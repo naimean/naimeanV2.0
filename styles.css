@@ -1,24 +1,17 @@
-.data-squares {
+.power-flicker {
   position: absolute;
-  left: 12%;
-  top: 10%;
-  width: 18%;
-  height: 8%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  z-index: 30;
-  pointer-events: none;
-}
-.data-square {
-  width: 12px;
-  height: 12px;
+  right: calc(6.67% - 48px); /* just to the right of power button */
+  top: calc(91.43% + 8px);
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
   background: #133;
-  border-radius: 2px;
   box-shadow: 0 0 2px #0f0a;
   transition: background 0.12s, box-shadow 0.12s;
+  z-index: 21;
+  pointer-events: none;
 }
-.data-square.active {
+.power-flicker.active {
   background: #3f6;
   box-shadow: 0 0 8px 2px #3f6, 0 0 2px #fff;
 }

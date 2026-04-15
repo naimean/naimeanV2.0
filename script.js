@@ -1,51 +1,22 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Data squares logic
-  const dataSquaresContainer = document.getElementById('data-squares');
-  let dataSquares = [];
-  function createDataSquares(rows = 2, cols = 8) {
-    dataSquaresContainer.innerHTML = '';
-    dataSquares = [];
-    for (let i = 0; i < rows * cols; i++) {
-      const sq = document.createElement('div');
-      sq.className = 'data-square';
-      dataSquaresContainer.appendChild(sq);
-      dataSquares.push(sq);
-    }
-  }
-  createDataSquares();
-
-  function flashAllSquares(times = 6, interval = 80, cb) {
-    let count = 0;
-    function flash() {
-      dataSquares.forEach(sq => sq.classList.toggle('active', count % 2 === 0));
-      count++;
-      if (count < times) {
-        setTimeout(flash, interval);
-      } else {
-        dataSquares.forEach(sq => sq.classList.remove('active'));
-        if (cb) cb();
-      }
-    }
-    flash();
-  }
-
+  // Power flicker square logic
+  const powerFlicker = document.getElementById('power-flicker');
   let flickerInterval = null;
-  function startDataFlicker() {
+  function startPowerFlicker() {
+    if (!powerFlicker) return;
     if (flickerInterval) return;
     flickerInterval = setInterval(() => {
-      dataSquares.forEach(sq => {
-        if (Math.random() > 0.7) {
-          sq.classList.add('active');
-        } else {
-          sq.classList.remove('active');
-        }
-      });
+      if (Math.random() > 0.7) {
+        powerFlicker.classList.add('active');
+      } else {
+        powerFlicker.classList.remove('active');
+      }
     }, 120);
   }
-  function stopDataFlicker() {
+  function stopPowerFlicker() {
     if (flickerInterval) clearInterval(flickerInterval);
     flickerInterval = null;
-    dataSquares.forEach(sq => sq.classList.remove('active'));
+    if (powerFlicker) powerFlicker.classList.remove('active');
   }
 
   // Power button logic
@@ -62,9 +33,23 @@ document.addEventListener('DOMContentLoaded', function() {
       shadowLayer.style.visibility = 'visible';
       void shadowLayer.offsetWidth;
       shadowLayer.classList.add('crt-on-anim');
-      // Flash all data squares green during boot
-      flashAllSquares(8, 70, () => {
-        startDataFlicker();
+      // Flicker the power square during boot
+      let flashes = 0;
+      function flashFlicker(times = 8, interval = 70, cb) {
+        function flash() {
+          powerFlicker.classList.toggle('active', flashes % 2 === 0);
+          flashes++;
+          if (flashes < times) {
+            setTimeout(flash, interval);
+          } else {
+            powerFlicker.classList.remove('active');
+            if (cb) cb();
+          }
+        }
+        flash();
+      }
+      flashFlicker(8, 70, () => {
+        startPowerFlicker();
         powerBtn.classList.add('solid-green');
       });
       setTimeout(() => {
