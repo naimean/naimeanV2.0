@@ -1,165 +1,160 @@
-/* Move flicker square to the left of the power button */
-.power-flicker {
+.shadow-layer {
   position: absolute;
-  /* Place just to the left of the power button with a 15px gap, using pixel-based positioning for reliability */
-  top: calc(91.43% + 16px); /* move down 3px */
-  right: calc(6.67% + 7% + 10px + 10px); /* move right 5px (15px gap -> 10px) */
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  background: #133;
-  box-shadow: 0 0 2px #0f0a;
-  transition: background 0.12s, box-shadow 0.12s;
-  z-index: 21;
-  pointer-events: none;
-}
-.power-flicker.active {
-  background: #3f6;
-  box-shadow: 0 0 8px 2px #3f6, 0 0 2px #fff;
-}
-.power-flicker.active {
-  background: #3f6;
-  box-shadow: 0 0 8px 2px #3f6, 0 0 2px #fff;
-}
-.power-btn.solid-green .power-light {
-  background: #1ed760 !important;
-  box-shadow: 0 0 18px 8px #1ed760, 0 0 2px 1px #fff !important;
-  animation: none !important;
-}
-/* Discord widget overlay fix */
-.discord-widget-embed {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 320px;
-  height: 400px;
-  z-index: 10000;
-  box-shadow: 0 0 12px #000b;
-  border-radius: 8px;
-  overflow: hidden;
-}
-@keyframes crt-on-reverse {
-  0% {
-    transform: scaleY(1) scaleX(1);
-    filter: none;
-  }
-  30% {
-    transform: scaleY(0.7) scaleX(1.03);
-    filter: brightness(1.1) blur(0.5px);
-  }
-  60% {
-    transform: scaleY(0.2) scaleX(1.1);
-    filter: brightness(1.5) blur(1px);
-  }
-  100% {
-    transform: scaleY(0.02) scaleX(1.2);
-    filter: brightness(2) blur(2px);
-  }
-}
-
-.shadow-layer.crt-on-anim {
-  animation: crt-on-reverse 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-}
-/* Static GIF overlay */
-.static-overlay {
-  position: absolute;
-  left: var(--screen-left);
-  top: var(--screen-top);
-  width: var(--screen-width);
-  height: var(--screen-height);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  left: calc(25% - 35px);
+  top: calc(20% - 65px);
+  width: calc(50vw + 68px);
+  height: 40vw;
   background: #000;
+  border: none;
+  border-radius: 18px;
+  z-index: 2;
   pointer-events: none;
 }
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-
-:root {
-  --screen-left: 4.44%;
-  --screen-top: 6.43%;
-  --screen-width: 90.11%;
-  --screen-height: 47.86%;
-  --mint: #8ef0b2;
-  --mint-bright: #c8ffd9;
-  --screen-black: #111112;
-  --screen-green: rgba(28, 66, 36, 0.98);
-  --c64-blue: #3c5cff;
-  --c64-blue-bright: #b8d0ff;
-  --c64-white: #b8d0ff;
-}
-
-html,
-body {
-  width: 100%;
+html, body {
   height: 100%;
   margin: 0;
   padding: 0;
   background: #000;
-  font-family: 'VT323', monospace;
+  width: 100vw;
+  min-height: 100vh;
 }
 
 body {
+  width: 100vw;
+  height: 100vh;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  max-width: 70vw;
+  max-height: 70vh;
+  width: auto;
+  height: auto;
+  display: block;
+  margin: auto;
 
-.c64-wrapper {
+.c64-center {
+  width: 100vw;
+  height: 100vh;
   position: relative;
-  width: min(900px, 100vw);
-  aspect-ratio: 900 / 700;
+  overflow: hidden;
 }
 
 .c64-img {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 100vh;
+  width: auto;
+  max-width: none;
+  max-height: 100vh;
+  transform: translate(-50%, -50%);
   display: block;
-  user-select: none;
+  margin: 0;
 }
-
-.return-bypass-btn {
+.power-btn {
   position: absolute;
-  left: 6.67%;
-  top: 91.43%;
-  width: 4%;
-  height: 5.14%;
-  background: url('assets/enter-btn.png') no-repeat center center/contain, #222;
-  border: 2px solid #555;
+  left: calc(50% + 245px); /* 205px + 40px */
+  top: calc(50% + 331px); /* 326px + 5px */
+  width: 30px; /* doubled size */
+  height: 30px; /* doubled size */
   border-radius: 50%;
-  z-index: 20;
+  border: none;
+  background: #b36b00; /* solid orange/brown core */
+  box-shadow: 0 0 40px 18px #ffe066, 0 0 24px 12px #ff9900, 0 0 2px #fff, inset 0 1px 3px #7c5c3e;
+  outline: 2px solid #b36b00;
   cursor: pointer;
-  box-shadow: 0 0 8px #000a;
-  outline: none;
-  transition: background 0.3s;
-  display: none;
-}
-
-.return-bypass-btn:focus-visible {
-  outline: 2px dashed rgba(142, 240, 178, 0.7);
-  outline-offset: 1px;
-}
-
-.shadow-layer,
-.boot-screen,
-.shoutbox-container {
+  z-index: 200;
+  animation: power-btn-pulse-harsh 0.7s infinite alternate;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
-  left: var(--screen-left);
-  top: var(--screen-top);
-  width: var(--screen-width);
-  height: var(--screen-height);
-  border-radius: 8px;
+}
+
+.power-btn .power-icon {
+  display: block;
+  font-size: 16px;
+  color: #3a2a1a; /* blackish brown for off state */
+  filter: none;
+  opacity: 0.85;
+  pointer-events: none;
+  font-weight: 400;
+  transition: color 0.2s, filter 0.2s;
+}
+
+.power-btn.on .power-icon {
+  color: #1aff1a;
+  filter: drop-shadow(0 0 6px #1aff1a);
+}
+
+@keyframes power-btn-pulse-harsh {
+  0% {
+    box-shadow: 0 0 0 0 #ffe066, 0 0 0 0 #ff9900, 0 0 2px #fff, inset 0 1px 3px #7c5c3e;
+    background: #b36b00;
+  }
+  40% {
+    box-shadow: 0 0 40px 18px #ffe066, 0 0 24px 12px #ff9900, 0 0 2px #fff, inset 0 1px 3px #7c5c3e;
+    background: #ff9900;
+  }
+  100% {
+    box-shadow: 0 0 60px 28px #ffe066, 0 0 36px 18px #ff9900, 0 0 2px #fff, inset 0 1px 3px #7c5c3e;
+    background: #ffe066;
+  }
+}
+
+.data-light {
+  position: absolute;
+  left: calc(50% + 145px + 20px + 10px + 7.5px + 100px);
+  top: calc(50% + 282px + 20px + 50px + 20px - 20px - 25px - 5px - 3px); /* move up 3px more */
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #1a2; /* dark green off */
+  box-shadow: 0 0 2px 1px #357a38, 0 0 1px #000;
+  border: 2px solid #357a38;
+  z-index: 100;
+  transition: background 0.2s;
+}
+
+.data-light.on {
+  animation: data-light-pulse 0.5s infinite alternate cubic-bezier(0.7,0,0.3,1);
+  background: #4caf50;
+  box-shadow: 0 0 12px 4px #4caf50, 0 0 1px #000;
+}
+
+@keyframes data-light-pulse {
+  0% {
+    background: #4caf50;
+    box-shadow: 0 0 12px 4px #4caf50, 0 0 1px #000;
+  }
+  70% {
+    background: #4caf50;
+    box-shadow: 0 0 32px 12px #bfffba, 0 0 1px #000;
+  }
+  80% {
+    background: #4caf50;
+    box-shadow: 0 0 8px 2px #4caf50, 0 0 1px #000;
+  }
+  100% {
+    background: #1a2;
+    box-shadow: 0 0 2px 1px #357a38, 0 0 1px #000;
+  }
 }
 
 .shadow-layer {
-  background: var(--screen-black);
-  opacity: 0.99;
-  z-index: 10;
+  background: #000;
+  border: none;
+  border-radius: 28px;
+  opacity: 1;
+  z-index: 21;
   pointer-events: auto;
   visibility: visible;
   transition: opacity 0.7s, visibility 0.7s;
+  position: absolute;
+  /* Extended right 5px */
+  top: calc(10% - 17px); /* up 1px from -16px */
+  left: calc(10% + 82px); /* left 1px from 83px */
+  width: calc(80% - 167px); /* 172px - 5px */
+  height: calc(60% - 105px); /* 109px - 4px */
 }
 
 .shadow-layer.hidden {
@@ -168,13 +163,14 @@ body {
 }
 
 .boot-screen {
-  background: transparent;
+  background: var(--c64-blue);
+  box-shadow: 0 0 24px #000b, 0 0 0 2px #b8d0ff;
+  opacity: 0;
+  z-index: 2000;
   opacity: 1;
-  z-index: 11;
-  display: flex;
-  align-items: stretch;
+  visibility: visible;
   justify-content: stretch;
-  pointer-events: auto;
+  pointer-events: none;
   transition: opacity 0.7s, visibility 0.7s;
   visibility: hidden;
   overflow: hidden;
@@ -183,16 +179,35 @@ body {
 .boot-screen.visible {
   visibility: visible;
   opacity: 1;
+  pointer-events: auto;
+}
+
+.boot-screen.visible ~ .discord-widget-embed {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
 }
 
 .boot-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  color: var(--mint);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 600px;
+  height: auto;
+  color: var(--c64-white);
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
   letter-spacing: 2.2px;
-  text-shadow: 0 0 6px #b0d0ff, 0 0 12px #4060a0, 0 1px 0 #b0d0ff;
+  text-shadow: 0 0 6px #b8d0ff, 0 0 12px #4060a0, 0 1px 0 #b8d0ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0 24px 0;
+  border-radius: 8px;
+  box-shadow: none;
 }
 
 .boot-form {
@@ -207,8 +222,8 @@ body {
 }
 
 .boot-input {
-  background: transparent;
-  border: 2px solid var(--c64-blue-bright);
+  background: var(--c64-blue);
+  border: 2px solid var(--c64-white);
   border-radius: 2px;
   color: var(--c64-white);
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
@@ -227,7 +242,7 @@ body {
 
 .boot-submit {
   background: var(--c64-blue);
-  border: 2px solid var(--c64-blue-bright);
+  border: 2px solid var(--c64-white);
   border-radius: 2px;
   color: var(--c64-white);
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
@@ -236,7 +251,7 @@ body {
   padding: 10px 12px;
   text-transform: lowercase;
   cursor: pointer;
-  box-shadow: 0 0 8px 1px var(--c64-blue-bright);
+  box-shadow: none;
   transition: border 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
@@ -262,11 +277,12 @@ body {
 
 .power-btn {
   position: absolute;
-  right: calc(6.67% - 5px);
-  top: calc(91.43% - 5px);
-  width: calc(7% + 10px);
-  height: calc(9% + 10px);
-  background: #222;
+  right: 38px;
+  top: 580px;
+  width: 44px;
+  height: 44px;
+  aspect-ratio: 1 / 1;
+  background: transparent;
   border: none;
   border-radius: 50%;
   display: flex;
@@ -274,14 +290,35 @@ body {
   justify-content: center;
   z-index: 20;
   cursor: pointer;
-  box-shadow: 0 0 18px 6px #3c5cff, 0 0 8px #000a;
+  box-shadow: none;
   outline: none;
   transition: background 0.3s;
+  animation: power-btn-pulse 1.2s infinite alternate;
+}
+
+@keyframes power-btn-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 200, 80, 0.18), 0 0 0 0 rgba(255, 120, 0, 0.08);
+    background: transparent;
+  }
+  60% {
+    box-shadow: 0 0 16px 8px rgba(255, 200, 80, 0.22), 0 0 8px 2px rgba(255, 120, 0, 0.13);
+    background: rgba(255, 180, 60, 0.04);
+  }
+  100% {
+    box-shadow: 0 0 24px 12px rgba(255, 200, 80, 0.28), 0 0 12px 4px rgba(255, 120, 0, 0.18);
+    background: rgba(255, 180, 60, 0.09);
+  }
+}
+
+.power-btn.solid-green {
+  animation: none;
+  box-shadow: 0 0 18px 8px #1ed760, 0 0 2px 1px #fff !important;
 }
 
 .power-btn.on {
-  background: #1ed760;
-  border-color: #1ed760;
+  box-shadow: 0 0 32px 12px #1aff1a, 0 0 16px 8px #2a1a0a, 0 0 2px #fff, inset 0 1px 3px #2a1a0a;
+  background: radial-gradient(circle at 60% 40%, #2a1a0a 60%, #3a2a1a 100%); /* dark chocolate gradient core, green glow */
 }
 
 .power-light {
@@ -293,6 +330,14 @@ body {
   display: block;
   transition: background 0.3s, box-shadow 0.3s;
   animation: power-pulse 1.6s infinite ease-in-out;
+.power-btn .power-light {
+  width: 60%;
+  height: 60%;
+  background: #222;
+  border-radius: 50%;
+  border: 2px solid #444;
+  box-shadow: 0 0 8px 2px #ff6600, 0 0 2px #fff;
+  transition: background 0.2s, box-shadow 0.2s;
 }
 
 @keyframes power-pulse {
@@ -301,7 +346,7 @@ body {
     filter: brightness(1);
   }
   50% {
-    box-shadow: 0 0 24px 12px #ff6600, 0 0 2px 1px #fff;
+    box-shadow: 0 0 24px 12px #ffb347, 0 0 2px 1px #fff;
     filter: brightness(1.12);
   }
   100% {
@@ -319,6 +364,12 @@ body {
   justify-content: center;
   pointer-events: none;
   visibility: hidden;
+  position: absolute;
+  left: calc(var(--screen-left) + 1px) !important;
+  top: calc(var(--screen-top) + 1px) !important;
+  width: calc(var(--screen-width) - 2px) !important;
+  height: calc(var(--screen-height) - 2px) !important;
+  border-radius: 7px !important;
   transition: opacity 0.7s, visibility 0.7s;
 }
 
@@ -614,4 +665,44 @@ body {
   border-radius: 7px;
   width: auto !important;
   height: auto !important;
+}
+
+/* --- Power Button Animation --- */
+@keyframes tv-on-flash {
+  0% {
+    opacity: 1;
+    transform: scale(0.05);
+    background: #fff;
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+    background: #fff;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.5);
+    background: #fff;
+  }
+}
+
+.tv-on-flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%) scale(0.05);
+  opacity: 1;
+  pointer-events: none;
+  z-index: 10000;
+  animation: tv-on-flash 0.7s cubic-bezier(0.7,0,0.3,1) forwards;
+}
+
+/* Hide shadow layer with fade */
+.shadow-layer.hide {
+  opacity: 0;
+  transition: opacity 0.7s cubic-bezier(0.7,0,0.3,1);
 }
