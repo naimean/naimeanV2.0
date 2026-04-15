@@ -1,20 +1,95 @@
-// Power button and blackout overlay toggle logic
 document.addEventListener('DOMContentLoaded', function() {
-      // Ensure shadow layer is visible on load
-      if (shadowLayer) {
-        shadowLayer.classList.remove('hidden');
-        shadowLayer.classList.remove('crt-on-anim');
-        shadowLayer.style.opacity = '';
-        shadowLayer.style.visibility = '';
+  // Data squares logic
+  const dataSquaresContainer = document.getElementById('data-squares');
+  let dataSquares = [];
+  function createDataSquares(rows = 2, cols = 8) {
+    dataSquaresContainer.innerHTML = '';
+    dataSquares = [];
+    for (let i = 0; i < rows * cols; i++) {
+      const sq = document.createElement('div');
+      sq.className = 'data-square';
+      dataSquaresContainer.appendChild(sq);
+      dataSquares.push(sq);
+    }
+  }
+  createDataSquares();
+
+  function flashAllSquares(times = 6, interval = 80, cb) {
+    let count = 0;
+    function flash() {
+      dataSquares.forEach(sq => sq.classList.toggle('active', count % 2 === 0));
+      count++;
+      if (count < times) {
+        setTimeout(flash, interval);
+      } else {
+        dataSquares.forEach(sq => sq.classList.remove('active'));
+        if (cb) cb();
       }
-    if (returnBypassBtn) {
-      returnBypassBtn.style.display = 'none';
-      returnBypassBtn.addEventListener('click', function() {
-        if (screenOn && !puzzleSolved) {
-          window.location.assign(DISCORD_URL);
+    }
+    flash();
+  }
+
+  let flickerInterval = null;
+  function startDataFlicker() {
+    if (flickerInterval) return;
+    flickerInterval = setInterval(() => {
+      dataSquares.forEach(sq => {
+        if (Math.random() > 0.7) {
+          sq.classList.add('active');
+        } else {
+          sq.classList.remove('active');
         }
       });
-    }
+    }, 120);
+  }
+  function stopDataFlicker() {
+    if (flickerInterval) clearInterval(flickerInterval);
+    flickerInterval = null;
+    dataSquares.forEach(sq => sq.classList.remove('active'));
+  }
+
+  // Power button logic
+  const powerBtn = document.getElementById('power-btn');
+  const shadowLayer = document.getElementById('shadow-layer');
+  const bootScreen = document.getElementById('boot-screen');
+  // Only add event listener once, and only declare these once
+  if (powerBtn && shadowLayer && bootScreen) {
+    powerBtn.addEventListener('click', function() {
+      // Animate shadow layer off (CRT-on)
+      shadowLayer.classList.remove('hidden');
+      shadowLayer.classList.remove('crt-on-anim');
+      shadowLayer.style.opacity = '1';
+      shadowLayer.style.visibility = 'visible';
+      void shadowLayer.offsetWidth;
+      shadowLayer.classList.add('crt-on-anim');
+      // Flash all data squares green during boot
+      flashAllSquares(8, 70, () => {
+        startDataFlicker();
+        powerBtn.classList.add('solid-green');
+      });
+      setTimeout(() => {
+        shadowLayer.classList.remove('crt-on-anim');
+        shadowLayer.style.opacity = '1';
+        shadowLayer.style.visibility = 'visible';
+        setTimeout(() => {
+          shadowLayer.classList.add('hidden');
+          shadowLayer.style.opacity = '';
+          shadowLayer.style.visibility = '';
+          bootScreen.classList.add('visible');
+        }, 30);
+      }, 700);
+    });
+  }
+
+  // Only handle returnBypassBtn here
+  if (returnBypassBtn) {
+    returnBypassBtn.style.display = 'none';
+    returnBypassBtn.addEventListener('click', function() {
+      if (screenOn && !puzzleSolved) {
+        window.location.assign(DISCORD_URL);
+      }
+    });
+  }
   const staticOverlay = document.getElementById('static-overlay');
 
   // Static sound effect (WAV)
@@ -61,11 +136,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  const powerBtn = document.getElementById('power-btn');
-  const powerLight = document.getElementById('power-light');
+  // ...existing code...
   const shoutboxContainer = document.getElementById('shoutbox-container');
-  const bootScreen = document.getElementById('boot-screen');
-  const shadowLayer = document.getElementById('shadow-layer');
   const bootInput = document.getElementById('boot-input');
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
@@ -81,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
   wrongAudio.load();
-  let screenOn = false;
+  // let screenOn = false; (removed)
   let puzzleSolved = false;
   let prankRunning = false;
   let hintRevealProgress = 0;
@@ -251,87 +323,8 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
-  if (powerBtn && powerLight && shoutboxContainer && bootScreen && shadowLayer) {
-    powerBtn.style.display = 'flex';
-    let poweredOn = false;
-    let flickerInterval = null;
-    let flickerTimeout = null;
-
-    function startFlicker() {
-      if (flickerInterval) return;
-      function flicker() {
-        const on = Math.random() > 0.5;
-        if (on) {
-          powerLight.style.background = 'radial-gradient(circle, #ffb347 60%, #ff6600 100%)';
-          powerLight.style.boxShadow = '0 0 18px 8px #ff6600, 0 0 2px 1px #fff';
-        } else {
-          powerLight.style.background = '#222';
-          powerLight.style.boxShadow = 'none';
-        }
-        flickerTimeout = setTimeout(flicker, 120 + Math.random() * 400);
-      }
-      flicker();
-    }
-    function stopFlicker() {
-      if (flickerTimeout) clearTimeout(flickerTimeout);
-      flickerTimeout = null;
-      powerLight.style.background = '#222';
-      powerLight.style.boxShadow = 'none';
-    }
-
-    powerBtn.addEventListener('click', async function() {
-      if (!poweredOn) {
-        // Animate shadow layer off (CRT-on)
-        powerBtn.classList.add('on');
-        if (shadowLayer) {
-          shadowLayer.classList.remove('hidden');
-          shadowLayer.classList.remove('crt-on-anim');
-          shadowLayer.style.opacity = '1';
-          shadowLayer.style.visibility = 'visible';
-          void shadowLayer.offsetWidth;
-          shadowLayer.classList.add('crt-on-anim');
-          setTimeout(() => {
-            shadowLayer.classList.remove('crt-on-anim');
-            shadowLayer.style.opacity = '1';
-            shadowLayer.style.visibility = 'visible';
-            setTimeout(() => {
-              shadowLayer.classList.add('hidden');
-              shadowLayer.style.opacity = '';
-              shadowLayer.style.visibility = '';
-              bootScreen.classList.add('visible');
-              if (bootInput) bootInput.focus();
-            }, 30);
-          }, 700);
-        }
-        shoutboxContainer.classList.remove('visible');
-        poweredOn = true;
-        if (returnBypassBtn) returnBypassBtn.style.display = 'flex';
-        startFlicker();
-      } else {
-        // Power off: static > sound > video > discord
-        stopFlicker();
-        if (bootScreen) bootScreen.classList.remove('visible');
-        if (shoutboxContainer) shoutboxContainer.classList.add('visible');
-        // Show static
-        if (staticOverlay) staticOverlay.style.display = 'flex';
-        await delay(1000);
-        if (staticOverlay) staticOverlay.style.display = 'none';
-        // Play power button sound
-        const powerOffAudio = new Audio('assets/power-button.mp3');
-        await powerOffAudio.play().catch(() => {});
-        await delay(500);
-        // Show and play prank video
-        if (prankVideoOverlay) prankVideoOverlay.classList.add('visible');
-        try {
-          prankVideo.currentTime = 0;
-          await prankVideo.play();
-        } catch (_) {}
-        await delay(5000);
-        window.location.assign(DISCORD_URL);
-      }
-    });
-
-    if (bootForm && bootInput && bootVideo && bootSubmit) {
+  // Power button logic removed
+  if (bootForm && bootInput && bootVideo && bootSubmit) {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (screenOn && !puzzleSolved) {
@@ -453,10 +446,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
       });
     }
-    }
   }
 });
-
 const zeldaSecretAudio = new Audio('assets/zelda-secret.mp3');
 zeldaSecretAudio.preload = 'auto';
 

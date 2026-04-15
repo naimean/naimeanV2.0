@@ -1,3 +1,32 @@
+.data-squares {
+  position: absolute;
+  left: 12%;
+  top: 10%;
+  width: 18%;
+  height: 8%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  z-index: 30;
+  pointer-events: none;
+}
+.data-square {
+  width: 12px;
+  height: 12px;
+  background: #133;
+  border-radius: 2px;
+  box-shadow: 0 0 2px #0f0a;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+.data-square.active {
+  background: #3f6;
+  box-shadow: 0 0 8px 2px #3f6, 0 0 2px #fff;
+}
+.power-btn.solid-green .power-light {
+  background: #1ed760 !important;
+  box-shadow: 0 0 18px 8px #1ed760, 0 0 2px 1px #fff !important;
+  animation: none !important;
+}
 /* Discord widget overlay fix */
 .discord-widget-embed {
   position: absolute;
