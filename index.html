@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commodore 64 Shoutbox</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="c64-wrapper">
+    <img src="assets/commodore64.jpg" alt="Commodore 64" class="c64-img" />
+    <button class="return-bypass-btn" id="return-bypass-btn" aria-label="Open Discord"></button>
+    <button class="power-btn" id="power-btn" aria-label="Power">
+      <span class="power-light" id="power-light"></span>
+    </button>
+    <div class="shadow-layer" id="shadow-layer"></div>
+    <div class="boot-screen" id="boot-screen">
+      <div class="boot-content">
+        <form id="boot-form" autocomplete="off" class="boot-form">
+          <input id="boot-input" class="boot-input" type="text" maxlength="24" value="C:\Naimean" autofocus />
+          <button id="boot-submit" class="boot-submit" type="submit">newman gate</button>
+        </form>
+        <video id="boot-video" src="assets/newman-gate.mp4" playsinline preload="auto"></video>
+      </div>
+    </div>
+    <div class="shoutbox-container" id="shoutbox-container">
+      <div class="c64-screen">
+        <div class="prank-video-overlay" id="prank-video-overlay" aria-hidden="true">
+          <video id="prank-video" src="assets/notarickroll.mp4" playsinline preload="auto"></video>
+        </div>
+        <div class="shoutbox-messages" id="messages"></div>
+        <div class="shoutbox-bottom">
+          <form id="shoutbox-form">
+            <div class="shoutbox-hint-shell" id="shoutbox-hint-shell" tabindex="0" role="button" aria-label="Reveal hint">
+              <div class="shoutbox-hint">You didn't say the magic word.</div>
+              <div class="shoutbox-hint-cover" aria-hidden="true"></div>
+            </div>
+            <div class="shoutbox-entry">
+              <input type="text" id="shoutbox-input" maxlength="120" value="C:\Naimean\" placeholder="" autocomplete="off" />
+              <button type="submit">submit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"2288b1a8f91e41eaad61c8a067422129","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ecb89e48b09cdf0',t:'MTc3NjI2MjI3Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
