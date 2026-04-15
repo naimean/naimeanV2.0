@@ -1,16 +1,21 @@
 /* Move flicker square to the left of the power button */
 .power-flicker {
   position: absolute;
-  left: calc(6.67% - 28px); /* just to the left of power button */
-  top: calc(91.43% + 8px);
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  /* Place to the left of the power button with a 15px gap */
+  left: calc(6.67% - 15px - 9px); /* 9px is half of 18px (old size), now half of 9px (new size) */
+  top: calc(91.43% + 13px);
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
   background: #133;
   box-shadow: 0 0 2px #0f0a;
   transition: background 0.12s, box-shadow 0.12s;
   z-index: 21;
   pointer-events: none;
+}
+.power-flicker.active {
+  background: #3f6;
+  box-shadow: 0 0 8px 2px #3f6, 0 0 2px #fff;
 }
 .power-flicker.active {
   background: #3f6;
