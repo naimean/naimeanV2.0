@@ -1,9 +1,35 @@
 // Power button and blackout overlay toggle logic
 document.addEventListener('DOMContentLoaded', function() {
+      // Ensure shadow layer is visible on load
+      if (shadowLayer) {
+        shadowLayer.classList.remove('hidden');
+        shadowLayer.classList.remove('crt-on-anim');
+        shadowLayer.style.opacity = '';
+        shadowLayer.style.visibility = '';
+      }
+    if (returnBypassBtn) {
+      returnBypassBtn.style.display = 'none';
+      returnBypassBtn.addEventListener('click', function() {
+        if (screenOn && !puzzleSolved) {
+          window.location.assign(DISCORD_URL);
+        }
+      });
+    }
   const staticOverlay = document.getElementById('static-overlay');
+
+  // Static sound effect (WAV)
+  const staticAudio = new Audio('assets/static.wav');
+  staticAudio.preload = 'auto';
+
+  function playStaticSound() {
+    staticAudio.currentTime = 0;
+    staticAudio.play().catch(() => {});
+  }
+
   function showStatic(duration = 1000) {
     if (!staticOverlay) return;
     staticOverlay.style.display = 'flex';
+    playStaticSound();
     setTimeout(() => {
       staticOverlay.style.display = 'none';
     }, duration);
@@ -227,22 +253,81 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (powerBtn && powerLight && shoutboxContainer && bootScreen && shadowLayer) {
     powerBtn.style.display = 'flex';
-    powerBtn.addEventListener('click', function() {
-      if (!screenOn) {
-        // Turn on: green button, fade shadow, show boot screen
+    let poweredOn = false;
+    let flickerInterval = null;
+    let flickerTimeout = null;
+
+    function startFlicker() {
+      if (flickerInterval) return;
+      function flicker() {
+        const on = Math.random() > 0.5;
+        if (on) {
+          powerLight.style.background = 'radial-gradient(circle, #ffb347 60%, #ff6600 100%)';
+          powerLight.style.boxShadow = '0 0 18px 8px #ff6600, 0 0 2px 1px #fff';
+        } else {
+          powerLight.style.background = '#222';
+          powerLight.style.boxShadow = 'none';
+        }
+        flickerTimeout = setTimeout(flicker, 120 + Math.random() * 400);
+      }
+      flicker();
+    }
+    function stopFlicker() {
+      if (flickerTimeout) clearTimeout(flickerTimeout);
+      flickerTimeout = null;
+      powerLight.style.background = '#222';
+      powerLight.style.boxShadow = 'none';
+    }
+
+    powerBtn.addEventListener('click', async function() {
+      if (!poweredOn) {
+        // Animate shadow layer off (CRT-on)
         powerBtn.classList.add('on');
-        powerLight.style.background = '#222';
-        powerLight.style.boxShadow = 'none';
-        shadowLayer.classList.add('hidden');
-        setTimeout(() => {
-          bootScreen.classList.add('visible');
-          if (bootInput) bootInput.focus();
-        }, 700);
+        if (shadowLayer) {
+          shadowLayer.classList.remove('hidden');
+          shadowLayer.classList.remove('crt-on-anim');
+          shadowLayer.style.opacity = '1';
+          shadowLayer.style.visibility = 'visible';
+          void shadowLayer.offsetWidth;
+          shadowLayer.classList.add('crt-on-anim');
+          setTimeout(() => {
+            shadowLayer.classList.remove('crt-on-anim');
+            shadowLayer.style.opacity = '1';
+            shadowLayer.style.visibility = 'visible';
+            setTimeout(() => {
+              shadowLayer.classList.add('hidden');
+              shadowLayer.style.opacity = '';
+              shadowLayer.style.visibility = '';
+              bootScreen.classList.add('visible');
+              if (bootInput) bootInput.focus();
+            }, 30);
+          }, 700);
+        }
         shoutboxContainer.classList.remove('visible');
-        screenOn = true;
+        poweredOn = true;
+        if (returnBypassBtn) returnBypassBtn.style.display = 'flex';
+        startFlicker();
       } else {
-        // Turn off: rickroll them instead
-        runPowerOffPrank();
+        // Power off: static > sound > video > discord
+        stopFlicker();
+        if (bootScreen) bootScreen.classList.remove('visible');
+        if (shoutboxContainer) shoutboxContainer.classList.add('visible');
+        // Show static
+        if (staticOverlay) staticOverlay.style.display = 'flex';
+        await delay(1000);
+        if (staticOverlay) staticOverlay.style.display = 'none';
+        // Play power button sound
+        const powerOffAudio = new Audio('assets/power-button.mp3');
+        await powerOffAudio.play().catch(() => {});
+        await delay(500);
+        // Show and play prank video
+        if (prankVideoOverlay) prankVideoOverlay.classList.add('visible');
+        try {
+          prankVideo.currentTime = 0;
+          await prankVideo.play();
+        } catch (_) {}
+        await delay(5000);
+        window.location.assign(DISCORD_URL);
       }
     });
 
@@ -267,15 +352,21 @@ document.addEventListener('DOMContentLoaded', function() {
             bootVideo.style.display = 'none';
             showStatic(1000); // Show static for 1 second after video
             await delay(1000);
+            await showDiscordJoinWindow(); // Show Discord window for 3 seconds
+            showStatic(1000); // Show static again after Discord window
+            await delay(1000);
           } catch (_) {
             // If autoplay/playback fails, continue to the prompt instead of hanging.
             bootVideo.pause();
             bootVideo.style.display = 'none';
             showStatic(1000);
             await delay(1000);
+            await showDiscordJoinWindow();
+            showStatic(1000);
+            await delay(1000);
           }
 
-          // Transition to input prompt (with native blinking caret) instead of a Discord screen.
+          // Transition to input prompt (with native blinking caret)
           bootScreen.classList.remove('visible');
           shoutboxContainer.classList.add('visible');
           if (shoutboxInput) {
@@ -283,6 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
             shoutboxInput.focus();
           }
           puzzleSolved = true;
+          if (returnBypassBtn) returnBypassBtn.style.display = 'none';
         }
       });
     }
@@ -313,10 +405,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (FINAL_UNLOCK_VALUES.has(text)) {
-          // Play secret sound, then static for 1 second, then runPleaseSequence
+          // Play secret sound, then static for 1 second, then show Discord join window, then runPleaseSequence
           playZeldaSecretSound();
           showStatic(1000);
-          setTimeout(runPleaseSequence, 1000);
+          setTimeout(async () => {
+            await showDiscordJoinWindow();
+            runPleaseSequence();
+          }, 1000);
           return;
         }
 
@@ -326,6 +421,38 @@ document.addEventListener('DOMContentLoaded', function() {
         await delay(1000);
         resetFinalInput();
       });
+    // Show Discord join window for 3 seconds before rickroll
+    async function showDiscordJoinWindow() {
+      return new Promise((resolve) => {
+        let discordWin = document.getElementById('discord-join-window');
+        if (!discordWin) {
+          discordWin = document.createElement('div');
+          discordWin.id = 'discord-join-window';
+          discordWin.style.position = 'fixed';
+          discordWin.style.top = '50%';
+          discordWin.style.left = '50%';
+          discordWin.style.transform = 'translate(-50%, -50%)';
+          discordWin.style.background = '#0f0';
+          discordWin.style.color = '#003300';
+          discordWin.style.fontFamily = '"Press Start 2P", "IBM Plex Mono", monospace';
+          discordWin.style.fontSize = '1.1rem';
+          discordWin.style.padding = '32px 48px';
+          discordWin.style.border = '2px solid #003300';
+          discordWin.style.borderRadius = '8px';
+          discordWin.style.boxShadow = '0 0 24px #000b';
+          discordWin.style.zIndex = '9999';
+          discordWin.style.textAlign = 'center';
+          discordWin.innerHTML = '<div style="margin-bottom:16px;font-size:1.3em;">JOIN THE DISCORD</div><div><a href="https://discord.gg/fvj4UrTpdp" target="_blank" style="color:#003300;text-decoration:underline;">discord.gg/fvj4UrTpdp</a></div>';
+          document.body.appendChild(discordWin);
+        } else {
+          discordWin.style.display = 'block';
+        }
+        setTimeout(() => {
+          discordWin.style.display = 'none';
+          resolve();
+        }, 3000);
+      });
+    }
     }
   }
 });
