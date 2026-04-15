@@ -1,10 +1,17 @@
-# Naimean V2.0 — Recent Changes
+# Update Log: naimeanV2.0
 
-## April 15, 2026
-- Fully restored and pushed all landing page files to GitHub
-- Fixed all asset references and missing files
-- Updated splash page image alt text to "Naimean?"
-- Changed browser window/tab title to "Naimean?"
-- README.md rewritten with culty, mysterious, retro-gaming, and AI themes
-- Verified all assets, scripts, and styles are present and correct
-- Provided deployment and local testing instructions
+## 2026-04-15
+- Data light moved down 3px and right 5px for precise placement
+- Removed blue background from C:\Naimean input (button only)
+- Input and button aligned: font, size, and padding unified
+- White color now blue-tinted to match Commodore palette
+- Power button border removed, glow effect retained
+- README, PLAN, and UPDATE docs refreshed
+
+## Previous Updates
+- Interactive power button and CRT-on animation
+- Animated shadow layer and flicker logic
+- Discord widget and shoutbox with hint system
+
+---
+_Automated update by GitHub Copilot_

@@ -2,8 +2,8 @@
 .power-flicker {
   position: absolute;
   /* Place just to the left of the power button with a 15px gap, using pixel-based positioning for reliability */
-  top: calc(91.43% + 13px);
-  right: calc(6.67% + 7% + 10px + 15px); /* power button's right edge + 15px gap */
+  top: calc(91.43% + 16px); /* move down 3px */
+  right: calc(6.67% + 7% + 10px + 10px); /* move right 5px (15px gap -> 10px) */
   width: 9px;
   height: 9px;
   border-radius: 2px;
@@ -87,7 +87,7 @@
   --screen-green: rgba(28, 66, 36, 0.98);
   --c64-blue: #3c5cff;
   --c64-blue-bright: #b8d0ff;
-  --c64-white: #eaf6ff;
+  --c64-white: #b8d0ff;
 }
 
 html,
@@ -207,23 +207,22 @@ body {
 }
 
 .boot-input {
-  background: var(--c64-blue);
+  background: transparent;
   border: 2px solid var(--c64-blue-bright);
   border-radius: 2px;
   color: var(--c64-white);
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
-  font-size: 0.95em;
+  font-size: 1em;
   outline: none;
   width: 14em;
   min-width: 14em;
   max-width: 14em;
-  padding: 6px 12px;
+  padding: 10px 12px;
   letter-spacing: 1.4px;
   caret-color: var(--c64-white);
-  box-shadow: 0 0 8px 1px var(--c64-blue-bright);
-  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: none;
+  transition: border 0.2s;
   border-color: var(--c64-white);
-  box-shadow: 0 0 12px 2px var(--c64-blue-bright);
 }
 
 .boot-submit {
@@ -232,9 +231,9 @@ body {
   border-radius: 2px;
   color: var(--c64-white);
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
-  font-size: 0.72em;
+  font-size: 1em;
   line-height: 1;
-  padding: 10px 10px;
+  padding: 10px 12px;
   text-transform: lowercase;
   cursor: pointer;
   box-shadow: 0 0 8px 1px var(--c64-blue-bright);
@@ -268,14 +267,14 @@ body {
   width: calc(7% + 10px);
   height: calc(9% + 10px);
   background: #222;
-  border: 2px solid #555;
+  border: none;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 20;
   cursor: pointer;
-  box-shadow: 0 0 8px #000a;
+  box-shadow: 0 0 18px 6px #3c5cff, 0 0 8px #000a;
   outline: none;
   transition: background 0.3s;
 }
