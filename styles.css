@@ -1,3 +1,17 @@
+/* Static GIF overlay */
+.static-overlay {
+  position: absolute;
+  left: var(--screen-left);
+  top: var(--screen-top);
+  width: var(--screen-width);
+  height: var(--screen-height);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  pointer-events: none;
+}
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
 :root {
@@ -114,12 +128,13 @@ body {
 
 .boot-form {
   position: absolute;
-  left: 52px;
+  left: 50%;
   bottom: 24px;
+  transform: translateX(-50%);
   z-index: 2;
   display: inline-flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 16px;
 }
 
 .boot-input {
@@ -133,7 +148,7 @@ body {
   width: 14em;
   min-width: 14em;
   max-width: 14em;
-  padding: 6px 8px;
+  padding: 6px 12px;
   letter-spacing: 1.4px;
   caret-color: var(--mint);
 }
@@ -446,18 +461,19 @@ body {
   }
 
   .boot-form {
-    left: 12px;
-    right: 12px;
-    bottom: 14px;
-    gap: 8px;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    gap: 12px !important;
   }
 
   .boot-input {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
+    width: 14em !important;
+    min-width: 14em !important;
+    max-width: 14em !important;
     font-size: 0.7em;
     letter-spacing: 0.8px;
+    padding: 6px 10px !important;
   }
 
   .boot-submit {

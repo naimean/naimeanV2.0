@@ -3,25 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Commodore 64 Shoutbox</title>
+  <title>Naimean?</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="c64-wrapper">
-    <img src="assets/commodore64.jpg" alt="Commodore 64" class="c64-img" />
+    <img src="assets/commodore64.jpg" alt="Naimean?" class="c64-img" />
     <button class="return-bypass-btn" id="return-bypass-btn" aria-label="Open Discord"></button>
     <button class="power-btn" id="power-btn" aria-label="Power">
       <span class="power-light" id="power-light"></span>
     </button>
     <div class="shadow-layer" id="shadow-layer"></div>
+    <div class="static-overlay" id="static-overlay" style="display:none;">
+      <img src="assets/static.gif" alt="static" style="width:100%;height:100%;object-fit:cover;" />
+    </div>
     <div class="boot-screen" id="boot-screen">
       <div class="boot-content">
         <form id="boot-form" autocomplete="off" class="boot-form">
           <input id="boot-input" class="boot-input" type="text" maxlength="24" value="C:\Naimean" autofocus />
-          <button id="boot-submit" class="boot-submit" type="submit">newman gate</button>
+          <button id="boot-submit" class="boot-submit" type="submit">nedry-gate</button>
         </form>
-        <video id="boot-video" src="assets/newman-gate.mp4" playsinline preload="auto"></video>
+        <video id="boot-video" src="assets/nedry-gate.mp4" playsinline preload="auto"></video>
       </div>
     </div>
     <div class="shoutbox-container" id="shoutbox-container">

@@ -1,5 +1,13 @@
 // Power button and blackout overlay toggle logic
 document.addEventListener('DOMContentLoaded', function() {
+  const staticOverlay = document.getElementById('static-overlay');
+  function showStatic(duration = 1000) {
+    if (!staticOverlay) return;
+    staticOverlay.style.display = 'flex';
+    setTimeout(() => {
+      staticOverlay.style.display = 'none';
+    }, duration);
+  }
   const DISCORD_URL = 'https://discord.gg/fvj4UrTpdp';
   const FINAL_PREFIX = 'C:\\Naimean\\';
   const FINAL_UNLOCK_VALUES = new Set([
@@ -247,17 +255,24 @@ document.addEventListener('DOMContentLoaded', function() {
           bootSubmit.style.display = 'none';
           bootVideo.style.display = 'block';
           try {
+            bootVideo.muted = false;
+            bootVideo.volume = 1;
             bootVideo.currentTime = 0;
             await bootVideo.play();
-            const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
-              ? Math.ceil(bootVideo.duration * 1000) + 2000
+            let waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
+              ? Math.ceil(bootVideo.duration * 1000)
               : 12000;
             await waitForVideoToEnd(bootVideo, waitMs);
-          } catch (_) {
-            // If autoplay/playback fails, continue to the prompt instead of hanging.
-          } finally {
             bootVideo.pause();
             bootVideo.style.display = 'none';
+            showStatic(1000); // Show static for 1 second after video
+            await delay(1000);
+          } catch (_) {
+            // If autoplay/playback fails, continue to the prompt instead of hanging.
+            bootVideo.pause();
+            bootVideo.style.display = 'none';
+            showStatic(1000);
+            await delay(1000);
           }
 
           // Transition to input prompt (with native blinking caret) instead of a Discord screen.
@@ -273,7 +288,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (shoutboxForm && shoutboxInput && messages) {
-      shoutboxForm.addEventListener('submit', function(e) {
+      // Prevent deleting the prefix in the input
+      shoutboxInput.addEventListener('keydown', function(e) {
+        const prefix = FINAL_PREFIX;
+        // Prevent backspace/delete if at or before prefix
+        if ((e.key === 'Backspace' || e.key === 'Delete') && shoutboxInput.selectionStart <= prefix.length) {
+          e.preventDefault();
+        }
+      });
+      shoutboxInput.addEventListener('input', function(e) {
+        const prefix = FINAL_PREFIX;
+        if (!shoutboxInput.value.startsWith(prefix)) {
+          shoutboxInput.value = prefix;
+          placeFinalCursorAtEnd();
+        }
+      });
+
+      shoutboxForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const text = shoutboxInput.value.trim();
@@ -282,16 +313,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (FINAL_UNLOCK_VALUES.has(text)) {
-          runPleaseSequence();
+          // Play secret sound, then static for 1 second, then runPleaseSequence
+          playZeldaSecretSound();
+          showStatic(1000);
+          setTimeout(runPleaseSequence, 1000);
           return;
         }
 
+        // Play static and sound for 1 second, then reset input
+        showStatic(1000);
         playWrongSound();
+        await delay(1000);
         resetFinalInput();
       });
     }
   }
 });
+
 const zeldaSecretAudio = new Audio('assets/zelda-secret.mp3');
 zeldaSecretAudio.preload = 'auto';
 
@@ -317,6 +355,11 @@ function playZeldaSecretSound() {
     });
   });
 }
+
+// Hidden enter button static effect (2s)
+window.showStaticForHiddenEnter = function() {
+  if (typeof showStatic === 'function') showStatic(2000);
+};
 
 function addMessage(msg, messagesContainer) {
   const div = document.createElement('div');
