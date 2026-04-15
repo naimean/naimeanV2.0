@@ -1,6 +1,7 @@
+/* Move flicker square to the left of the power button */
 .power-flicker {
   position: absolute;
-  right: calc(6.67% - 48px); /* just to the right of power button */
+  left: calc(6.67% - 28px); /* just to the left of power button */
   top: calc(91.43% + 8px);
   width: 18px;
   height: 18px;
@@ -32,27 +33,27 @@
   border-radius: 8px;
   overflow: hidden;
 }
-@keyframes crt-on {
+@keyframes crt-on-reverse {
   0% {
-    transform: scaleY(0.02) scaleX(1.2);
-    filter: brightness(2) blur(2px);
+    transform: scaleY(1) scaleX(1);
+    filter: none;
   }
-  40% {
-    transform: scaleY(0.2) scaleX(1.1);
-    filter: brightness(1.5) blur(1px);
-  }
-  70% {
+  30% {
     transform: scaleY(0.7) scaleX(1.03);
     filter: brightness(1.1) blur(0.5px);
   }
+  60% {
+    transform: scaleY(0.2) scaleX(1.1);
+    filter: brightness(1.5) blur(1px);
+  }
   100% {
-    transform: scaleY(1) scaleX(1);
-    filter: none;
+    transform: scaleY(0.02) scaleX(1.2);
+    filter: brightness(2) blur(2px);
   }
 }
 
 .shadow-layer.crt-on-anim {
-  animation: crt-on 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation: crt-on-reverse 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 /* Static GIF overlay */
 .static-overlay {
