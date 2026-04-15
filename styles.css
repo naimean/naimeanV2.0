@@ -85,6 +85,9 @@
   --mint-bright: #c8ffd9;
   --screen-black: #111112;
   --screen-green: rgba(28, 66, 36, 0.98);
+  --c64-blue: #3c5cff;
+  --c64-blue-bright: #b8d0ff;
+  --c64-white: #eaf6ff;
 }
 
 html,
@@ -204,10 +207,10 @@ body {
 }
 
 .boot-input {
-  background: transparent;
-  border: 1px solid #7ec8bf;
+  background: var(--c64-blue);
+  border: 2px solid var(--c64-blue-bright);
   border-radius: 2px;
-  color: var(--mint);
+  color: var(--c64-white);
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
   font-size: 0.95em;
   outline: none;
@@ -216,24 +219,33 @@ body {
   max-width: 14em;
   padding: 6px 12px;
   letter-spacing: 1.4px;
-  caret-color: var(--mint);
+  caret-color: var(--c64-white);
+  box-shadow: 0 0 8px 1px var(--c64-blue-bright);
+  transition: border 0.2s, box-shadow 0.2s;
+  border-color: var(--c64-white);
+  box-shadow: 0 0 12px 2px var(--c64-blue-bright);
 }
 
 .boot-submit {
-  background: var(--mint);
-  border: none;
+  background: var(--c64-blue);
+  border: 2px solid var(--c64-blue-bright);
   border-radius: 2px;
-  color: #1b2a57;
+  color: var(--c64-white);
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
   font-size: 0.72em;
   line-height: 1;
   padding: 10px 10px;
   text-transform: lowercase;
   cursor: pointer;
+  box-shadow: 0 0 8px 1px var(--c64-blue-bright);
+  transition: border 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
 .boot-submit:hover {
-  background: var(--mint-bright);
+  background: var(--c64-blue-bright);
+  color: var(--c64-blue);
+  border-color: var(--c64-white);
+  box-shadow: 0 0 12px 2px var(--c64-blue-bright);
 }
 
 #boot-video {
