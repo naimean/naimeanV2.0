@@ -1,8 +1,8 @@
 /* Move flicker square to the left of the power button */
 .power-flicker {
   position: absolute;
-  /* Place to the left of the power button with a 15px gap */
-  left: calc(6.67% - 15px - 9px); /* 9px is half of 18px (old size), now half of 9px (new size) */
+  /* Place immediately to the left of the power button with a 15px gap */
+  left: calc(6.67% - 15px - 9px - 7% - 10px); /* power button's left edge minus 15px gap minus flicker width */
   top: calc(91.43% + 13px);
   width: 9px;
   height: 9px;
