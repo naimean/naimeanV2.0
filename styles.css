@@ -30,7 +30,7 @@ body {
 
 .c64-wrapper {
   position: relative;
-  width: min(760px, 100vw);
+  width: min(608px, 100vw);
 }
 
 .c64-img {
