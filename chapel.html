@@ -126,8 +126,9 @@
   </div>
 
   <script>
-    // Fade in on load
+    // Scroll to bottom instantly, then fade in
     window.addEventListener('load', function () {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });
       document.body.classList.add('loaded');
     });
 
