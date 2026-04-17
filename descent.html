@@ -16,6 +16,15 @@
       min-height: 100%;
     }
 
+    body {
+      opacity: 0;
+      transition: opacity 0.9s ease;
+    }
+
+    body.loaded {
+      opacity: 1;
+    }
+
     .descent-outer {
       width: 100%;
       max-width: 820px;
@@ -35,5 +44,46 @@
   <div class="descent-outer">
     <img src="assets/bedroom.PNG" alt="Bedroom" class="descent-img" />
   </div>
+  <script>
+    function playDoorClosingSound() {
+      const audioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!audioContextCtor) {
+        return;
+      }
+
+      const ctx = new audioContextCtor();
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.exponentialRampToValueAtTime(60, now + 0.16);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(900, now);
+      filter.frequency.exponentialRampToValueAtTime(240, now + 0.18);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.24);
+    }
+
+    window.addEventListener('load', function () {
+      playDoorClosingSound();
+      requestAnimationFrame(function () {
+        document.body.classList.add('loaded');
+      });
+    });
+  </script>
 </body>
 </html>

@@ -221,6 +221,47 @@
 
     const congregationAudio = document.getElementById('congregation-audio');
     let congregationStarted = false;
+    let isNavigatingToDescent = false;
+
+    function playDoorOpeningSound() {
+      const audioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!audioContextCtor) {
+        return;
+      }
+
+      const ctx = new audioContextCtor();
+      const now = ctx.currentTime;
+
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc1.type = 'sawtooth';
+      osc2.type = 'triangle';
+      osc1.frequency.setValueAtTime(210, now);
+      osc1.frequency.exponentialRampToValueAtTime(95, now + 0.35);
+      osc2.frequency.setValueAtTime(130, now);
+      osc2.frequency.exponentialRampToValueAtTime(70, now + 0.35);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1400, now);
+      filter.frequency.exponentialRampToValueAtTime(420, now + 0.35);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.13, now + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.42);
+      osc2.stop(now + 0.42);
+    }
 
     function startCongregationAudio() {
       if (congregationStarted) {
@@ -279,6 +320,13 @@
     });
 
     function navigateToSite() {
+      if (isNavigatingToDescent) {
+        return;
+      }
+      isNavigatingToDescent = true;
+
+      playDoorOpeningSound();
+      congregationAudio.pause();
       var overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
