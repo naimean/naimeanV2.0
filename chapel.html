@@ -215,8 +215,8 @@
     const STITCHED_CHAPEL_HEIGHT = 3709;
     const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
 
-    var congregationAudio = document.getElementById('congregation-audio');
-    var congregationStarted = false;
+    const congregationAudio = document.getElementById('congregation-audio');
+    let congregationStarted = false;
 
     function startCongregationAudio() {
       if (congregationStarted) {
