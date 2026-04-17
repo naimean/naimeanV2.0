@@ -42,7 +42,8 @@
       display: block;
       user-select: none;
       -webkit-user-drag: none;
-      margin-bottom: -2px;
+      /* Crop bottom ~20% so column bases align with seam top */
+      margin-bottom: -20%;
     }
 
     .chapel-wrapper {
@@ -56,6 +57,58 @@
       display: block;
       user-select: none;
       -webkit-user-drag: none;
+    }
+
+    .chapel-seam-wrapper {
+      position: relative;
+      width: 100%;
+      line-height: 0;
+      margin-top: -2px;
+      margin-bottom: -2px;
+    }
+
+    .chapel-seam-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    /* Fade top edge of seam into ceiling bottom */
+    .chapel-seam-wrapper::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 25%;
+      background: linear-gradient(to bottom, rgba(10, 6, 2, 0.85), transparent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Fade bottom edge of seam into chapel top */
+    .chapel-seam-wrapper::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 25%;
+      background: linear-gradient(to top, rgba(10, 6, 2, 0.85), transparent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Warm overlay on seam to match chapel tone */
+    .chapel-seam-wrapper .seam-color-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(60, 30, 10, 0.22);
+      mix-blend-mode: multiply;
+      pointer-events: none;
+      z-index: 1;
     }
 
     /* Pulsing power button — positioned over the C64's power button on the altar */
@@ -124,6 +177,7 @@
       position: relative;
       width: 100%;
       line-height: 0;
+      overflow: hidden;
     }
 
     .chapel-ceiling-wrapper::after {
@@ -160,6 +214,10 @@
   <div class="chapel-outer">
     <div class="chapel-ceiling-wrapper">
       <img src="assets/chapel_ceiling.png" alt="" class="chapel-ceiling-img" />
+    </div>
+    <div class="chapel-seam-wrapper">
+      <div class="seam-color-overlay"></div>
+      <img src="assets/chapel_seam.png" alt="" class="chapel-seam-img" />
     </div>
     <div class="chapel-wrapper">
       <img src="assets/chapel.png" alt="The Chapel" class="chapel-img" />
