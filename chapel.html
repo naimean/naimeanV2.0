@@ -210,6 +210,10 @@
 
   <script>
     // Robust scroll to bottom — retry until images are painted (fixes mobile)
+    var ORIGINAL_CHAPEL_HEIGHT_PX = 2529;
+    var STITCHED_CHAPEL_HEIGHT_PX = 3709;
+    var ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT_PX / STITCHED_CHAPEL_HEIGHT_PX;
+
     var congregationAudio = document.getElementById('congregation-audio');
     var congregationStarted = false;
 
@@ -250,9 +254,8 @@
         return;
       }
 
-      // Preserve the pre-stitch floor start: 2529px original chapel height within 3709px stitched image.
-      var originalChapelHeightRatio = 2529 / 3709;
-      var stitchTop = chapelWrapper.offsetTop + (chapelWrapper.offsetHeight * originalChapelHeightRatio);
+      // Preserve the pre-stitch floor start at the top edge of the stitched extension.
+      var stitchTop = chapelWrapper.offsetTop + (chapelWrapper.offsetHeight * ORIGINAL_CHAPEL_HEIGHT_RATIO);
       var target = Math.max(0, stitchTop - window.innerHeight);
       window.scrollTo(0, target);
     }
