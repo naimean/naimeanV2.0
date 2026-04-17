@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     'C:\\Naimean\\please',
     'C:\\Naimean\\Please'
   ]);
+  const POWER_BUTTON_COOLDOWN_MS = 5000;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   function waitForVideoToEnd(video, maxWaitMs) {
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let screenOn = false;
   let puzzleSolved = false;
   let prankRunning = false;
+  let powerButtonCooldownUntil = 0;
   let hintRevealProgress = 0;
   let lastPointerPosition = null;
 
@@ -153,12 +155,45 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  function playVideoOverlay(overlay, video, maxWaitMs) {
+    return new Promise((resolve) => {
+      if (!overlay || !video) {
+        resolve();
+        return;
+      }
+
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        overlay.classList.remove('visible');
+        video.pause();
+        video.removeEventListener('ended', finish);
+        video.removeEventListener('error', finish);
+        video.removeEventListener('abort', finish);
+        resolve();
+      };
+
+      overlay.classList.add('visible');
+      video.currentTime = 0;
+      video.addEventListener('ended', finish, { once: true });
+      video.addEventListener('error', finish, { once: true });
+      video.addEventListener('abort', finish, { once: true });
+      video.play().catch(() => {
+        finish();
+      });
+      setTimeout(finish, maxWaitMs);
+    });
+  }
+
   async function runPowerOffPrank() {
     if (prankRunning) return;
     prankRunning = true;
 
-    const powerOffAudio = new Audio('assets/power-button.mp3');
-    powerOffAudio.play().catch(() => {});
+    const powerOffOverlay = document.getElementById('power-off-overlay');
+    const powerOffVideo = document.getElementById('power-off-video');
+
+    await playVideoOverlay(powerOffOverlay, powerOffVideo, 10000);
 
     await playStaticTransition();
 
@@ -210,11 +245,30 @@ document.addEventListener('DOMContentLoaded', function() {
     window.location.assign(DISCORD_URL);
   }
 
+  function fadeToChapel() {
+    const overlay = document.getElementById('page-fade-overlay');
+    if (!overlay) { window.location.assign('chapel.html'); return; }
+    overlay.classList.add('visible');
+    setTimeout(function() {
+      window.location.assign('chapel.html');
+    }, 900);
+  }
+
   if (returnBypassBtn) {
     returnBypassBtn.addEventListener('click', function() {
-      window.location.assign(DISCORD_URL);
+      fadeToChapel();
     });
   }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !screenOn) {
+      const active = document.activeElement;
+      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'BUTTON' || active.tagName === 'TEXTAREA');
+      if (!isInput) {
+        fadeToChapel();
+      }
+    }
+  });
 
   document.addEventListener('pointerdown', primeWrongAudio, { once: true });
 
@@ -277,10 +331,14 @@ document.addEventListener('DOMContentLoaded', function() {
         shadowLayer.classList.add('hidden');
         shoutboxContainer.classList.remove('visible');
         screenOn = true;
+        powerButtonCooldownUntil = Date.now() + POWER_BUTTON_COOLDOWN_MS;
         await delay(700);
         bootScreen.classList.add('visible');
         if (bootInput) bootInput.focus();
       } else {
+        if (Date.now() < powerButtonCooldownUntil) {
+          return;
+        }
         // Turn off: rickroll them instead
         runPowerOffPrank();
       }

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Chapel</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background: #000;
+      /* enable smooth momentum scrolling on iOS */
+      -webkit-overflow-scrolling: touch;
+    }
+
+    body {
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    body.loaded {
+      opacity: 1;
+    }
+
+    .chapel-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 820px;
+      /* center on desktop, full-width on mobile */
+      margin: 0 auto;
+    }
+
+    .chapel-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    /* Pulsing power button — positioned over the C64's power button on the altar */
+    .chapel-power-btn {
+      position: absolute;
+      left: calc(58.2% - 8px);
+      top: calc(73.8% - 40px);
+      width: 1.1%;
+      aspect-ratio: 1;
+      background: #1ed760;
+      border: 1.5px solid #1ed760;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9;
+      pointer-events: none;
+      box-shadow: 0 0 6px #000a;
+    }
+
+    .chapel-power-light {
+      width: 55%;
+      height: 55%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffb347 60%, #ff6600 100%);
+      box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff;
+      display: block;
+      animation: chapel-power-pulse 1.6s infinite ease-in-out;
+    }
+
+    @keyframes chapel-power-pulse {
+      0%   { box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff; filter: brightness(1); }
+      50%  { box-shadow: 0 0 14px 6px #ff6600, 0 0 2px 1px #fff; filter: brightness(1.18); }
+      100% { box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff; filter: brightness(1); }
+    }
+
+    /* Invisible button over the computer/altar screen in the chapel image.
+       The monitor is centered horizontally and sits in the mid-section of the image. */
+    .screen-btn {
+      position: absolute;
+      left: 28%;
+      top: 53%;
+      width: 44%;
+      height: 17%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      z-index: 10;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Page transition fade overlay */
+    .fade-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.9s ease;
+      z-index: 100;
+    }
+
+    .fade-overlay.fading {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="fade-overlay" id="fade-overlay"></div>
+
+  <div class="chapel-wrapper">
+    <img src="assets/chapel.png" alt="The Chapel" class="chapel-img" />
+    <div class="chapel-power-btn" aria-hidden="true">
+      <span class="chapel-power-light"></span>
+    </div>
+    <button class="screen-btn" id="screen-btn" aria-label="Enter the chapel"></button>
+  </div>
+
+  <script>
+    // Fade in on load
+    window.addEventListener('load', function () {
+      document.body.classList.add('loaded');
+    });
+
+    function navigateToSite() {
+      var overlay = document.getElementById('fade-overlay');
+      overlay.classList.add('fading');
+      setTimeout(function () {
+        window.location.assign('https://naimean.com');
+      }, 900);
+    }
+
+    // Invisible button click → naimean.com
+    document.getElementById('screen-btn').addEventListener('click', navigateToSite);
+
+    // Enter key → same behavior
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        navigateToSite();
+      }
+    });
+  </script>
+</body>
+</html>

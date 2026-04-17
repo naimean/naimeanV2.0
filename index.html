@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 </head>
 <body>
+  <div class="page-fade-overlay" id="page-fade-overlay"></div>
   <div class="c64-wrapper">
     <img src="assets/commodore64.jpg" alt="Commodore 64" class="c64-img" />
     <button class="return-bypass-btn" id="return-bypass-btn" aria-label="Open Discord"></button>
@@ -17,6 +18,9 @@
     <div class="shadow-layer" id="shadow-layer"></div>
     <div class="static-overlay" id="static-overlay" aria-hidden="true">
       <video id="static-video" src="assets/static.mp4" playsinline preload="auto"></video>
+    </div>
+    <div class="power-off-overlay" id="power-off-overlay" aria-hidden="true">
+      <video id="power-off-video" src="assets/power-off.mp4" playsinline preload="auto"></video>
     </div>
     <div class="boot-screen" id="boot-screen">
       <div class="boot-content">
