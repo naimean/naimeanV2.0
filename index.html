@@ -3,80 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Naimean?</title>
+  <title>Commodore 64 Shoutbox</title>
   <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="c64-center" style="position:relative;">
+  <div class="c64-wrapper">
     <img src="assets/commodore64.jpg" alt="Commodore 64" class="c64-img" />
-    <div class="shadow-layer"></div>
-    <div id="visual-screen" style="display:none; position:absolute; z-index:20;"></div>
-    <span class="data-light"></span>
-    <button class="power-btn" aria-label="Power"><span class="power-icon">&#x23FB;</span></button>
-    <div id="tv-flash" style="display:none;"></div>
+    <button class="return-bypass-btn" id="return-bypass-btn" aria-label="Open Discord"></button>
+    <button class="power-btn" id="power-btn" aria-label="Power">
+      <span class="power-light" id="power-light"></span>
+    </button>
+    <div class="shadow-layer" id="shadow-layer"></div>
+    <div class="boot-screen" id="boot-screen">
+      <div class="boot-content">
+        <form id="boot-form" autocomplete="off" class="boot-form">
+          <input id="boot-input" class="boot-input" type="text" maxlength="24" value="C:\Naimean" autofocus />
+          <button id="boot-submit" class="boot-submit" type="submit">newman gate</button>
+        </form>
+        <video id="boot-video" src="assets/newman-gate.mp4" playsinline preload="auto"></video>
+      </div>
+    </div>
+    <div class="shoutbox-container" id="shoutbox-container">
+      <div class="c64-screen">
+        <div class="prank-video-overlay" id="prank-video-overlay" aria-hidden="true">
+          <video id="prank-video" src="assets/notarickroll.mp4" playsinline preload="auto"></video>
+        </div>
+        <div class="shoutbox-messages" id="messages"></div>
+        <div class="shoutbox-bottom">
+          <form id="shoutbox-form">
+            <div class="shoutbox-hint-shell" id="shoutbox-hint-shell" tabindex="0" role="button" aria-label="Reveal hint">
+              <div class="shoutbox-hint">You didn't say the magic word.</div>
+              <div class="shoutbox-hint-cover" aria-hidden="true"></div>
+            </div>
+            <div class="shoutbox-entry">
+              <input type="text" id="shoutbox-input" maxlength="120" value="C:\Naimean\" placeholder="" autocomplete="off" />
+              <button type="submit">submit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
-  <script>
-    const powerBtn = document.querySelector('.power-btn');
-    const shadowLayer = document.querySelector('.shadow-layer');
-    const tvFlash = document.getElementById('tv-flash');
-    let powerOn = false;
-    let powerOnTime = 0;
-    let staticTimeout = null;
-    let audioTimeout = null;
-    let staticAudio = null;
-    powerBtn.addEventListener('click', () => {
-      if (!powerOn) {
-        // Powering on
-        powerOn = true;
-        powerOnTime = Date.now();
-        tvFlash.innerHTML = '<div class="tv-on-flash"></div>';
-        tvFlash.style.display = 'block';
-        shadowLayer.classList.add('hide');
-        document.querySelector('.data-light').classList.add('on');
-        powerBtn.classList.add('on');
-        setTimeout(() => {
-          shadowLayer.style.display = 'none';
-          tvFlash.innerHTML = '';
-          tvFlash.style.display = 'none';
-        }, 700);
-      } else {
-        // Powering off after 5s only
-        if (Date.now() - powerOnTime > 5000) {
-          // Show static.gif in visual screen layer
-          const visual = document.getElementById('visual-screen');
-          visual.innerHTML = '<img src="assets/static.gif" style="width:calc(100% - 2px);height:calc(100% - 2px);position:absolute;top:1px;left:1px;object-fit:cover;">';
-          visual.style.display = 'block';
-          visual.style.top = shadowLayer.style.top;
-          visual.style.left = shadowLayer.style.left;
-          visual.style.width = shadowLayer.style.width;
-          visual.style.height = shadowLayer.style.height;
-          // Play power-button.mp3
-          if (!staticAudio) {
-            staticAudio = document.createElement('audio');
-            staticAudio.src = 'assets/power-button.mp3';
-            staticAudio.autoplay = true;
-            staticAudio.style.display = 'none';
-            document.body.appendChild(staticAudio);
-          } else {
-            staticAudio.src = 'assets/power-button.mp3';
-            staticAudio.play();
-          }
-          // After 5s, play another audio and show another visual (not a rickroll)
-          if (staticTimeout) clearTimeout(staticTimeout);
-          staticTimeout = setTimeout(() => {
-            visual.innerHTML = '<img src="assets/your-image.gif" style="width:calc(100% - 2px);height:calc(100% - 2px);position:absolute;top:1px;left:1px;object-fit:cover;">';
-            let audio2 = document.createElement('audio');
-            audio2.src = 'assets/your-audio.mp3';
-            audio2.autoplay = true;
-            audio2.style.display = 'none';
-            document.body.appendChild(audio2);
-            setTimeout(() => {
-              window.location.href = 'https://discord.gg/fvj4UrTpdp';
-            }, 5000);
-          }, 5000);
-        }
-      }
-    });
-  </script>
-</body>
+  <script src="script.js"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9edbbbd5db7c20ba',t:'MTc3NjQzMjA5NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
