@@ -170,9 +170,9 @@ body {
 
 .boot-input {
   background: transparent;
-  border: 1px solid #7ec8bf;
+  border: 1px solid rgba(180, 210, 255, 0.6);
   border-radius: 2px;
-  color: var(--mint);
+  color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
   font-size: 0.95em;
   outline: none;
@@ -181,24 +181,29 @@ body {
   max-width: 14em;
   padding: 6px 8px;
   letter-spacing: 1.4px;
-  caret-color: var(--mint);
+  caret-color: #c8deff;
+  text-shadow: 0 0 6px #b0d0ff, 0 0 14px #5080c0, 0 0 2px #fff;
+  filter: blur(0.3px);
 }
 
 .boot-submit {
-  background: var(--mint);
-  border: none;
+  background: rgba(140, 180, 255, 0.18);
+  border: 1px solid rgba(180, 210, 255, 0.5);
   border-radius: 2px;
-  color: #1b2a57;
+  color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
   font-size: 0.72em;
   line-height: 1;
   padding: 10px 10px;
   text-transform: lowercase;
   cursor: pointer;
+  text-shadow: 0 0 6px #b0d0ff, 0 0 14px #5080c0, 0 0 2px #fff;
+  filter: blur(0.3px);
 }
 
 .boot-submit:hover {
-  background: var(--mint-bright);
+  background: rgba(160, 200, 255, 0.28);
+  filter: blur(0.3px) brightness(1.15);
 }
 
 #boot-video {
