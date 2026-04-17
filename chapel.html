@@ -119,6 +119,35 @@
       z-index: 100;
     }
 
+    /* Warm dark color overlay on ceiling to match chapel tone */
+    .chapel-ceiling-wrapper {
+      position: relative;
+      width: 100%;
+      line-height: 0;
+    }
+
+    .chapel-ceiling-wrapper::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(60, 30, 10, 0.38);
+      mix-blend-mode: multiply;
+      pointer-events: none;
+    }
+
+    /* Gradient seam: bottom of ceiling fades to match chapel top */
+    .chapel-ceiling-wrapper::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: linear-gradient(to bottom, transparent, rgba(20, 12, 5, 0.72));
+      pointer-events: none;
+      z-index: 2;
+    }
+
     .fade-overlay.fading {
       opacity: 1;
       pointer-events: auto;
@@ -129,7 +158,9 @@
   <div class="fade-overlay" id="fade-overlay"></div>
 
   <div class="chapel-outer">
-    <img src="assets/chapel_ceiling.png" alt="" class="chapel-ceiling-img" />
+    <div class="chapel-ceiling-wrapper">
+      <img src="assets/chapel_ceiling.png" alt="" class="chapel-ceiling-img" />
+    </div>
     <div class="chapel-wrapper">
       <img src="assets/chapel.png" alt="The Chapel" class="chapel-img" />
       <div class="chapel-power-btn" aria-hidden="true">
@@ -140,10 +171,21 @@
   </div>
 
   <script>
-    // Scroll to bottom instantly, then fade in
+    // Robust scroll to bottom — retry until images are painted (fixes mobile)
+    function scrollToBottom() {
+      var target = document.body.scrollHeight - window.innerHeight;
+      window.scrollTo(0, target);
+    }
+
     window.addEventListener('load', function () {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });
-      document.body.classList.add('loaded');
+      scrollToBottom();
+      // Retry a few times in case layout shifts as images decode on mobile
+      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 300);
+      setTimeout(function () {
+        scrollToBottom();
+        document.body.classList.add('loaded');
+      }, 500);
     });
 
     function navigateToSite() {
