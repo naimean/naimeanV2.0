@@ -190,8 +190,6 @@
 </head>
 <body>
   <div class="fade-overlay" id="fade-overlay"></div>
-  <audio id="congregation-audio" src="assets/congregation.mp3" preload="auto"></audio>
-
   <div class="chapel-outer">
     <div class="chapel-wrapper">
       <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
@@ -206,37 +204,6 @@
 
   <script>
     // Robust scroll to bottom — retry until images are painted (fixes mobile)
-    var congregationAudio = document.getElementById('congregation-audio');
-    var congregationStarted = false;
-
-    function startCongregationAudio() {
-      if (congregationStarted) {
-        return;
-      }
-
-      congregationStarted = true;
-      congregationAudio.currentTime = 0;
-
-      var playPromise = congregationAudio.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(function () {
-          congregationStarted = false;
-        });
-      }
-    }
-
-    function bindCongregationFallback() {
-      function handleFirstInteraction() {
-        startCongregationAudio();
-        document.removeEventListener('pointerdown', handleFirstInteraction);
-        document.removeEventListener('keydown', handleFirstInteraction);
-        document.removeEventListener('touchstart', handleFirstInteraction);
-      }
-
-      document.addEventListener('pointerdown', handleFirstInteraction);
-      document.addEventListener('keydown', handleFirstInteraction);
-      document.addEventListener('touchstart', handleFirstInteraction);
-    }
 
     function scrollToBottom() {
       var target = document.body.scrollHeight - window.innerHeight;
@@ -250,8 +217,6 @@
       setTimeout(scrollToBottom, 300);
       setTimeout(function () {
         scrollToBottom();
-        startCongregationAudio();
-        bindCongregationFallback();
         document.body.classList.add('loaded');
       }, 500);
     });
