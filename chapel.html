@@ -210,7 +210,9 @@
 
   <script>
     // Robust scroll to bottom — retry until images are painted (fixes mobile)
-    // Source image heights in pixels (original chapel image and stitched composite).
+    // Source image heights in pixels, measured from tracked assets:
+    // - 2529px: pre-stitch assets/chapel_stacked.png height
+    // - 3709px: current stitched assets/chapel_stacked.png height
     // Their ratio marks the stitch boundary used for the initial floor anchor.
     const ORIGINAL_CHAPEL_HEIGHT = 2529;
     const STITCHED_CHAPEL_HEIGHT = 3709;
