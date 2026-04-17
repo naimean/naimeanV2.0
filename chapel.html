@@ -61,6 +61,40 @@
       filter: blur(12px);
     }
 
+    /* Warm light bloom and subtle shafts rising from the stained glass area. */
+    .stained-glass-light {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      mix-blend-mode: screen;
+      opacity: 0.82;
+    }
+
+    .stained-glass-light::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 18% 10% at 50% 84%, rgba(255, 187, 92, 0.34), transparent 70%),
+        radial-gradient(ellipse 10% 6% at 50% 82%, rgba(255, 236, 185, 0.14), transparent 72%),
+        radial-gradient(ellipse 36% 22% at 50% 69%, rgba(255, 182, 92, 0.08), transparent 78%);
+      filter: blur(10px);
+    }
+
+    .stained-glass-light::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(353deg, transparent 41%, rgba(255, 202, 118, 0.10) 50%, transparent 60%),
+        linear-gradient(0deg, transparent 40%, rgba(255, 213, 140, 0.08) 50%, transparent 61%),
+        linear-gradient(7deg, transparent 42%, rgba(255, 184, 96, 0.09) 51%, transparent 61%);
+      filter: blur(24px);
+      mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 18%, rgba(0, 0, 0, 0.75) 38%, transparent 72%);
+      -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 18%, rgba(0, 0, 0, 0.75) 38%, transparent 72%);
+    }
+
     /* Narrow seam softener just above center. */
     .chapel-wrapper::after {
       content: '';
@@ -160,6 +194,7 @@
     <div class="chapel-wrapper">
       <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
       <div class="chapel-relight" aria-hidden="true"></div>
+      <div class="stained-glass-light" aria-hidden="true"></div>
       <div class="chapel-power-btn" aria-hidden="true">
         <span class="chapel-power-light"></span>
       </div>
