@@ -51,6 +51,19 @@
       width: 100%;
     }
 
+    /* Soft darkening gradient rising from chapel top toward the seam */
+    .chapel-wrapper::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 45%;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.55) 40%, transparent 100%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
     .chapel-img {
       width: 100%;
       height: auto;
@@ -75,40 +88,30 @@
       -webkit-user-drag: none;
     }
 
-    /* Fade top edge of seam into ceiling bottom */
+    /* Soften the seam top edge into ceiling */
     .chapel-seam-wrapper::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 25%;
-      background: linear-gradient(to bottom, rgba(10, 6, 2, 0.85), transparent);
+      height: 30%;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
       pointer-events: none;
       z-index: 2;
     }
 
-    /* Fade bottom edge of seam into chapel top */
+    /* Soften the seam bottom edge into chapel top */
     .chapel-seam-wrapper::after {
       content: '';
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 25%;
-      background: linear-gradient(to top, rgba(10, 6, 2, 0.85), transparent);
+      height: 30%;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
       pointer-events: none;
       z-index: 2;
-    }
-
-    /* Warm overlay on seam to match chapel tone */
-    .chapel-seam-wrapper .seam-color-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(60, 30, 10, 0.22);
-      mix-blend-mode: multiply;
-      pointer-events: none;
-      z-index: 1;
     }
 
     /* Pulsing power button — positioned over the C64's power button on the altar */
@@ -172,7 +175,6 @@
       z-index: 100;
     }
 
-    /* Warm dark color overlay on ceiling to match chapel tone */
     .chapel-ceiling-wrapper {
       position: relative;
       width: 100%;
@@ -180,24 +182,15 @@
       overflow: hidden;
     }
 
+    /* Fade bottom of ceiling to black to meet seam */
     .chapel-ceiling-wrapper::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(60, 30, 10, 0.38);
-      mix-blend-mode: multiply;
-      pointer-events: none;
-    }
-
-    /* Gradient seam: bottom of ceiling fades to match chapel top */
-    .chapel-ceiling-wrapper::before {
       content: '';
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 80px;
-      background: linear-gradient(to bottom, transparent, rgba(20, 12, 5, 0.72));
+      height: 35%;
+      background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.85));
       pointer-events: none;
       z-index: 2;
     }
@@ -216,7 +209,6 @@
       <img src="assets/chapel_ceiling.png" alt="" class="chapel-ceiling-img" />
     </div>
     <div class="chapel-seam-wrapper">
-      <div class="seam-color-overlay"></div>
       <img src="assets/chapel_seam.png" alt="" class="chapel-seam-img" />
     </div>
     <div class="chapel-wrapper">
