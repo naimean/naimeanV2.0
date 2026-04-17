@@ -508,6 +508,7 @@ body {
     max-width: none;
     font-size: 0.7em;
     letter-spacing: 0.8px;
+    filter: blur(0.21px);
   }
 
   .boot-submit {
