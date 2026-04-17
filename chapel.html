@@ -256,8 +256,8 @@
       }
 
       // Preserve the pre-stitch floor start at the top edge of the stitched extension.
-      var stitchTop = chapelWrapper.offsetTop + (chapelWrapper.offsetHeight * ORIGINAL_CHAPEL_HEIGHT_RATIO);
-      var target = Math.max(0, stitchTop - window.innerHeight);
+      const stitchTop = chapelWrapper.offsetTop + (chapelWrapper.offsetHeight * ORIGINAL_CHAPEL_HEIGHT_RATIO);
+      const target = Math.max(0, stitchTop - window.innerHeight);
       window.scrollTo(0, target);
     }
 
