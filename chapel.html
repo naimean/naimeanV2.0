@@ -224,12 +224,12 @@
     let isNavigatingToDescent = false;
 
     function playDoorOpeningSound() {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) {
+      const audioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!audioContextCtor) {
         return;
       }
 
-      const ctx = new AudioCtx();
+      const ctx = new audioContextCtor();
       const now = ctx.currentTime;
 
       const osc1 = ctx.createOscillator();
