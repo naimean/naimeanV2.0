@@ -164,8 +164,9 @@ body {
   bottom: 24px;
   z-index: 2;
   display: inline-flex;
-  align-items: flex-end;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .boot-input {
@@ -174,7 +175,7 @@ body {
   border-radius: 2px;
   color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
-  font-size: 0.95em;
+  font-size: 1.05em;
   outline: none;
   width: 14em;
   min-width: 14em;
@@ -192,7 +193,7 @@ body {
   border-radius: 2px;
   color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
-  font-size: 0.72em;
+  font-size: 0.82em;
   line-height: 1;
   padding: 10px 10px;
   text-transform: lowercase;
