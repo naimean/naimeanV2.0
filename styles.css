@@ -42,13 +42,13 @@ body {
 
 .return-bypass-btn {
   position: absolute;
-  left: 72.0%;
-  top: 74.7%;
-  width: 10.4%;
-  height: 5.6%;
+  left: calc(72.0% + 5px);
+  top: calc(74.7% + 5px);
+  width: 11.4%;
+  height: 6.4%;
   z-index: 19;
-  border: 2px solid red;
-  background: rgba(255,0,0,0.15);
+  border: none;
+  background: transparent;
   cursor: pointer;
   padding: 0;
 }
@@ -224,9 +224,9 @@ body {
   right: 6.67%;
   top: 91.43%;
   width: 4%;
-  height: 5.14%;
+  aspect-ratio: 1;
   background: #222;
-  border: 3px solid lime;
+  border: 2px solid #555;
   border-radius: 50%;
   display: flex;
   align-items: center;
