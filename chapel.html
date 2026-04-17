@@ -61,14 +61,14 @@
       filter: blur(12px);
     }
 
-    /* Warm light bloom and subtle shafts rising from the stained glass area. */
+    /* Directional stained-glass sunlight with a warm bloom and tapered shafts. */
     .stained-glass-light {
       position: absolute;
       inset: 0;
       pointer-events: none;
       z-index: 5;
       mix-blend-mode: screen;
-      opacity: 0.82;
+      opacity: 0.92;
     }
 
     .stained-glass-light::before {
@@ -76,10 +76,11 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(ellipse 18% 10% at 50% 84%, rgba(255, 187, 92, 0.34), transparent 70%),
-        radial-gradient(ellipse 10% 6% at 50% 82%, rgba(255, 236, 185, 0.14), transparent 72%),
-        radial-gradient(ellipse 36% 22% at 50% 69%, rgba(255, 182, 92, 0.08), transparent 78%);
-      filter: blur(10px);
+        radial-gradient(ellipse 15% 7% at 50% 83.6%, rgba(255, 205, 132, 0.42), transparent 64%),
+        radial-gradient(ellipse 9% 4.5% at 50% 82.7%, rgba(255, 247, 221, 0.22), transparent 70%),
+        radial-gradient(ellipse 30% 16% at 50% 73%, rgba(255, 190, 104, 0.10), transparent 76%),
+        radial-gradient(ellipse 18% 22% at 50% 60%, rgba(255, 214, 146, 0.05), transparent 82%);
+      filter: blur(12px);
     }
 
     .stained-glass-light::after {
@@ -87,12 +88,13 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(353deg, transparent 41%, rgba(255, 202, 118, 0.10) 50%, transparent 60%),
-        linear-gradient(0deg, transparent 40%, rgba(255, 213, 140, 0.08) 50%, transparent 61%),
-        linear-gradient(7deg, transparent 42%, rgba(255, 184, 96, 0.09) 51%, transparent 61%);
-      filter: blur(24px);
-      mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 18%, rgba(0, 0, 0, 0.75) 38%, transparent 72%);
-      -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 18%, rgba(0, 0, 0, 0.75) 38%, transparent 72%);
+        linear-gradient(346deg, transparent 39%, rgba(255, 200, 116, 0.11) 48%, rgba(255, 228, 170, 0.09) 52%, transparent 61%),
+        linear-gradient(0deg, transparent 37%, rgba(255, 222, 164, 0.10) 48%, rgba(255, 239, 198, 0.07) 52%, transparent 63%),
+        linear-gradient(14deg, transparent 40%, rgba(255, 188, 102, 0.10) 49%, rgba(255, 214, 146, 0.08) 53%, transparent 62%),
+        radial-gradient(ellipse 42% 30% at 50% 56%, rgba(255, 193, 114, 0.04), transparent 76%);
+      filter: blur(28px);
+      mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.98) 16%, rgba(0, 0, 0, 0.88) 28%, rgba(0, 0, 0, 0.62) 44%, transparent 74%);
+      -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.98) 16%, rgba(0, 0, 0, 0.88) 28%, rgba(0, 0, 0, 0.62) 44%, transparent 74%);
     }
 
     /* Narrow seam softener just above center. */
