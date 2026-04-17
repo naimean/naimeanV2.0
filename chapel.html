@@ -219,13 +219,31 @@
     const STITCHED_CHAPEL_HEIGHT = 3709;
     const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
 
-    function resolveDiscordPageUrl() {
-      const storedDiscordUrl = window.localStorage.getItem('naimean-discord-url');
-      if (storedDiscordUrl && /^https?:\/\//i.test(storedDiscordUrl)) {
-        return storedDiscordUrl;
+    function sanitizeDiscordUrl(candidateUrl) {
+      if (!candidateUrl) {
+        return null;
       }
 
-      return 'https://discord.com';
+      try {
+        const parsedUrl = new URL(candidateUrl, window.location.href);
+        if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+          return parsedUrl.toString();
+        }
+      } catch (_) {
+        return null;
+      }
+
+      return null;
+    }
+
+    function resolveDiscordPageUrl() {
+      const storedDiscordUrl = window.localStorage.getItem('naimean-discord-url');
+      const sanitizedStoredUrl = sanitizeDiscordUrl(storedDiscordUrl);
+      if (sanitizedStoredUrl) {
+        return sanitizedStoredUrl;
+      }
+
+      return 'https://discord.com/';
     }
 
     const DISCORD_PAGE_URL = resolveDiscordPageUrl();
@@ -344,6 +362,9 @@
     }
 
     congregationAudio.addEventListener('playing', navigateToDiscord, { once: true });
+    if (!congregationAudio.paused && !congregationAudio.ended && congregationAudio.currentTime > 0) {
+      navigateToDiscord();
+    }
 
     function navigateToSite() {
       if (isNavigatingToDescent || isNavigatingToDiscord) {
