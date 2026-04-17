@@ -129,7 +129,7 @@
     .chapel-power-btn {
       position: absolute;
       left: 53.9%;
-      top: 85.6%;
+      top: 58.36%;
       width: 1.1%;
       aspect-ratio: 1;
       background: #1ed760;
@@ -164,9 +164,9 @@
     .screen-btn {
       position: absolute;
       left: 28%;
-      top: 78.4%;
+      top: 53.44%;
       width: 44%;
-      height: 7.8%;
+      height: 5.32%;
       background: transparent;
       border: none;
       cursor: pointer;
@@ -250,8 +250,9 @@
         return;
       }
 
-      var stackBottom = chapelWrapper.offsetTop + chapelWrapper.offsetHeight;
-      var target = Math.max(0, stackBottom - window.innerHeight);
+      var originalChapelHeightRatio = 2529 / 3709;
+      var stitchTop = chapelWrapper.offsetTop + (chapelWrapper.offsetHeight * originalChapelHeightRatio);
+      var target = Math.max(0, stitchTop - window.innerHeight);
       window.scrollTo(0, target);
     }
 
