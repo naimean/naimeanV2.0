@@ -41,6 +41,10 @@
       width: 100%;
     }
 
+    .chapel-stitch {
+      width: 100%;
+    }
+
     /* Subtle relight pass over the marked arch areas. */
     .chapel-relight {
       position: absolute;
@@ -202,6 +206,9 @@
       </div>
       <button class="screen-btn" id="screen-btn" aria-label="Enter the chapel"></button>
     </div>
+    <div class="chapel-stitch">
+      <img src="assets/chapel.png" alt="The Chapel lower extension" class="chapel-img" />
+    </div>
   </div>
 
   <script>
@@ -238,18 +245,26 @@
       document.addEventListener('touchstart', handleFirstInteraction);
     }
 
-    function scrollToBottom() {
-      var target = document.body.scrollHeight - window.innerHeight;
+    function scrollToCurrentStartPoint() {
+      var chapelWrapper = document.querySelector('.chapel-wrapper');
+      if (!chapelWrapper) {
+        var fallbackTarget = document.body.scrollHeight - window.innerHeight;
+        window.scrollTo(0, fallbackTarget);
+        return;
+      }
+
+      var stackBottom = chapelWrapper.offsetTop + chapelWrapper.offsetHeight;
+      var target = Math.max(0, stackBottom - window.innerHeight);
       window.scrollTo(0, target);
     }
 
     window.addEventListener('load', function () {
-      scrollToBottom();
+      scrollToCurrentStartPoint();
       // Retry a few times in case layout shifts as images decode on mobile
-      setTimeout(scrollToBottom, 100);
-      setTimeout(scrollToBottom, 300);
+      setTimeout(scrollToCurrentStartPoint, 100);
+      setTimeout(scrollToCurrentStartPoint, 300);
       setTimeout(function () {
-        scrollToBottom();
+        scrollToCurrentStartPoint();
         startCongregationAudio();
         bindCongregationFallback();
         document.body.classList.add('loaded');
