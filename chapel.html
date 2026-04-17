@@ -31,12 +31,26 @@
       opacity: 1;
     }
 
+    .chapel-outer {
+      width: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chapel-ceiling-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      margin-bottom: -2px;
+    }
+
     .chapel-wrapper {
       position: relative;
       width: 100%;
-      max-width: 820px;
-      /* center on desktop, full-width on mobile */
-      margin: 0 auto;
     }
 
     .chapel-img {
@@ -117,12 +131,15 @@
 <body>
   <div class="fade-overlay" id="fade-overlay"></div>
 
-  <div class="chapel-wrapper">
-    <img src="assets/chapel.png" alt="The Chapel" class="chapel-img" />
-    <div class="chapel-power-btn" aria-hidden="true">
-      <span class="chapel-power-light"></span>
+  <div class="chapel-outer">
+    <img src="assets/chapel_ceiling.png" alt="" class="chapel-ceiling-img" />
+    <div class="chapel-wrapper">
+      <img src="assets/chapel.png" alt="The Chapel" class="chapel-img" />
+      <div class="chapel-power-btn" aria-hidden="true">
+        <span class="chapel-power-light"></span>
+      </div>
+      <button class="screen-btn" id="screen-btn" aria-label="Enter the chapel"></button>
     </div>
-    <button class="screen-btn" id="screen-btn" aria-label="Enter the chapel"></button>
   </div>
 
   <script>
