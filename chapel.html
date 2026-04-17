@@ -219,9 +219,11 @@
     const STITCHED_CHAPEL_HEIGHT = 3709;
     const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
 
+    const DISCORD_PAGE_URL = 'https://discord.com';
     const congregationAudio = document.getElementById('congregation-audio');
     let congregationStarted = false;
     let isNavigatingToDescent = false;
+    let isNavigatingToDiscord = false;
 
     function playDoorOpeningSound() {
       const audioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -319,8 +321,23 @@
       }, 500);
     });
 
+    function navigateToDiscord() {
+      if (isNavigatingToDiscord || isNavigatingToDescent) {
+        return;
+      }
+
+      isNavigatingToDiscord = true;
+      var overlay = document.getElementById('fade-overlay');
+      overlay.classList.add('fading');
+      setTimeout(function () {
+        window.location.assign(DISCORD_PAGE_URL);
+      }, 900);
+    }
+
+    congregationAudio.addEventListener('playing', navigateToDiscord, { once: true });
+
     function navigateToSite() {
-      if (isNavigatingToDescent) {
+      if (isNavigatingToDescent || isNavigatingToDiscord) {
         return;
       }
       isNavigatingToDescent = true;
