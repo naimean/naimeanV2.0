@@ -1,6 +1,5 @@
 // Power button and blackout overlay toggle logic
 document.addEventListener('DOMContentLoaded', function() {
-  const DISCORD_URL = 'https://discord.gg/fvj4UrTpdp';
   const FINAL_PREFIX = 'C:\\Naimean\\';
   const FINAL_UNLOCK_VALUES = new Set([
     'C:\\Naimean\\please',
@@ -207,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (_) {}
 
     await delay(5000);
-    window.location.assign(DISCORD_URL);
+    window.location.assign('chapel.html');
   }
 
   async function runPleaseSequence() {
@@ -242,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await delay(5000);
-    window.location.assign(DISCORD_URL);
+    window.location.assign('chapel.html');
   }
 
   function fadeToChapel() {
