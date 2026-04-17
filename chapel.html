@@ -219,7 +219,16 @@
     const STITCHED_CHAPEL_HEIGHT = 3709;
     const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
 
-    const DISCORD_PAGE_URL = 'https://discord.com';
+    function resolveDiscordPageUrl() {
+      const storedDiscordUrl = window.localStorage.getItem('naimean-discord-url');
+      if (storedDiscordUrl && /^https?:\/\//i.test(storedDiscordUrl)) {
+        return storedDiscordUrl;
+      }
+
+      return 'https://discord.com';
+    }
+
+    const DISCORD_PAGE_URL = resolveDiscordPageUrl();
     const congregationAudio = document.getElementById('congregation-audio');
     let congregationStarted = false;
     let isNavigatingToDescent = false;
@@ -327,7 +336,7 @@
       }
 
       isNavigatingToDiscord = true;
-      var overlay = document.getElementById('fade-overlay');
+      const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
         window.location.assign(DISCORD_PAGE_URL);
@@ -344,7 +353,7 @@
 
       playDoorOpeningSound();
       congregationAudio.pause();
-      var overlay = document.getElementById('fade-overlay');
+      const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
         window.location.assign('descent.html');
