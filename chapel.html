@@ -175,6 +175,21 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    /* Invisible trap door hotspot with temporary outline for placement tuning. */
+    .trap-door-btn {
+      position: absolute;
+      left: 44%;
+      top: 88.2%;
+      width: 12%;
+      height: 6%;
+      background: transparent;
+      border: 2px dashed rgba(255, 190, 96, 0.95);
+      cursor: pointer;
+      z-index: 10;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     /* Page transition fade overlay */
     .fade-overlay {
       position: fixed;
@@ -205,6 +220,7 @@
         <span class="chapel-power-light"></span>
       </div>
       <button class="screen-btn" id="screen-btn" aria-label="Enter the chapel"></button>
+      <button class="trap-door-btn" id="trap-door-btn" type="button" aria-label="Trap door"></button>
     </div>
   </div>
 
