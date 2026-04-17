@@ -49,8 +49,7 @@
     .chapel-wrapper {
       position: relative;
       width: 100%;
-      /* Slide chapel under the seam so seam physically overlaps the top edge */
-      margin-top: -70px;
+      margin-top: -80px; /* slide under seam's transparent bottom so seam composites into chapel */
     }
 
     .chapel-img {
@@ -65,9 +64,8 @@
       position: relative;
       width: 100%;
       line-height: 0;
-      margin-top: -2px;
-      /* Extend seam down over the chapel top — no gap, no separate fade needed */
-      z-index: 1;
+      margin-top: -80px; /* overlap into ceiling bottom */
+      z-index: 1;       /* sit above both ceiling and chapel */
     }
 
     .chapel-seam-img {
@@ -76,32 +74,19 @@
       display: block;
       user-select: none;
       -webkit-user-drag: none;
-    }
-
-    /* Soften the seam top edge into ceiling */
-    .chapel-seam-wrapper::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 30%;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
-      pointer-events: none;
-      z-index: 2;
-    }
-
-    /* Seam bottom fades softly into the chapel below — sole blend point */
-    .chapel-seam-wrapper::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 50%;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.5) 40%, transparent 100%);
-      pointer-events: none;
-      z-index: 2;
+      /* Fade edges to true transparency — composites into ceiling above, chapel below */
+      mask-image: linear-gradient(to bottom,
+        transparent 0%,
+        black 20%,
+        black 72%,
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(to bottom,
+        transparent 0%,
+        black 20%,
+        black 72%,
+        transparent 100%
+      );
     }
 
     /* Pulsing power button — positioned over the C64's power button on the altar */
@@ -170,19 +155,7 @@
       width: 100%;
       line-height: 0;
       overflow: hidden;
-    }
-
-    /* Fade bottom of ceiling to black to meet seam */
-    .chapel-ceiling-wrapper::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 35%;
-      background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.85));
-      pointer-events: none;
-      z-index: 2;
+      /* No gradient overlay — seam overlaps and masks into the ceiling */
     }
 
     .fade-overlay.fading {
