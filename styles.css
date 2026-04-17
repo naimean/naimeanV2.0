@@ -171,7 +171,7 @@ body {
 
 .boot-input {
   background: transparent;
-  border: 1px solid rgba(180, 210, 255, 0.6);
+  border: none;
   border-radius: 2px;
   color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
