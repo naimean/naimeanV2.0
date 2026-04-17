@@ -250,6 +250,7 @@
         return;
       }
 
+      // Preserve the pre-stitch floor start: 2529px original chapel height within 3709px stitched image.
       var originalChapelHeightRatio = 2529 / 3709;
       var stitchTop = chapelWrapper.offsetTop + (chapelWrapper.offsetHeight * originalChapelHeightRatio);
       var target = Math.max(0, stitchTop - window.innerHeight);
