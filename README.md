@@ -26,5 +26,12 @@ A Commodore 64-themed interactive landing page with retro effects, puzzles, and 
 - Static hosting (GitHub Pages, Vercel, Netlify, etc.)
 - To deploy: push to main branch and enable GitHub Pages
 
+### Optional: Cloudflare Worker image stitch endpoint
+- A Worker endpoint is included at `worker/stitch.js` with route `/stitch`
+- Local/dev deploy config is in `wrangler.toml`
+- Chapel view now attempts to load a stitched image from `/stitch?src=/assets/chapel.png&width=1024&height=1536`
+- If the endpoint is unavailable, it automatically falls back to `assets/chapel_stacked.png`
+- To use a different Worker URL, set `window.NAIMEAN_STITCH_ENDPOINT` before `chapel.html` runs
+
 ---
 He boiled for our sins

@@ -194,7 +194,7 @@
 
   <div class="chapel-outer">
     <div class="chapel-wrapper">
-      <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
+      <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" id="chapel-image" />
       <div class="chapel-relight" aria-hidden="true"></div>
       <div class="stained-glass-light" aria-hidden="true"></div>
       <div class="chapel-power-btn" aria-hidden="true">
@@ -256,6 +256,28 @@
       }, 500);
     });
 
+    function tryWorkerStitchedImage() {
+      var chapelImage = document.getElementById('chapel-image');
+      if (!chapelImage) {
+        return;
+      }
+
+      var workerEndpoint = window.NAIMEAN_STITCH_ENDPOINT || '/stitch';
+      var workerUrl = new URL(workerEndpoint, window.location.href);
+      workerUrl.searchParams.set('src', '/assets/chapel.png');
+      workerUrl.searchParams.set('width', '1024');
+      workerUrl.searchParams.set('height', '1536');
+
+      var probe = new Image();
+      probe.onload = function () {
+        chapelImage.src = workerUrl.toString();
+      };
+      probe.onerror = function () {
+        // Keep the bundled fallback image when the worker is unavailable.
+      };
+      probe.src = workerUrl.toString();
+    }
+
     function navigateToSite() {
       var overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
@@ -273,6 +295,8 @@
         navigateToSite();
       }
     });
+
+    tryWorkerStitchedImage();
   </script>
 </body>
 </html>

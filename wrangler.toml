@@ -1,0 +1,3 @@
+name = "naimean-image-stitcher"
+main = "worker/stitch.js"
+compatibility_date = "2026-04-17"
