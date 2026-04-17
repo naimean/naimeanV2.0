@@ -168,6 +168,8 @@
       width: 44%;
       height: 5.32%;
       background: transparent;
+      opacity: 0;
+      pointer-events: auto;
       border: none;
       cursor: pointer;
       z-index: 10;
@@ -204,7 +206,7 @@
       <div class="chapel-power-btn" aria-hidden="true">
         <span class="chapel-power-light"></span>
       </div>
-      <button class="screen-btn" id="screen-btn" aria-label="Enter the chapel"></button>
+      <button class="screen-btn" id="screen-btn" aria-label="Enter the descent"></button>
     </div>
   </div>
 
@@ -281,11 +283,11 @@
       var overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
-        window.location.assign('https://naimean.com');
+        window.location.assign('descent.html');
       }, 900);
     }
 
-    // Invisible button click → naimean.com
+    // Invisible button click → descent.html
     document.getElementById('screen-btn').addEventListener('click', navigateToSite);
 
     // Enter key → same behavior
