@@ -210,9 +210,10 @@
 
   <script>
     // Robust scroll to bottom — retry until images are painted (fixes mobile)
-    var ORIGINAL_CHAPEL_HEIGHT_PX = 2529;
-    var STITCHED_CHAPEL_HEIGHT_PX = 3709;
-    var ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT_PX / STITCHED_CHAPEL_HEIGHT_PX;
+    // Relative source heights used when the stitched extension was added.
+    const ORIGINAL_CHAPEL_HEIGHT = 2529;
+    const STITCHED_CHAPEL_HEIGHT = 3709;
+    const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
 
     var congregationAudio = document.getElementById('congregation-audio');
     var congregationStarted = false;
