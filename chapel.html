@@ -225,7 +225,7 @@
       }
 
       try {
-        const parsedUrl = new URL(candidateUrl, window.location.href);
+        const parsedUrl = new URL(candidateUrl);
         if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
           return parsedUrl.toString();
         }
