@@ -129,7 +129,7 @@
     .chapel-power-btn {
       position: absolute;
       left: 53.9%;
-      top: 85.6%;
+      top: 58.36%;
       width: 1.1%;
       aspect-ratio: 1;
       background: #1ed760;
@@ -164,9 +164,9 @@
     .screen-btn {
       position: absolute;
       left: 28%;
-      top: 78.4%;
+      top: 53.44%;
       width: 44%;
-      height: 7.8%;
+      height: 5.32%;
       background: transparent;
       border: none;
       cursor: pointer;
@@ -210,8 +210,16 @@
 
   <script>
     // Robust scroll to bottom — retry until images are painted (fixes mobile)
-    var congregationAudio = document.getElementById('congregation-audio');
-    var congregationStarted = false;
+    // Source image heights in pixels, measured from tracked assets:
+    // - 2529px: pre-stitch assets/chapel_stacked.png height
+    // - 3709px: current stitched assets/chapel_stacked.png height
+    // Their ratio marks the stitch boundary used for the initial floor anchor.
+    const ORIGINAL_CHAPEL_HEIGHT = 2529;
+    const STITCHED_CHAPEL_HEIGHT = 3709;
+    const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
+
+    const congregationAudio = document.getElementById('congregation-audio');
+    let congregationStarted = false;
 
     function startCongregationAudio() {
       if (congregationStarted) {
@@ -250,8 +258,9 @@
         return;
       }
 
-      var stackBottom = chapelWrapper.offsetTop + chapelWrapper.offsetHeight;
-      var target = Math.max(0, stackBottom - window.innerHeight);
+      // Preserve the pre-stitch floor start at the top edge of the stitched extension.
+      const stitchTop = chapelWrapper.offsetTop + (chapelWrapper.offsetHeight * ORIGINAL_CHAPEL_HEIGHT_RATIO);
+      const target = Math.max(0, stitchTop - window.innerHeight);
       window.scrollTo(0, target);
     }
 
