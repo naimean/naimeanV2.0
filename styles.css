@@ -84,6 +84,29 @@ body {
   visibility: hidden;
 }
 
+.static-overlay {
+  position: absolute;
+  left: var(--screen-left);
+  top: var(--screen-top);
+  width: var(--screen-width);
+  height: var(--screen-height);
+  border-radius: 8px;
+  display: none;
+  z-index: 12;
+  background: #000;
+  overflow: hidden;
+}
+
+.static-overlay.visible {
+  display: block;
+}
+
+#static-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .boot-screen {
   background: transparent;
   opacity: 1;

@@ -135,6 +135,24 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
+  function playStaticTransition() {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('static-overlay');
+      const vid = document.getElementById('static-video');
+      if (!overlay || !vid) { resolve(); return; }
+      overlay.classList.add('visible');
+      vid.currentTime = 0;
+      vid.play().catch(() => {});
+      const onEnd = () => {
+        overlay.classList.remove('visible');
+        resolve();
+      };
+      vid.addEventListener('ended', onEnd, { once: true });
+      vid.addEventListener('error', onEnd, { once: true });
+      setTimeout(() => { overlay.classList.remove('visible'); resolve(); }, 4000);
+    });
+  }
+
   async function runPowerOffPrank() {
     if (prankRunning) return;
     prankRunning = true;
@@ -142,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const powerOffAudio = new Audio('assets/power-button.mp3');
     powerOffAudio.play().catch(() => {});
 
-    await delay(5000);
+    await playStaticTransition();
 
     if (bootScreen) bootScreen.classList.remove('visible');
     if (shoutboxContainer) shoutboxContainer.classList.add('visible');
@@ -176,6 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(resolve, 8000); // fallback cap
     });
     await delay(500);
+    await playStaticTransition();
 
     shoutboxContainer.classList.add('visible');
     prankVideoOverlay.classList.add('visible');
@@ -249,19 +268,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (powerBtn && powerLight && shoutboxContainer && bootScreen && shadowLayer) {
     powerBtn.style.display = 'flex';
-    powerBtn.addEventListener('click', function() {
+    powerBtn.addEventListener('click', async function() {
       if (!screenOn) {
-        // Turn on: green button, fade shadow, show boot screen
+        // Turn on: green button, fade shadow, play static, show boot screen
         powerBtn.classList.add('on');
         powerLight.style.background = '#222';
         powerLight.style.boxShadow = 'none';
         shadowLayer.classList.add('hidden');
-        setTimeout(() => {
-          bootScreen.classList.add('visible');
-          if (bootInput) bootInput.focus();
-        }, 700);
         shoutboxContainer.classList.remove('visible');
         screenOn = true;
+        await delay(700);
+        bootScreen.classList.add('visible');
+        if (bootInput) bootInput.focus();
       } else {
         // Turn off: rickroll them instead
         runPowerOffPrank();
@@ -272,9 +290,10 @@ document.addEventListener('DOMContentLoaded', function() {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (screenOn && !puzzleSolved) {
-          // Hide form controls and play full-screen video in the C64 screen area.
+          // Hide form controls and play static, then the newman-gate video.
           bootInput.style.display = 'none';
           bootSubmit.style.display = 'none';
+          await playStaticTransition();
           bootVideo.style.display = 'block';
           try {
             bootVideo.currentTime = 0;
@@ -292,6 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
           // Transition to input prompt (with native blinking caret) instead of a Discord screen.
           bootScreen.classList.remove('visible');
+          await playStaticTransition();
           shoutboxContainer.classList.add('visible');
           if (shoutboxInput) {
             resetFinalInput();
