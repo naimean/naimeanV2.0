@@ -49,19 +49,8 @@
     .chapel-wrapper {
       position: relative;
       width: 100%;
-    }
-
-    /* Soft darkening gradient rising from chapel top toward the seam */
-    .chapel-wrapper::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 45%;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.55) 40%, transparent 100%);
-      pointer-events: none;
-      z-index: 2;
+      /* Slide chapel under the seam so seam physically overlaps the top edge */
+      margin-top: -70px;
     }
 
     .chapel-img {
@@ -77,7 +66,8 @@
       width: 100%;
       line-height: 0;
       margin-top: -2px;
-      margin-bottom: -2px;
+      /* Extend seam down over the chapel top — no gap, no separate fade needed */
+      z-index: 1;
     }
 
     .chapel-seam-img {
@@ -101,15 +91,15 @@
       z-index: 2;
     }
 
-    /* Soften the seam bottom edge into chapel top */
+    /* Seam bottom fades softly into the chapel below — sole blend point */
     .chapel-seam-wrapper::after {
       content: '';
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 30%;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+      height: 50%;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.5) 40%, transparent 100%);
       pointer-events: none;
       z-index: 2;
     }
