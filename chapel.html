@@ -36,20 +36,9 @@
       flex-direction: column;
     }
 
-    .chapel-ceiling-img {
-      width: 100%;
-      height: auto;
-      display: block;
-      user-select: none;
-      -webkit-user-drag: none;
-      /* Crop bottom ~20% so column bases align with seam top */
-      margin-bottom: -40%;
-    }
-
     .chapel-wrapper {
       position: relative;
       width: 100%;
-      margin-top: -80px; /* slide under seam's transparent bottom so seam composites into chapel */
     }
 
     .chapel-img {
@@ -58,35 +47,6 @@
       display: block;
       user-select: none;
       -webkit-user-drag: none;
-    }
-
-    .chapel-seam-wrapper {
-      position: relative;
-      width: 100%;
-      line-height: 0;
-      margin-top: -80px; /* overlap into ceiling bottom */
-      z-index: 1;       /* sit above both ceiling and chapel */
-    }
-
-    .chapel-seam-img {
-      width: 100%;
-      height: auto;
-      display: block;
-      user-select: none;
-      -webkit-user-drag: none;
-      /* Fade edges to true transparency — composites into ceiling above, chapel below */
-      mask-image: linear-gradient(to bottom,
-        transparent 0%,
-        black 20%,
-        black 72%,
-        transparent 100%
-      );
-      -webkit-mask-image: linear-gradient(to bottom,
-        transparent 0%,
-        black 20%,
-        black 72%,
-        transparent 100%
-      );
     }
 
     /* Pulsing power button — positioned over the C64's power button on the altar */
@@ -150,14 +110,6 @@
       z-index: 100;
     }
 
-    .chapel-ceiling-wrapper {
-      position: relative;
-      width: 100%;
-      line-height: 0;
-      overflow: hidden;
-      /* No gradient overlay — seam overlaps and masks into the ceiling */
-    }
-
     .fade-overlay.fading {
       opacity: 1;
       pointer-events: auto;
@@ -168,14 +120,8 @@
   <div class="fade-overlay" id="fade-overlay"></div>
 
   <div class="chapel-outer">
-    <div class="chapel-ceiling-wrapper">
-      <img src="assets/chapel_ceiling.png" alt="" class="chapel-ceiling-img" />
-    </div>
-    <div class="chapel-seam-wrapper">
-      <img src="assets/chapel_seam.png" alt="" class="chapel-seam-img" />
-    </div>
     <div class="chapel-wrapper">
-      <img src="assets/chapel.png" alt="The Chapel" class="chapel-img" />
+      <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
       <div class="chapel-power-btn" aria-hidden="true">
         <span class="chapel-power-light"></span>
       </div>
