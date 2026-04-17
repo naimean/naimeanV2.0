@@ -41,7 +41,7 @@
       width: 100%;
     }
 
-    /* Single gradient band to soften the seam at ~50% */
+    /* Narrow seam softener just above center. */
     .chapel-wrapper::after {
       content: '';
       position: absolute;
@@ -49,9 +49,11 @@
       pointer-events: none;
       z-index: 3;
       background: linear-gradient(to bottom,
-        transparent 40%,
-        rgba(0,0,0,0.6) 50%,
-        transparent 60%
+        transparent 46.4%,
+        rgba(0, 0, 0, 0.10) 47.4%,
+        rgba(0, 0, 0, 0.22) 48.5%,
+        rgba(0, 0, 0, 0.12) 49.6%,
+        transparent 50.8%
       );
     }
 
