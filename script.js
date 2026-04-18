@@ -464,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     await delay(5000);
     incrementRickrollCount();
-    incrementRickrollCount();
     persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }
