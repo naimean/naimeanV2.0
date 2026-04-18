@@ -129,6 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const RICKROLL_COUNT_API_URLS = buildRickrollApiUrls('/increment');
   const RICKROLL_COUNT_READ_API_URLS = buildRickrollApiUrls('/get');
 
+  function appendNoCacheParam(url) {
+    try {
+      const requestUrl = new URL(url);
+      requestUrl.searchParams.set('_naimean_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+      return requestUrl.toString();
+    } catch (_) {
+      return url;
+    }
+  }
+
   function markBaseImageMissing() {
     if (c64Wrapper) {
       c64Wrapper.classList.add('base-image-missing');
@@ -250,27 +260,28 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastError = null;
 
     for (const candidateUrl of candidateUrls) {
-      if (window.NaimeanDiag) { window.NaimeanDiag.log('try: ' + candidateUrl); }
+      const requestUrl = appendNoCacheParam(candidateUrl);
+      if (window.NaimeanDiag) { window.NaimeanDiag.log('try: ' + requestUrl); }
       try {
-        const response = await fetch(candidateUrl, {
+        const response = await fetch(requestUrl, {
           method: 'GET',
           cache: 'no-store',
           ...options
         });
 
         if (!response.ok) {
-          if (window.NaimeanDiag) { window.NaimeanDiag.log('fail(' + response.status + '): ' + candidateUrl); }
+          if (window.NaimeanDiag) { window.NaimeanDiag.log('fail(' + response.status + '): ' + requestUrl); }
           throw new Error('Failed to fetch rickroll count');
         }
 
         const payload = await response.json();
         const remoteCount = normalizeRickrollCount(payload && payload.value);
         if (remoteCount === null) {
-          if (window.NaimeanDiag) { window.NaimeanDiag.log('invalid payload: ' + candidateUrl); }
+          if (window.NaimeanDiag) { window.NaimeanDiag.log('invalid payload: ' + requestUrl); }
           throw new Error('Received invalid rickroll count');
         }
 
-        if (window.NaimeanDiag) { window.NaimeanDiag.log('ok: ' + candidateUrl + ' \u2192 ' + remoteCount); }
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('ok: ' + requestUrl + ' \u2192 ' + remoteCount); }
         return remoteCount;
       } catch (err) {
         lastError = err;
