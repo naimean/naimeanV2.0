@@ -58,30 +58,17 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastPointerPosition = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
-  const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
+  const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
 
-  function readLocalRickrollCount() {
-    try {
-      const rawValue = window.localStorage.getItem(LOCAL_RICKROLL_COUNT_KEY);
-      const parsedCount = Number(rawValue);
-      if (Number.isFinite(parsedCount) && parsedCount >= 0) {
-        return Math.floor(parsedCount);
-      }
-    } catch (_) {}
-    return 0;
-  }
-
-  function writeLocalRickrollCount(count) {
-    if (!Number.isFinite(count) || count < 0) {
-      return;
+  function normalizeRickrollCount(value) {
+    const parsedCount = Number(value);
+    if (!Number.isFinite(parsedCount) || parsedCount < 0) {
+      return null;
     }
-
-    try {
-      window.localStorage.setItem(LOCAL_RICKROLL_COUNT_KEY, String(Math.floor(count)));
-    } catch (_) {}
+    return Math.floor(parsedCount);
   }
 
   function updateDiscordRickrollCounterDisplay(count) {
@@ -89,7 +76,30 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    discordRickrollCounter.textContent = String(Math.floor(count)).padStart(2, '0');
+    const normalizedCount = normalizeRickrollCount(count);
+    discordRickrollCounter.textContent = normalizedCount === null
+      ? RICKROLL_COUNT_UNAVAILABLE_TEXT
+      : String(normalizedCount).padStart(2, '0');
+  }
+
+  async function fetchRickrollCount(url, options = {}) {
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      ...options
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch rickroll count');
+    }
+
+    const payload = await response.json();
+    const remoteCount = normalizeRickrollCount(payload && payload.value);
+    if (remoteCount === null) {
+      throw new Error('Received invalid rickroll count');
+    }
+
+    return remoteCount;
   }
 
   function setDiscordRickrollCounterVisible(isVisible) {
@@ -105,35 +115,15 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    const localCount = readLocalRickrollCount();
-    updateDiscordRickrollCounterDisplay(localCount);
-
     try {
-      const response = await fetch(RICKROLL_COUNT_READ_API_URL, {
-        method: 'GET',
-        cache: 'no-store'
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch rickroll count');
-      }
-
-      const payload = await response.json();
-      const parsedCount = Number(payload && payload.value);
-      const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
-        ? Math.floor(parsedCount)
-        : 0;
-      const nextCount = Math.max(localCount, remoteCount);
-      writeLocalRickrollCount(nextCount);
-      updateDiscordRickrollCounterDisplay(nextCount);
-    } catch (_) {}
+      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URL);
+      updateDiscordRickrollCounterDisplay(remoteCount);
+    } catch (_) {
+      updateDiscordRickrollCounterDisplay(null);
+    }
   }
 
   async function incrementRickrollCount() {
-    const currentLocalCount = readLocalRickrollCount();
-    const nextLocalCount = currentLocalCount + 1;
-    writeLocalRickrollCount(nextLocalCount);
-    updateDiscordRickrollCounterDisplay(nextLocalCount);
-
     let controller = null;
     if (typeof AbortController === 'function') {
       try {
@@ -154,28 +144,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     try {
-      const response = await fetch(RICKROLL_COUNT_API_URL, {
-        method: 'GET',
-        cache: 'no-store',
+      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URL, {
         keepalive: true,
         signal: controller ? controller.signal : undefined
       });
-      if (!response.ok) {
-        throw new Error('Failed to increment rickroll count');
-      }
-
-      const payload = await response.json();
-      const parsedCount = Number(payload && payload.value);
-      const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
-        ? Math.floor(parsedCount)
-        : nextLocalCount;
-      const syncedCount = Math.max(nextLocalCount, remoteCount);
-      writeLocalRickrollCount(syncedCount);
-      updateDiscordRickrollCounterDisplay(syncedCount);
-      return syncedCount;
+      updateDiscordRickrollCounterDisplay(remoteCount);
+      return remoteCount;
     } catch (_) {
-      // Keep the local fallback count when the remote API is unavailable.
-      return nextLocalCount;
+      updateDiscordRickrollCounterDisplay(null);
+      return null;
     } finally {
       requestSettled = true;
       if (timeoutId) {
