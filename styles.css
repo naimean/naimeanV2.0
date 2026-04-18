@@ -205,6 +205,10 @@ body {
   filter: blur(0.3px);
 }
 
+.boot-submit-label {
+  font-weight: 700;
+}
+
 .discord-pixel-logo {
   width: 2px;
   height: 2px;
