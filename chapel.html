@@ -265,6 +265,7 @@
     </div>
   </div>
 
+  <script src="diagnostics.js"></script>
   <script>
     // Robust scroll to bottom — retry until images are painted (fixes mobile)
     // Source image heights in pixels, measured from tracked assets:
@@ -301,7 +302,11 @@
         }
       } catch (_) {}
       candidates.push(`${LEGACY_RICKROLL_COUNTER_BASE_URL}${pathname}`);
-      return Array.from(new Set(candidates));
+      const urls = Array.from(new Set(candidates));
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.log('endpoints' + pathname + ': ' + urls.join(', '));
+      }
+      return urls;
     }
 
     const RICKROLL_COUNT_API_URLS = buildRickrollApiUrls('/get');
@@ -340,21 +345,25 @@
       let lastError = null;
 
       for (const candidateUrl of candidateUrls) {
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('try: ' + candidateUrl); }
         try {
           const response = await fetch(candidateUrl, {
             method: 'GET',
             cache: 'no-store'
           });
           if (!response.ok) {
+            if (window.NaimeanDiag) { window.NaimeanDiag.log('fail(' + response.status + '): ' + candidateUrl); }
             throw new Error('Failed to fetch rickroll count');
           }
 
           const payload = await response.json();
           const remoteCount = normalizeRickrollCount(payload && payload.value);
           if (remoteCount === null) {
+            if (window.NaimeanDiag) { window.NaimeanDiag.log('invalid payload: ' + candidateUrl); }
             throw new Error('Received invalid rickroll count');
           }
 
+          if (window.NaimeanDiag) { window.NaimeanDiag.log('ok: ' + candidateUrl + ' \u2192 ' + remoteCount); }
           return remoteCount;
         } catch (err) {
           lastError = err;
@@ -371,13 +380,24 @@
 
       const localCount = readLocalRickrollCount();
       chapelTvCounter.textContent = String(localCount).padStart(2, '0');
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.set('local count', localCount);
+        window.NaimeanDiag.set('count src', 'local');
+      }
 
       try {
         const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URLS);
         const nextCount = remoteCount;
         writeLocalRickrollCount(nextCount);
         chapelTvCounter.textContent = String(nextCount).padStart(2, '0');
-      } catch (_) {}
+        if (window.NaimeanDiag) {
+          window.NaimeanDiag.set('remote count', nextCount);
+          window.NaimeanDiag.set('count src', 'remote');
+          window.NaimeanDiag.set('local count', nextCount);
+        }
+      } catch (_) {
+        if (window.NaimeanDiag) { window.NaimeanDiag.set('count src', 'local (fallback)'); }
+      }
     }
 
     function clearRockRollContinuationState() {

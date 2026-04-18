@@ -94,7 +94,11 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch (_) {}
     candidates.push(`${LEGACY_RICKROLL_COUNTER_BASE_URL}${pathname}`);
-    return Array.from(new Set(candidates));
+    const urls = Array.from(new Set(candidates));
+    if (window.NaimeanDiag) {
+      window.NaimeanDiag.log('endpoints' + pathname + ': ' + urls.join(', '));
+    }
+    return urls;
   }
 
   const RICKROLL_COUNT_API_URLS = buildRickrollApiUrls('/hit');
@@ -221,6 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastError = null;
 
     for (const candidateUrl of candidateUrls) {
+      if (window.NaimeanDiag) { window.NaimeanDiag.log('try: ' + candidateUrl); }
       try {
         const response = await fetch(candidateUrl, {
           method: 'GET',
@@ -229,15 +234,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (!response.ok) {
+          if (window.NaimeanDiag) { window.NaimeanDiag.log('fail(' + response.status + '): ' + candidateUrl); }
           throw new Error('Failed to fetch rickroll count');
         }
 
         const payload = await response.json();
         const remoteCount = normalizeRickrollCount(payload && payload.value);
         if (remoteCount === null) {
+          if (window.NaimeanDiag) { window.NaimeanDiag.log('invalid payload: ' + candidateUrl); }
           throw new Error('Received invalid rickroll count');
         }
 
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('ok: ' + candidateUrl + ' \u2192 ' + remoteCount); }
         return remoteCount;
       } catch (err) {
         lastError = err;
@@ -261,6 +269,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const localCount = readLocalRickrollCount();
+    if (window.NaimeanDiag) {
+      window.NaimeanDiag.set('local count', localCount);
+      window.NaimeanDiag.set('count src', 'local');
+    }
     updateDiscordRickrollCounterDisplay(localCount);
 
     try {
@@ -268,8 +280,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const nextCount = remoteCount;
       writeLocalRickrollCount(nextCount);
       updateDiscordRickrollCounterDisplay(nextCount);
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.set('remote count', nextCount);
+        window.NaimeanDiag.set('count src', 'remote');
+        window.NaimeanDiag.set('local count', nextCount);
+      }
     } catch (_) {
       updateDiscordRickrollCounterDisplay(localCount);
+      if (window.NaimeanDiag) { window.NaimeanDiag.set('count src', 'local (fallback)'); }
     }
   }
 
@@ -277,6 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const optimisticCount = readLocalRickrollCount() + 1;
     writeLocalRickrollCount(optimisticCount);
     updateDiscordRickrollCounterDisplay(optimisticCount);
+    if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: optimistic \u2192 ' + optimisticCount); }
 
     let controller = null;
     if (typeof AbortController === 'function') {
@@ -305,8 +324,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const nextCount = remoteCount;
       writeLocalRickrollCount(nextCount);
       updateDiscordRickrollCounterDisplay(nextCount);
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.set('remote count', nextCount);
+        window.NaimeanDiag.set('local count', nextCount);
+        window.NaimeanDiag.log('increment: confirmed \u2192 ' + nextCount);
+      }
       return nextCount;
     } catch (_) {
+      if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: remote failed, keeping ' + optimisticCount); }
       return optimisticCount;
     } finally {
       requestSettled = true;
