@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
-  function showBootDiscordPromptScreen(showBootControls = true) {
+  function displayBootPromptScreen(showBootControls = true) {
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     gateSequenceRunning = true;
 
-    showBootDiscordPromptScreen(false);
+    displayBootPromptScreen(false);
     try {
       await playStaticTransition();
       if (bootVideo) {
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await playStaticTransition();
-    showBootDiscordPromptScreen();
+    displayBootPromptScreen();
   }
 
   function playStaticTransition() {
