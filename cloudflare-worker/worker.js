@@ -16,14 +16,42 @@
 const COUNTER_ID = 'rickrolls';
 
 function corsHeaders(origin) {
-  const allowOrigin = origin || '*';
+  if (!isAllowedOrigin(origin)) {
+    // Origin not in allowlist – omit ACAO so browsers block the request.
+    return {};
+  }
+
   return {
-    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
+}
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return false;
+  }
+
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      return false;
+    }
+
+    const hostname = url.hostname.toLowerCase();
+    return hostname === 'naimean.com'
+      || hostname === 'www.naimean.com'
+      || hostname === 'naimean.github.io'
+      || hostname === 'localhost'
+      || hostname === '127.0.0.1'
+      || hostname.endsWith('.naimean.com')
+      || hostname.endsWith('.pages.dev');
+  } catch (_) {
+    return false;
+  }
 }
 
 function jsonResponse(data, status, origin) {
