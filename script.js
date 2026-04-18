@@ -498,10 +498,11 @@ function playZeldaSecretSound() {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const notes = [783.99, 987.77, 1174.66, 1567.98];
+        const notePeakGain = 0.14;
         const noteSpacingSeconds = 0.14;
         const noteAttackSeconds = 0.02;
         const noteLengthSeconds = 0.13;
-        const noteSequenceDurationSeconds = ((notes.length - 1) * noteSpacingSeconds) + noteAttackSeconds + noteLengthSeconds;
+        const noteSequenceDurationSeconds = ((notes.length - 1) * noteSpacingSeconds) + noteLengthSeconds;
         const start = ctx.currentTime;
         notes.forEach((freq, i) => {
           const osc = ctx.createOscillator();
@@ -509,7 +510,7 @@ function playZeldaSecretSound() {
           osc.type = 'triangle';
           osc.frequency.value = freq;
           gain.gain.setValueAtTime(0.0001, start + i * noteSpacingSeconds);
-          gain.gain.exponentialRampToValueAtTime(0.14, start + i * noteSpacingSeconds + noteAttackSeconds);
+          gain.gain.exponentialRampToValueAtTime(notePeakGain, start + i * noteSpacingSeconds + noteAttackSeconds);
           gain.gain.exponentialRampToValueAtTime(0.0001, start + i * noteSpacingSeconds + noteLengthSeconds);
           osc.connect(gain);
           gain.connect(ctx.destination);
