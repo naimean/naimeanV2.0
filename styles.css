@@ -217,38 +217,6 @@ body {
   filter: drop-shadow(0 0 3px rgba(200, 222, 255, 0.45));
 }
 
-.discord-overlay {
-  position: absolute;
-  left: calc(var(--screen-left) + var(--screen-inner-inset));
-  top: calc(var(--screen-top) + var(--screen-inner-inset));
-  width: calc(var(--screen-width) - var(--screen-inner-inset-double));
-  height: calc(var(--screen-height) - var(--screen-inner-inset-double));
-  border-radius: 7px;
-  display: none;
-  z-index: 11;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 42%, rgba(88, 101, 242, 0.2) 0%, rgba(25, 31, 60, 0.92) 100%),
-    #0f1224;
-}
-
-.discord-overlay.visible {
-  display: block;
-}
-
-.discord-widget-embed {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.discord-widget-embed iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-}
-
 .boot-submit:hover {
   background: rgba(160, 200, 255, 0.28);
   filter: blur(0.3px) brightness(1.15);

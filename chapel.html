@@ -159,13 +159,13 @@
       100% { box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff; filter: brightness(1); }
     }
 
-    /* Invisible hotspot over the trap door area. */
+    /* Invisible hotspot over the trap door square area. */
     .trapdoor-btn {
       position: absolute;
-      left: 36%;
-      top: 79.5%;
-      width: 28%;
-      height: 11%;
+      left: 33%;
+      top: 77%;
+      width: 34%;
+      height: 16%;
       background: transparent;
       opacity: 0;
       pointer-events: auto;
@@ -219,59 +219,10 @@
     const STITCHED_CHAPEL_HEIGHT = 3709;
     const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
 
-    function sanitizeDiscordUrl(candidateUrl) {
-      if (!candidateUrl) {
-        return null;
-      }
-
-      try {
-        const parsedUrl = new URL(candidateUrl);
-        if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
-          return parsedUrl.toString();
-        }
-      } catch (_) {
-        return null;
-      }
-
-      return null;
-    }
-
-    function resolveDiscordPageUrl() {
-      const storedDiscordUrl = window.localStorage.getItem('naimean-discord-url');
-      const sanitizedStoredUrl = sanitizeDiscordUrl(storedDiscordUrl);
-      if (sanitizedStoredUrl) {
-        return sanitizedStoredUrl;
-      }
-
-      return 'https://discord.gg/fvj4UrTpdp';
-    }
-
-    const DISCORD_PAGE_URL = resolveDiscordPageUrl();
-    const SKIP_DISCORD_REDIRECT_KEY = 'naimean-skip-discord-redirect';
-    const DISCORD_REDIRECTED_KEY = 'naimean-discord-redirected';
-    const shouldSkipDiscordRedirect = (function consumeSkipDiscordRedirectFlag() {
-      try {
-        const shouldSkip = window.sessionStorage.getItem(SKIP_DISCORD_REDIRECT_KEY) === '1';
-        if (shouldSkip) {
-          window.sessionStorage.removeItem(SKIP_DISCORD_REDIRECT_KEY);
-        }
-        return shouldSkip;
-      } catch (_) {
-        return false;
-      }
-    })();
-    const hasRedirectedToDiscordThisSession = (function hasRedirectedToDiscordThisSession() {
-      try {
-        return window.sessionStorage.getItem(DISCORD_REDIRECTED_KEY) === '1';
-      } catch (_) {
-        return false;
-      }
-    })();
     const congregationAudio = document.getElementById('congregation-audio');
     congregationAudio.volume = 0.08;
     let congregationStarted = false;
     let isNavigatingToDescent = false;
-    let isNavigatingToDiscord = false;
 
     function playDoorOpeningSound() {
       const audioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -369,35 +320,8 @@
       }, 500);
     });
 
-    function navigateToDiscord() {
-      if (shouldSkipDiscordRedirect || hasRedirectedToDiscordThisSession) {
-        return;
-      }
-
-      if (isNavigatingToDiscord || isNavigatingToDescent) {
-        return;
-      }
-
-      isNavigatingToDiscord = true;
-      const overlay = document.getElementById('fade-overlay');
-      overlay.classList.add('fading');
-      setTimeout(function () {
-        try {
-          window.sessionStorage.setItem(DISCORD_REDIRECTED_KEY, '1');
-        } catch (_) {}
-        window.location.assign(DISCORD_PAGE_URL);
-      }, 900);
-    }
-
-    if (!shouldSkipDiscordRedirect && !hasRedirectedToDiscordThisSession) {
-      congregationAudio.addEventListener('playing', navigateToDiscord, { once: true });
-      if (!congregationAudio.paused && !congregationAudio.ended && congregationAudio.currentTime > 0) {
-        navigateToDiscord();
-      }
-    }
-
     function navigateToSite() {
-      if (isNavigatingToDescent || isNavigatingToDiscord) {
+      if (isNavigatingToDescent) {
         return;
       }
       isNavigatingToDescent = true;
