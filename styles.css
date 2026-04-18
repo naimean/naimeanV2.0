@@ -205,12 +205,7 @@ body {
   filter: blur(0.3px);
 }
 
-.boot-submit .discord-pixel-logo {
-  order: 0;
-}
-
 .boot-submit-label {
-  order: 1;
   font-weight: 700;
 }
 
