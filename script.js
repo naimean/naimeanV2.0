@@ -460,6 +460,8 @@ zeldaSecretAudio.preload = 'auto';
 
 function playZeldaSecretSound() {
   return new Promise((resolve) => {
+    const AUDIO_END_PADDING_MS = 250;
+    const SYNTH_END_PADDING_MS = 50;
     let settled = false;
     let fallbackTimer = null;
 
@@ -482,7 +484,7 @@ function playZeldaSecretSound() {
 
     zeldaSecretAudio.play().then(() => {
       const durationMs = Number.isFinite(zeldaSecretAudio.duration) && zeldaSecretAudio.duration > 0
-        ? Math.ceil(zeldaSecretAudio.duration * 1000) + 250
+        ? Math.ceil(zeldaSecretAudio.duration * 1000) + AUDIO_END_PADDING_MS
         : 8000;
       fallbackTimer = setTimeout(finish, durationMs);
     }).catch(() => {
@@ -507,7 +509,7 @@ function playZeldaSecretSound() {
           osc.start(start + i * noteSpacingSeconds);
           osc.stop(start + i * noteSpacingSeconds + noteLengthSeconds);
         });
-        fallbackTimer = setTimeout(finish, Math.ceil(totalDurationSeconds * 1000) + 50);
+        fallbackTimer = setTimeout(finish, Math.ceil(totalDurationSeconds * 1000) + SYNTH_END_PADDING_MS);
       } catch (_) {
         finish();
       }
