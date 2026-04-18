@@ -974,14 +974,9 @@ document.addEventListener('DOMContentLoaded', function() {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (screenOn && !puzzleSolved) {
-          const normalizedUser = getNormalizedBootUser();
-          if (!isKnownBootUser(normalizedUser)) {
-            playWrongSound();
-            resetBootInput();
-            updateBootQuickLinkVisibility();
-            return;
-          }
-          await runNedryGateSequence();
+          playWrongSound();
+          resetBootInput();
+          updateBootQuickLinkVisibility();
         }
       });
     }
