@@ -194,7 +194,7 @@ body {
 
 .boot-input {
   background: transparent;
-  border: none;
+  border: 1px solid rgba(180, 210, 255, 0.5);
   border-radius: 2px;
   color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
@@ -208,6 +208,24 @@ body {
   caret-color: #c8deff;
   text-shadow: 0 0 6px #b0d0ff, 0 0 14px #5080c0, 0 0 2px #fff;
   filter: blur(0.3px);
+}
+
+.boot-input-row {
+  display: inline-flex;
+  align-items: center;
+}
+
+.boot-input-row .boot-input {
+  border-right: 0;
+  border-radius: 2px 0 0 2px;
+}
+
+.boot-inline-submit {
+  gap: 0;
+  padding: 10px 8px;
+  font-size: 0.62em;
+  border-radius: 0 2px 2px 0;
+  text-transform: lowercase;
 }
 
 .boot-submit {
@@ -300,17 +318,6 @@ body {
   filter: blur(0.3px);
   pointer-events: none;
   white-space: nowrap;
-}
-
-.boot-corner-submit {
-  position: absolute;
-  right: 22px;
-  bottom: 24px;
-  z-index: 2;
-  gap: 0;
-  font-size: 0.66em;
-  text-transform: lowercase;
-  padding: 9px 10px;
 }
 
 .discord-widget-embed {
@@ -651,10 +658,8 @@ body {
     gap: calc(10px * var(--boot-mobile-button-scale));
   }
 
-  .boot-corner-submit {
-    right: 12px;
-    bottom: 14px;
-    padding: calc(9px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
+  .boot-inline-submit {
+    padding: calc(10px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
   }
 
   .boot-quick-link {

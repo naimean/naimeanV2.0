@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
   const bootSubmit = document.getElementById('boot-submit');
-  const bootCornerSubmit = document.getElementById('boot-corner-submit');
+  const bootInlineSubmit = document.getElementById('boot-inline-submit');
   const bootQuickLinks = document.getElementById('boot-quick-links');
   const bootCalendarBtn = document.getElementById('boot-calendar-btn');
   const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
@@ -424,8 +424,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootSubmit) {
       bootSubmit.style.display = 'none';
     }
-    if (bootCornerSubmit) {
-      bootCornerSubmit.style.display = 'none';
+    if (bootInlineSubmit) {
+      bootInlineSubmit.style.display = 'none';
     }
     if (bootQuickLinks) {
       bootQuickLinks.style.display = 'none';
@@ -497,8 +497,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootSubmit) {
       bootSubmit.style.display = 'inline-flex';
     }
-    if (bootCornerSubmit) {
-      bootCornerSubmit.style.display = 'inline-flex';
+    if (bootInlineSubmit) {
+      bootInlineSubmit.style.display = 'inline-flex';
     }
     if (bootQuickLinks) {
       bootQuickLinks.style.display = 'none';
