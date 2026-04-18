@@ -293,13 +293,9 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    const localCount = readLocalRickrollCount();
-    if (window.NaimeanDiag) {
-      window.NaimeanDiag.set('local count', localCount);
-      window.NaimeanDiag.set('count src', 'local');
-    }
-    updateDiscordRickrollCounterDisplay(localCount);
-
+    // Always wait for the network before showing a value so that incognito
+    // windows (where localStorage is empty) show the real persisted count
+    // instead of a misleading 0.
     try {
       const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URLS);
       const nextCount = remoteCount;
@@ -311,8 +307,16 @@ document.addEventListener('DOMContentLoaded', function() {
         window.NaimeanDiag.set('local count', nextCount);
       }
     } catch (_) {
-      updateDiscordRickrollCounterDisplay(localCount);
-      if (window.NaimeanDiag) { window.NaimeanDiag.set('count src', 'local (fallback)'); }
+      // Network failed – fall back to the locally cached value only when it
+      // is a real previously-seen count (> 0).  If there is no cached value
+      // (e.g. incognito, first visit) show the unavailable placeholder so
+      // the display is never misleadingly stuck at 0.
+      const localCount = readLocalRickrollCount();
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.set('local count', localCount);
+        window.NaimeanDiag.set('count src', 'local (fallback)');
+      }
+      updateDiscordRickrollCounterDisplay(localCount > 0 ? localCount : null);
     }
   }
 
