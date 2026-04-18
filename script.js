@@ -221,12 +221,12 @@ document.addEventListener('DOMContentLoaded', function() {
       bootVideo.style.display = 'none';
     }
     if (bootInput) {
-      bootInput.style.display = '';
+      bootInput.style.display = 'inline-block';
       resetBootInput();
       bootInput.focus();
     }
     if (bootSubmit) {
-      bootSubmit.style.display = '';
+      bootSubmit.style.display = 'inline-flex';
     }
     if (bootScreen) {
       bootScreen.classList.add('visible');
