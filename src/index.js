@@ -1,6 +1,6 @@
 const COUNTER_WORKER_URL = "https://barrelrollcounter-worker.naimean.workers.dev";
 
-const PROXY_PATHS = ["/get", "/increment", "/board", "/board-upload", "/board-delete", "/uploads/"];
+const PROXY_PATHS = ["/get", "/increment", "/hit", "/board", "/board-upload", "/board-delete", "/uploads/"];
 
 export default {
   async fetch(request, env, ctx) {
