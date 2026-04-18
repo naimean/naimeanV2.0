@@ -4,6 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Naimean?</title>
+  <style>
+    .c64-wrapper {
+      position: relative;
+    }
+
+    .shadow-layer {
+      position: absolute;
+      left: 4.44%;
+      top: 6.43%;
+      width: 90.11%;
+      height: 47.86%;
+      border-radius: 8px;
+      background: #111112;
+      opacity: 0.99;
+      z-index: 10;
+      pointer-events: auto;
+      visibility: visible;
+    }
+
+    .boot-screen,
+    .shoutbox-container,
+    .discord-overlay,
+    .static-overlay,
+    .power-off-overlay {
+      display: none;
+    }
+  </style>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 </head>
