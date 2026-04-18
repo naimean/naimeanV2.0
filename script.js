@@ -87,9 +87,38 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (c64Image) {
-    c64Image.addEventListener('error', markBaseImageMissing, { once: true });
+    const baseImageCandidates = Array.from(
+      new Set([
+        c64Image.getAttribute('src'),
+        'assets/commodore64.png',
+        'assets/commodore64.jpg',
+        'assets/commodore64.jpeg'
+      ].filter(Boolean))
+    );
+    let baseImageCandidateIndex = Math.max(baseImageCandidates.indexOf(c64Image.getAttribute('src')), 0);
+
+    function tryNextBaseImage() {
+      while (baseImageCandidateIndex + 1 < baseImageCandidates.length) {
+        baseImageCandidateIndex += 1;
+        const nextSource = baseImageCandidates[baseImageCandidateIndex];
+        if (nextSource && c64Image.getAttribute('src') !== nextSource) {
+          c64Image.setAttribute('src', nextSource);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    c64Image.addEventListener('error', function() {
+      if (!tryNextBaseImage()) {
+        markBaseImageMissing();
+      }
+    });
+
     if (c64Image.complete && c64Image.naturalWidth === 0) {
-      markBaseImageMissing();
+      if (!tryNextBaseImage()) {
+        markBaseImageMissing();
+      }
     }
   }
 
