@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
   const BOOT_ROLE_VISIBILITY_BY_USER = {
+    ADMIN: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: false },
     RCA: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true },
     MAD: { showDiscordButton: false, showCalendarButton: true, showWhiteboardButton: true },
     JV: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true },
@@ -367,7 +368,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentUser = inputValue.startsWith(BOOT_PREFIX)
       ? inputValue.slice(BOOT_PREFIX.length)
       : '';
-    const visibility = BOOT_ROLE_VISIBILITY_BY_USER[currentUser] || {
+    const normalizedUser = currentUser.trim().toUpperCase();
+    const visibility = BOOT_ROLE_VISIBILITY_BY_USER[normalizedUser] || {
       showDiscordButton: true,
       showCalendarButton: false,
       showWhiteboardButton: false

@@ -225,7 +225,8 @@ body {
   min-width: calc(14em + 75px);
   max-width: calc(14em + 75px);
   padding: 6px 8px;
-  letter-spacing: 1.4px;
+  font-weight: 400;
+  letter-spacing: 0.9px;
   caret-color: #c8deff;
   text-shadow: 0 0 6px #b0d0ff, 0 0 14px #5080c0, 0 0 2px #fff;
   filter: blur(0.3px);
@@ -358,7 +359,8 @@ body {
   }
 
   .discord-rickroll-counter {
-    right: var(--desktop-counter-right);
+    right: calc(var(--desktop-counter-right) + 40px);
+    bottom: 86px;
     font-size: clamp(1.15em, 1.7vw, 1.5em);
   }
 }
