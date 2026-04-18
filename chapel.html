@@ -179,7 +179,7 @@
     .chapel-tv-counter {
       position: absolute;
       right: calc(45.2% + 8px);
-      top: calc(53.55% + 38px);
+      top: calc(53.55% + 34px);
       min-width: 1.8ch;
       min-height: 2.2%;
       display: flex;
@@ -292,8 +292,9 @@
         }
 
         const payload = await response.json();
-        const count = Number.isFinite(payload && payload.value) && payload.value >= 0
-          ? payload.value
+        const parsedCount = Number(payload && payload.value);
+        const count = Number.isFinite(parsedCount) && parsedCount >= 0
+          ? Math.floor(parsedCount)
           : 0;
         chapelTvCounter.textContent = String(count).padStart(2, '0');
       } catch (_) {

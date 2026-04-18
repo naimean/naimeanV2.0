@@ -76,8 +76,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       const payload = await response.json();
-      const count = Number.isFinite(payload && payload.value) && payload.value >= 0
-        ? payload.value
+      const parsedCount = Number(payload && payload.value);
+      const count = Number.isFinite(parsedCount) && parsedCount >= 0
+        ? Math.floor(parsedCount)
         : 0;
       discordRickrollCounter.textContent = String(count).padStart(2, '0');
     } catch (_) {
