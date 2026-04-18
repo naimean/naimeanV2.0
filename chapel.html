@@ -481,36 +481,76 @@
 
       const ctx = new audioContextCtor();
       const now = ctx.currentTime;
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0.22, now);
+      master.connect(ctx.destination);
 
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
+      function scheduleTone(type, startFreq, endFreq, startOffset, duration, peakGain) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        const startTime = now + startOffset;
+        const endTime = startTime + duration;
 
-      osc1.type = 'sawtooth';
-      osc2.type = 'triangle';
-      osc1.frequency.setValueAtTime(210, now);
-      osc1.frequency.exponentialRampToValueAtTime(95, now + 0.35);
-      osc2.frequency.setValueAtTime(130, now);
-      osc2.frequency.exponentialRampToValueAtTime(70, now + 0.35);
+        osc.type = type;
+        osc.frequency.setValueAtTime(startFreq, startTime);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, endTime);
 
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(1400, now);
-      filter.frequency.exponentialRampToValueAtTime(420, now + 0.35);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1800, startTime);
+        filter.frequency.exponentialRampToValueAtTime(420, endTime);
+        filter.Q.setValueAtTime(0.8, startTime);
 
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.13, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(peakGain, startTime + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, endTime);
 
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
 
-      osc1.start(now);
-      osc2.start(now);
-      osc1.stop(now + 0.42);
-      osc2.stop(now + 0.42);
+        osc.start(startTime);
+        osc.stop(endTime + 0.02);
+      }
+
+      function scheduleNoiseBurst(startOffset, duration, peakGain) {
+        const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+        const channel = buffer.getChannelData(0);
+        for (let i = 0; i < channel.length; i += 1) {
+          channel[i] = (Math.random() * 2 - 1) * (1 - (i / channel.length));
+        }
+
+        const source = ctx.createBufferSource();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+        const startTime = now + startOffset;
+        const endTime = startTime + duration;
+
+        source.buffer = buffer;
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(760, startTime);
+        filter.Q.setValueAtTime(1.3, startTime);
+
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(peakGain, startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, endTime);
+
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+
+        source.start(startTime);
+        source.stop(endTime + 0.01);
+      }
+
+      scheduleTone('sawtooth', 230, 92, 0, 0.56, 0.11);
+      scheduleTone('triangle', 165, 88, 0.03, 0.46, 0.07);
+      scheduleTone('sine', 78, 52, 0.18, 0.24, 0.09);
+      scheduleNoiseBurst(0.01, 0.19, 0.08);
+
+      setTimeout(function () {
+        ctx.close();
+      }, 1000);
     }
 
     function startCongregationAudio() {
