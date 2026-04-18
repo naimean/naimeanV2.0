@@ -1,9 +1,10 @@
 // Power button and blackout overlay toggle logic
 document.addEventListener('DOMContentLoaded', function() {
-  const FINAL_PREFIX = 'C:\\Naimean\\';
+  const BOOT_PREFIX = 'C:\\Naimean\\User\\';
+  const FINAL_PREFIX = 'C:\\Naimean\\User\\';
   const FINAL_UNLOCK_VALUES = new Set([
-    'C:\\Naimean\\please',
-    'C:\\Naimean\\Please'
+    'C:\\Naimean\\User\\please',
+    'C:\\Naimean\\User\\Please'
   ]);
   const POWER_BUTTON_COOLDOWN_MS = 5000;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,6 +78,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const end = shoutboxInput.value.length;
     shoutboxInput.setSelectionRange(end, end);
+  }
+
+  function placeBootCursorAtEnd() {
+    if (!bootInput) {
+      return;
+    }
+
+    const end = bootInput.value.length;
+    bootInput.setSelectionRange(end, end);
+  }
+
+  function enforceLockedPrefix(inputEl, prefix) {
+    if (!inputEl) {
+      return;
+    }
+
+    if (!inputEl.value.startsWith(prefix)) {
+      inputEl.value = prefix;
+    }
+
+    const moveCursorToEnd = () => {
+      const end = inputEl.value.length;
+      inputEl.setSelectionRange(end, end);
+    };
+
+    inputEl.addEventListener('focus', moveCursorToEnd);
+    inputEl.addEventListener('click', moveCursorToEnd);
+    inputEl.addEventListener('keydown', function(e) {
+      const prefixLen = prefix.length;
+      const selStart = inputEl.selectionStart;
+      const selEnd = inputEl.selectionEnd;
+      if (e.key === 'Backspace' && selStart <= prefixLen && selStart === selEnd) {
+        e.preventDefault();
+      }
+      if (e.key === 'Delete' && selStart < prefixLen && selStart === selEnd) {
+        e.preventDefault();
+      }
+      if (selStart < prefixLen && selEnd > selStart && (e.key === 'Backspace' || e.key === 'Delete')) {
+        e.preventDefault();
+      }
+    });
+    inputEl.addEventListener('input', function() {
+      if (!inputEl.value.startsWith(prefix)) {
+        inputEl.value = prefix;
+      }
+      moveCursorToEnd();
+    });
   }
 
   function resetFinalInput() {
@@ -329,35 +377,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.addEventListener('pointerdown', primeWrongAudio, { once: true });
 
-  if (shoutboxInput) {
-    shoutboxInput.addEventListener('focus', placeFinalCursorAtEnd);
-    shoutboxInput.addEventListener('click', placeFinalCursorAtEnd);
-    shoutboxInput.addEventListener('keydown', function(e) {
-      const prefixLen = FINAL_PREFIX.length;
-      const selStart = shoutboxInput.selectionStart;
-      const selEnd = shoutboxInput.selectionEnd;
-      // Block Backspace/Delete if it would eat into the prefix
-      if (e.key === 'Backspace' && selStart <= prefixLen && selStart === selEnd) {
-        e.preventDefault();
-      }
-      if (e.key === 'Delete' && selStart < prefixLen && selStart === selEnd) {
-        e.preventDefault();
-      }
-      // Block any selection that includes the prefix from being deleted/replaced
-      if (selStart < prefixLen && selEnd > selStart && (e.key === 'Backspace' || e.key === 'Delete')) {
-        e.preventDefault();
-      }
-    });
-    shoutboxInput.addEventListener('input', function() {
-      // Restore prefix if it was somehow removed
-      if (!shoutboxInput.value.startsWith(FINAL_PREFIX)) {
-        shoutboxInput.value = FINAL_PREFIX;
-        const end = shoutboxInput.value.length;
-        shoutboxInput.setSelectionRange(end, end);
-      }
-    });
-    resetFinalInput();
-  }
+  enforceLockedPrefix(bootInput, BOOT_PREFIX);
+  enforceLockedPrefix(shoutboxInput, FINAL_PREFIX);
+  resetFinalInput();
 
   if (c64Screen) {
     c64Screen.addEventListener('mousemove', handleHintWaggle);
@@ -391,7 +413,10 @@ document.addEventListener('DOMContentLoaded', function() {
         powerButtonCooldownUntil = Date.now() + POWER_BUTTON_COOLDOWN_MS;
         await delay(700);
         bootScreen.classList.add('visible');
-        if (bootInput) bootInput.focus();
+        if (bootInput) {
+          bootInput.focus();
+          placeBootCursorAtEnd();
+        }
       } else {
         if (Date.now() < powerButtonCooldownUntil) {
           return;
