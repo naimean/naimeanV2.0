@@ -242,8 +242,8 @@ body {
 
 .boot-inline-submit {
   gap: 0;
-  padding: 10px 8px;
-  font-size: 0.62em;
+  padding: 8px 7px;
+  font-size: 0.54em;
   border-radius: 0 2px 2px 0;
   text-transform: lowercase;
 }
@@ -341,6 +341,21 @@ body {
 }
 
 @media (min-width: 601px) {
+  .boot-form {
+    right: calc(43px + 2.4ch);
+  }
+
+  .boot-input-row {
+    width: 100%;
+  }
+
+  .boot-input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
   .discord-rickroll-counter {
     right: 43px;
     font-size: clamp(1.15em, 1.7vw, 1.5em);
