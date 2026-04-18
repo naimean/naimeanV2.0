@@ -318,7 +318,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function incrementRickrollCount() {
     const localCountBeforeIncrement = readLocalRickrollCount();
-    updateDiscordRickrollCounterDisplay(localCountBeforeIncrement);
 
     let controller = null;
     if (typeof AbortController === 'function') {
