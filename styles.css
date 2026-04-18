@@ -706,7 +706,7 @@ body {
     width: 14em;
     min-width: 14em;
     max-width: 14em;
-    font-family: 'IBM Plex Mono', 'VT323', monospace;
+    font-family: 'VT323', monospace;
     font-weight: 400;
     letter-spacing: 0.25px;
   }
