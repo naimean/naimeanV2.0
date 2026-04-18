@@ -11,6 +11,7 @@
   --screen-green: rgba(28, 66, 36, 0.98);
   --screen-inner-inset: 1px;
   --screen-inner-inset-double: 2px;
+  --desktop-counter-right: 43px;
 }
 
 html,
@@ -342,7 +343,7 @@ body {
 
 @media (min-width: 601px) {
   .boot-form {
-    right: calc(43px + 2.4ch);
+    right: calc(var(--desktop-counter-right) + 2.4ch);
   }
 
   .boot-input-row {
@@ -357,7 +358,7 @@ body {
   }
 
   .discord-rickroll-counter {
-    right: 43px;
+    right: var(--desktop-counter-right);
     font-size: clamp(1.15em, 1.7vw, 1.5em);
   }
 }
