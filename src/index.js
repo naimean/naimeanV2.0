@@ -14,7 +14,7 @@ export default {
     if (shouldProxyPath(url.pathname)) {
       const proxyUrl = new URL(url.pathname + url.search, `https://barrelrollcounter-worker.naimean.workers.dev`);
       const method = request.method.toUpperCase();
-      const hasBody = method !== "GET" && method !== "HEAD";
+      const hasBody = method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
       return fetch(new Request(proxyUrl, {
         method,
         headers: request.headers,
