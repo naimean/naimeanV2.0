@@ -56,11 +56,23 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_DEFAULT_SUFFIX = 'Admin';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
+  const BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY = {
+    showDiscordButton: false,
+    showCalendarButton: false,
+    showWhiteboardButton: true,
+    showCapExButton: true
+  };
   const BOOT_ROLE_VISIBILITY_BY_USER = {
     ADMIN: { showDiscordButton: true,  showCalendarButton: false, showWhiteboardButton: false, showCapExButton: false },
     RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: false },
     MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true,  showCapExButton: true  },
-    JV:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
+    JV:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
+    KB:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
+    JY:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
+    RD:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
+    JS:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
+    DL:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
+    EW:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
     RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false },
     SED:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false }
   };
