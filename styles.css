@@ -9,6 +9,8 @@
   --mint-bright: #c8ffd9;
   --screen-black: #111112;
   --screen-green: rgba(28, 66, 36, 0.98);
+  --screen-inner-inset: 1px;
+  --screen-inner-inset-double: 2px;
 }
 
 html,
@@ -292,9 +294,10 @@ body {
     linear-gradient(180deg, rgba(20, 44, 27, 0.98) 0%, rgba(9, 20, 12, 0.98) 100%);
   border: 4px solid rgba(223, 245, 225, 0.78);
   border-radius: 18px 18px 26px 26px;
-  width: 100%;
-  height: calc(100% - 55px);
-  margin-top: 10px;
+  box-sizing: border-box;
+  width: calc(100% - var(--screen-inner-inset-double));
+  height: calc(100% - var(--screen-inner-inset-double));
+  margin: var(--screen-inner-inset);
   padding: 16px 14px 24px;
   color: #8ef0b2;
   font-size: 1.2em;
