@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
     candidates.push(`${LEGACY_RICKROLL_COUNTER_BASE_URL}${pathname}`);
     const urls = Array.from(new Set(candidates));
     if (window.NaimeanDiag) {
-      window.NaimeanDiag.log('endpoints' + pathname + ': ' + urls.join(', '));
+      window.NaimeanDiag.log('endpoints ' + pathname + ': ' + urls.join(', '));
     }
     return urls;
   }
