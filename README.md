@@ -24,7 +24,8 @@ A Commodore 64-themed interactive landing page with retro effects, puzzles, and 
 
 ## Deployment
 - Static hosting (GitHub Pages, Vercel, Netlify, etc.)
-- To deploy: push to main branch and enable GitHub Pages
+- GitHub deployment check runs on pull requests via `.github/workflows/github-pages.yml`
+- GitHub Pages deploy runs on pushes to `main`/`master`
 
 ---
 He boiled for our sins
