@@ -343,8 +343,8 @@ body {
 
 @media (min-width: 601px) {
   .discord-widget-embed {
-    /* 97px base offset + 150px desktop adjustment */
-    --discord-widget-crop-offset-y: calc(-35% + 247px);
+    /* 97px base offset + 190px desktop adjustment */
+    --discord-widget-crop-offset-y: calc(-35% + 287px);
   }
 
   .boot-form {
