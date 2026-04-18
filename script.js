@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
   const BOOT_ROLE_VISIBILITY_BY_USER = {
-    ADMIN: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: false, showRebootButton: false },
+    ADMIN: { showDiscordButton: true,  showCalendarButton: false, showWhiteboardButton: false, showRebootButton: false },
     RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showRebootButton: false },
     MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true,  showRebootButton: true  },
     JV:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showRebootButton: false },
