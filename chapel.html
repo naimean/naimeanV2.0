@@ -220,7 +220,7 @@
     const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
 
     const congregationAudio = document.getElementById('congregation-audio');
-    congregationAudio.volume = 0.08;
+    congregationAudio.volume = 0.04;
     let congregationStarted = false;
     let isNavigatingToDescent = false;
 
@@ -331,11 +331,11 @@
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
-        window.location.assign('descent.html');
+        window.location.assign('bedroom_antechamber.html');
       }, 900);
     }
 
-    // Invisible button click → descent.html
+    // Invisible button click → bedroom_antechamber.html
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
 
     // Enter key → same behavior
