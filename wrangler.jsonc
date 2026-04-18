@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "naimeanv2",
-  "main": "cloudflare-worker/worker.js",
+  "main": "src/index.js",
   "compatibility_date": "2026-04-18",
   "observability": {
     "enabled": true
@@ -9,13 +9,6 @@
   "assets": {
     "directory": "."
   },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "barrelroll-counter-db",
-      "database_id": "<DATABASE_ID>"
-    }
-  ],
   "compatibility_flags": [
     "nodejs_compat"
   ]

@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     JY:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
     RD:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
     JS:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
+    JD:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
     DL:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
     EW:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
     RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false },
