@@ -483,10 +483,15 @@ function playZeldaSecretSound() {
     zeldaSecretAudio.addEventListener('ended', finish, { once: true });
     zeldaSecretAudio.addEventListener('error', finish, { once: true });
 
+    fallbackTimer = setTimeout(finish, DEFAULT_AUDIO_FALLBACK_DURATION_MS);
+
     zeldaSecretAudio.play().then(() => {
       const durationMs = Number.isFinite(zeldaSecretAudio.duration) && zeldaSecretAudio.duration > 0
         ? Math.ceil(zeldaSecretAudio.duration * 1000) + AUDIO_END_PADDING_MS
         : DEFAULT_AUDIO_FALLBACK_DURATION_MS;
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+      }
       fallbackTimer = setTimeout(finish, durationMs);
     }).catch(() => {
       // If the mp3 file is missing, fall back to a short chime sequence.
@@ -494,8 +499,9 @@ function playZeldaSecretSound() {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const notes = [783.99, 987.77, 1174.66, 1567.98];
         const noteSpacingSeconds = 0.14;
+        const noteAttackSeconds = 0.02;
         const noteLengthSeconds = 0.13;
-        const noteSequenceDurationSeconds = ((notes.length - 1) * noteSpacingSeconds) + noteLengthSeconds;
+        const noteSequenceDurationSeconds = ((notes.length - 1) * noteSpacingSeconds) + noteAttackSeconds + noteLengthSeconds;
         const start = ctx.currentTime;
         notes.forEach((freq, i) => {
           const osc = ctx.createOscillator();
@@ -503,13 +509,16 @@ function playZeldaSecretSound() {
           osc.type = 'triangle';
           osc.frequency.value = freq;
           gain.gain.setValueAtTime(0.0001, start + i * noteSpacingSeconds);
-          gain.gain.exponentialRampToValueAtTime(0.14, start + i * noteSpacingSeconds + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.14, start + i * noteSpacingSeconds + noteAttackSeconds);
           gain.gain.exponentialRampToValueAtTime(0.0001, start + i * noteSpacingSeconds + noteLengthSeconds);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start(start + i * noteSpacingSeconds);
           osc.stop(start + i * noteSpacingSeconds + noteLengthSeconds);
         });
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer);
+        }
         fallbackTimer = setTimeout(finish, Math.ceil(noteSequenceDurationSeconds * 1000) + SYNTH_END_PADDING_MS);
       } catch (_) {
         finish();
