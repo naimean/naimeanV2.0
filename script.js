@@ -164,6 +164,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (endTimer) {
           clearTimeout(endTimer);
         }
+        if (metadataHandler) {
+          vid.removeEventListener('loadedmetadata', metadataHandler);
+          metadataHandler = null;
+        }
         vid.pause();
         overlay.classList.remove('visible');
         resolve();
@@ -198,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startRandomClip();
       } else {
         metadataHandler = () => {
+          metadataHandler = null;
           startRandomClip();
         };
         vid.addEventListener('loadedmetadata', metadataHandler, { once: true });
