@@ -285,7 +285,8 @@
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
-    const ROCK_ROLL_START_VOLUME_FACTOR = 0.25;
+    const ROCK_ROLL_START_VOLUME_FACTOR = 0.5;
+    const ROCK_ROLL_START_DELAY_MS = 2000;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
@@ -526,7 +527,8 @@
         }
 
         const elapsed = now - fadeStart;
-        const progress = Math.min(elapsed / ROCK_ROLL_FADE_DURATION_MS, 1);
+        const fadeElapsed = Math.max(0, elapsed - ROCK_ROLL_START_DELAY_MS);
+        const progress = Math.min(fadeElapsed / ROCK_ROLL_FADE_DURATION_MS, 1);
         const nextVolume = startVolume * (1 - progress);
         rockRollContinuationMedia.volume = Math.max(0, nextVolume);
 
