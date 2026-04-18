@@ -62,11 +62,46 @@ document.addEventListener('DOMContentLoaded', function() {
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
+  const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
+
+  function consumeIndexFadeInFlag() {
+    try {
+      const shouldFadeIn = window.sessionStorage.getItem(INDEX_FADE_IN_KEY) === '1';
+      if (shouldFadeIn) {
+        window.sessionStorage.removeItem(INDEX_FADE_IN_KEY);
+      }
+      return shouldFadeIn;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function runIndexFadeInIfNeeded() {
+    if (!consumeIndexFadeInFlag()) {
+      return;
+    }
+
+    const overlay = document.getElementById('page-fade-overlay');
+    if (!overlay) {
+      return;
+    }
+
+    // Make the overlay fully visible immediately so the subsequent class removal
+    // always fades from black to transparent instead of briefly animating toward black.
+    overlay.style.transition = 'none';
+    overlay.classList.add('visible');
+    void overlay.offsetHeight;
+    overlay.style.transition = '';
+
+    requestAnimationFrame(function() {
+      overlay.classList.remove('visible');
+    });
+  }
 
   function normalizeRickrollCount(value) {
     const parsedCount = Number(value);
@@ -213,6 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   renderDiscordRickrollCount();
+  runIndexFadeInIfNeeded();
 
   function primeWrongAudio() {
     wrongAudio.muted = true;
