@@ -211,7 +211,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await playStaticTransition();
-    await runNedryGateSequence();
+    showBlueNedryGateScreen();
+  }
+
+  function showBlueNedryGateScreen() {
+    if (bootVideo) {
+      bootVideo.pause();
+      bootVideo.currentTime = 0;
+      bootVideo.style.display = 'none';
+    }
+    if (bootInput) {
+      bootInput.style.display = 'inline-block';
+      resetBootInput();
+      bootInput.focus();
+    }
+    if (bootSubmit) {
+      bootSubmit.style.display = 'inline-flex';
+    }
+    if (bootScreen) {
+      bootScreen.classList.add('visible');
+    }
   }
 
   function playStaticTransition() {
