@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootCalendarBtn = document.getElementById('boot-calendar-btn');
   const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
   const bootCapExBtn = document.getElementById('boot-capex-btn');
+  const bootSnowBtn = document.getElementById('boot-snow-btn');
   const returnBypassBtn = document.getElementById('return-bypass-btn');
   const discordRickrollCounter = document.getElementById('discord-rickroll-counter');
   const c64Screen = document.querySelector('.c64-screen');
@@ -60,22 +61,30 @@ document.addEventListener('DOMContentLoaded', function() {
     showDiscordButton: false,
     showCalendarButton: false,
     showWhiteboardButton: true,
-    showCapExButton: true
+    showCapExButton: true,
+    showSnowButton: false
+  };
+  const BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY = {
+    showDiscordButton: false,
+    showCalendarButton: false,
+    showWhiteboardButton: true,
+    showCapExButton: true,
+    showSnowButton: true
   };
   const BOOT_ROLE_VISIBILITY_BY_USER = {
-    ADMIN: { showDiscordButton: true,  showCalendarButton: false, showWhiteboardButton: false, showCapExButton: false },
-    RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: false },
-    MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true,  showCapExButton: true  },
-    JV:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    KB:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    JY:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    RD:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    JS:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    JD:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
+    ADMIN: { showDiscordButton: true,  showCalendarButton: false, showWhiteboardButton: false, showCapExButton: false, showSnowButton: false },
+    RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: false, showSnowButton: false },
+    MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true,  showCapExButton: true,  showSnowButton: true  },
+    JV:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
+    KB:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
+    JY:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
+    RD:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
+    JS:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
+    JD:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
     DL:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
     EW:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false },
-    SED:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false }
+    RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false, showSnowButton: false },
+    SED:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false, showSnowButton: false }
   };
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
@@ -100,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
   const CAP_EX_URL = 'https://app.smartsheet.com/b/form/70b07591b76a4289bc6f5d5e1aabac91?';
+  const SNOW_URL = 'https://recoverycoa.service-now.com/now/nav/ui/classic/params/target/incident_list.do%3Fsysparm_query%3DstateNOT%2520IN6%252C7%252C8%255Eassigned_to%253D7fc866ea1b1d7110153886a7624bcbc0%26sysparm_first_row%3D1%26sysparm_view%3D';
 
   function buildRickrollApiUrls(pathname) {
     const candidates = [];
@@ -442,9 +452,10 @@ document.addEventListener('DOMContentLoaded', function() {
       showDiscordButton: true,
       showCalendarButton: false,
       showWhiteboardButton: false,
-      showCapExButton: false
+      showCapExButton: false,
+      showSnowButton: false
     };
-    const { showDiscordButton, showCalendarButton, showWhiteboardButton, showCapExButton } = visibility;
+    const { showDiscordButton, showCalendarButton, showWhiteboardButton, showCapExButton, showSnowButton } = visibility;
 
     if (bootSubmit) {
       bootSubmit.style.visibility = showDiscordButton ? 'visible' : 'hidden';
@@ -463,8 +474,12 @@ document.addEventListener('DOMContentLoaded', function() {
       bootCapExBtn.style.display = showCapExButton ? 'inline-flex' : 'none';
     }
 
+    if (bootSnowBtn) {
+      bootSnowBtn.style.display = showSnowButton ? 'inline-flex' : 'none';
+    }
+
     if (bootQuickLinks) {
-      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton || showCapExButton) ? 'inline-flex' : 'none';
+      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton || showCapExButton || showSnowButton) ? 'inline-flex' : 'none';
     }
   }
 
@@ -917,6 +932,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if (bootCapExBtn) {
     bootCapExBtn.addEventListener('click', function() {
       window.open(CAP_EX_URL, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  if (bootSnowBtn) {
+    bootSnowBtn.addEventListener('click', function() {
+      window.open(SNOW_URL, '_blank', 'noopener,noreferrer');
     });
   }
 
