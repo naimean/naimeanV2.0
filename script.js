@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const shoutboxContainer = document.getElementById('shoutbox-container');
   const bootScreen = document.getElementById('boot-screen');
   const shadowLayer = document.getElementById('shadow-layer');
+  const discordOverlay = document.getElementById('discord-overlay');
   const bootInput = document.getElementById('boot-input');
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
@@ -134,6 +135,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     resetFinalInput();
     resetHintReveal();
+  }
+
+  async function runInitialPowerOnSequence() {
+    if (discordOverlay) {
+      discordOverlay.classList.add('visible');
+      discordOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    await delay(3000);
+
+    if (discordOverlay) {
+      discordOverlay.classList.remove('visible');
+      discordOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    await playStaticTransition();
+
+    if (bootScreen) {
+      bootScreen.classList.add('visible');
+    }
+    if (bootInput) {
+      bootInput.focus();
+    }
   }
 
   function playStaticTransition() {
@@ -386,12 +410,13 @@ document.addEventListener('DOMContentLoaded', function() {
         powerLight.style.background = '#222';
         powerLight.style.boxShadow = 'none';
         shadowLayer.classList.add('hidden');
+        if (bootScreen) {
+          bootScreen.classList.remove('visible');
+        }
         shoutboxContainer.classList.remove('visible');
         screenOn = true;
         powerButtonCooldownUntil = Date.now() + POWER_BUTTON_COOLDOWN_MS;
-        await delay(700);
-        bootScreen.classList.add('visible');
-        if (bootInput) bootInput.focus();
+        await runInitialPowerOnSequence();
       } else {
         if (Date.now() < powerButtonCooldownUntil) {
           return;
