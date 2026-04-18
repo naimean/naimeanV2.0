@@ -1,0 +1,17 @@
+name = "barrelroll-counter-worker"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# ⚠️  Before deploying, replace <DATABASE_ID> below with the actual ID shown in
+#     the Cloudflare dashboard under Workers & Pages → D1 → barrelroll-counter-db → Database ID.
+#
+# Then run once to initialise the table:
+#   wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
+#
+# And deploy with:
+#   wrangler deploy
+
+[[d1_databases]]
+binding = "DB"
+database_name = "barrelroll-counter-db"
+database_id = "<DATABASE_ID>"
