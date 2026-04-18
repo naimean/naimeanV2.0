@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function fetchRickrollCount(urls, options = {}) {
     const candidateUrls = Array.isArray(urls) ? urls : [urls];
-    let lastError = new Error('Failed to fetch rickroll count');
+    let lastError = null;
 
     for (const candidateUrl of candidateUrls) {
       try {
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    throw lastError;
+    throw new Error(`All rickroll count endpoints failed${lastError && lastError.message ? `: ${lastError.message}` : ''}`);
   }
 
   function setDiscordRickrollCounterVisible(isVisible) {
