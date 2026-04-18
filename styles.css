@@ -725,6 +725,7 @@ body {
     font-size: calc(0.93em + 1px);
     font-weight: 400;
     letter-spacing: 0.25px;
+    filter: blur(0.15px);
   }
 
   .boot-input-row {
@@ -770,6 +771,7 @@ body {
   .discord-rickroll-counter {
     right: 17px;
     bottom: 81px;
+    filter: blur(0.15px);
   }
 
   .shoutbox-bottom {
