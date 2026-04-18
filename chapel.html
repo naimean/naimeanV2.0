@@ -312,6 +312,16 @@
 
     const RICKROLL_COUNT_API_URLS = buildRickrollApiUrls('/get');
 
+    function appendNoCacheParam(url) {
+      try {
+        const requestUrl = new URL(url);
+        requestUrl.searchParams.set('_cache_bust', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+        return requestUrl.toString();
+      } catch (_) {
+        return url;
+      }
+    }
+
     function readLocalRickrollCount() {
       try {
         const rawValue = window.localStorage.getItem(LOCAL_RICKROLL_COUNT_KEY);
@@ -346,25 +356,26 @@
       let lastError = null;
 
       for (const candidateUrl of candidateUrls) {
-        if (window.NaimeanDiag) { window.NaimeanDiag.log('try: ' + candidateUrl); }
+        const requestUrl = appendNoCacheParam(candidateUrl);
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('try: ' + requestUrl); }
         try {
-          const response = await fetch(candidateUrl, {
+          const response = await fetch(requestUrl, {
             method: 'GET',
             cache: 'no-store'
           });
           if (!response.ok) {
-            if (window.NaimeanDiag) { window.NaimeanDiag.log('fail(' + response.status + '): ' + candidateUrl); }
+            if (window.NaimeanDiag) { window.NaimeanDiag.log('fail(' + response.status + '): ' + requestUrl); }
             throw new Error('Failed to fetch rickroll count');
           }
 
           const payload = await response.json();
           const remoteCount = normalizeRickrollCount(payload && payload.value);
           if (remoteCount === null) {
-            if (window.NaimeanDiag) { window.NaimeanDiag.log('invalid payload: ' + candidateUrl); }
+            if (window.NaimeanDiag) { window.NaimeanDiag.log('invalid payload: ' + requestUrl); }
             throw new Error('Received invalid rickroll count');
           }
 
-          if (window.NaimeanDiag) { window.NaimeanDiag.log('ok: ' + candidateUrl + ' \u2192 ' + remoteCount); }
+          if (window.NaimeanDiag) { window.NaimeanDiag.log('ok: ' + requestUrl + ' \u2192 ' + remoteCount); }
           return remoteCount;
         } catch (err) {
           lastError = err;
@@ -380,10 +391,10 @@
       }
 
       const localCount = readLocalRickrollCount();
-      chapelTvCounter.textContent = String(localCount).padStart(2, '0');
+      chapelTvCounter.textContent = localCount > 0 ? String(localCount).padStart(2, '0') : '--';
       if (window.NaimeanDiag) {
         window.NaimeanDiag.set('local count', localCount);
-        window.NaimeanDiag.set('count src', 'local');
+        window.NaimeanDiag.set('count src', localCount > 0 ? 'local' : 'pending remote');
       }
 
       try {
