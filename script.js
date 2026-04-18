@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
   async function serveDiscordInviteIfPossible() {
     const inviteUrl = await resolveDiscordInviteUrl();
     if (inviteUrl) {
-      window.location.assign(inviteUrl);
+      window.open(inviteUrl, '_blank', 'noopener,noreferrer');
       return true;
     }
 
@@ -800,10 +800,7 @@ document.addEventListener('DOMContentLoaded', function() {
     await delay(PRANK_REDIRECT_DELAY_MS);
     await incrementRickrollCount();
     persistRockRollPlaybackState();
-    const inviteServed = await serveDiscordInviteIfPossible();
-    if (inviteServed) {
-      return;
-    }
+    await serveDiscordInviteIfPossible();
     window.location.assign('chapel.html');
   }
 
