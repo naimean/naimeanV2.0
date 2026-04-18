@@ -85,30 +85,33 @@ export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
     const { pathname } = new URL(request.url);
+    const isGetRoute = pathname === '/get';
+    const isHitRoute = pathname === '/hit';
+    const isCounterRoute = isGetRoute || isHitRoute;
 
-    // Handle CORS pre-flight
+    // Serve static assets for all non-counter paths.
+    if (!isCounterRoute) {
+      return env.ASSETS.fetch(request);
+    }
+
+    // Handle CORS pre-flight for counter routes.
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
 
     try {
       // ── Counter routes (GET only) ─────────────────────────────────────────
-      if (request.method === 'GET' && pathname === '/get') {
+      if (request.method === 'GET' && isGetRoute) {
         const value = await getCount(env.DB);
         return jsonResponse({ value }, 200, origin);
       }
 
-      if (request.method === 'GET' && pathname === '/hit') {
+      if (request.method === 'GET' && isHitRoute) {
         const value = await incrementCount(env.DB);
         return jsonResponse({ value }, 200, origin);
       }
 
-      // ── Fallthrough ───────────────────────────────────────────────────────
-      if (request.method !== 'GET') {
-        return jsonResponse({ error: 'Method not allowed' }, 405, origin);
-      }
-
-      return jsonResponse({ error: 'Not found' }, 404, origin);
+      return jsonResponse({ error: 'Method not allowed' }, 405, origin);
     } catch (err) {
       console.error('Worker error:', err);
       return jsonResponse({ error: 'Internal server error' }, 500, origin);
