@@ -19,7 +19,9 @@ A Commodore 64-themed interactive landing page with retro effects, puzzles, and 
 
 ## Development
 - All code and assets are in this repo
-- Edit `styles.css`, `index.html`, and `script.js` for UI/logic changes
+- Pages: `chapel.html` (chapel experience), `bedroom_antechamber.html` (bedroom scene), `index.html` (placeholder landing)
+- Main C64 boot experience: `script.js` + `styles.css` (linked to the boot page)
+- Assets live in the `assets/` directory
 - See PLAN.md and UPDATE.md for roadmap and changelog
 
 ## Deployment

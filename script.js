@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const shoutboxForm = document.getElementById('shoutbox-form');
   const shoutboxInput = document.getElementById('shoutbox-input');
   const shoutboxHintShell = document.getElementById('shoutbox-hint-shell');
-  const messages = document.getElementById('messages');
   const prankVideoOverlay = document.getElementById('prank-video-overlay');
   const prankVideo = document.getElementById('prank-video');
   const BOOT_PREFIX = bootInput ? bootInput.value : '';
@@ -339,15 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     lastPointerPosition = currentPosition;
-  }
-
-  function resetInteractiveState() {
-    if (shoutboxInput) {
-      shoutboxInput.disabled = false;
-    }
-
-    resetFinalInput();
-    resetHintReveal();
   }
 
   function setBootScreenPoweringOff(isPoweringOff) {
@@ -767,7 +757,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    if (shoutboxForm && shoutboxInput && messages) {
+    if (shoutboxForm && shoutboxInput) {
       shoutboxForm.addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -858,12 +848,4 @@ function playZeldaSecretSound() {
       }
     });
   });
-}
-
-function addMessage(msg, messagesContainer) {
-  const div = document.createElement('div');
-  div.textContent = msg;
-  div.className = 'c64-message';
-  messagesContainer.appendChild(div);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
