@@ -15,28 +15,14 @@
 
 const COUNTER_ID = 'rickrolls';
 
-/**
- * Origins that are allowed to call this worker.
- * Add your production and preview origins here.
- */
-const ALLOWED_ORIGINS = [
-  'https://naimean.com',
-  'https://www.naimean.com',
-  // Allow local development
-  'http://localhost',
-  'http://127.0.0.1',
-];
-
 function corsHeaders(origin) {
-  if (!ALLOWED_ORIGINS.includes(origin)) {
-    // Origin not in allowlist – omit the ACAO header so browsers block the request.
-    return {};
-  }
+  const allowOrigin = origin || '*';
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
   };
 }
 
