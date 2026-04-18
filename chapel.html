@@ -199,10 +199,16 @@
     }
 
     @media (min-width: 900px) {
-      /* Desktop tweak: shift counter 8px left and 38px down from base placement. */
+      /* Desktop-only requested offset: hitbox moved 10px left and 30px down. */
+      .chapel-return-btn {
+        left: calc(46.4% - 10px);
+        top: calc(53.2% + 30px);
+      }
+
+      /* Desktop tweak: shift counter further left and down from base placement. */
       .chapel-tv-counter {
-        right: calc(45.2% + 6px + 8px);
-        top: calc(53.55% + 34px + 38px);
+        right: calc(45.2% + 6px + 11px);
+        top: calc(53.55% + 34px + 48px);
       }
     }
 
