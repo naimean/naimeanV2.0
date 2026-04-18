@@ -37,16 +37,30 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
   const bootSubmit = document.getElementById('boot-submit');
+  const bootInlineSubmit = document.getElementById('boot-inline-submit');
+  const bootQuickLinks = document.getElementById('boot-quick-links');
+  const bootCalendarBtn = document.getElementById('boot-calendar-btn');
+  const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
   const returnBypassBtn = document.getElementById('return-bypass-btn');
   const discordRickrollCounter = document.getElementById('discord-rickroll-counter');
   const c64Screen = document.querySelector('.c64-screen');
+  const c64Wrapper = document.querySelector('.c64-wrapper');
+  const c64Image = document.querySelector('.c64-img');
   const shoutboxForm = document.getElementById('shoutbox-form');
   const shoutboxInput = document.getElementById('shoutbox-input');
   const shoutboxHintShell = document.getElementById('shoutbox-hint-shell');
-  const messages = document.getElementById('messages');
   const prankVideoOverlay = document.getElementById('prank-video-overlay');
   const prankVideo = document.getElementById('prank-video');
-  const BOOT_PREFIX = bootInput ? bootInput.value : '';
+  const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
+  const BOOT_DEFAULT_SUFFIX = 'Admin';
+  const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
+  const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
+  const BOOT_ROLE_VISIBILITY_BY_USER = {
+    RCA: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true },
+    MAD: { showDiscordButton: false, showCalendarButton: true, showWhiteboardButton: true },
+    JV: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true },
+    RAD: { showDiscordButton: false, showCalendarButton: true, showWhiteboardButton: false }
+  };
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
   wrongAudio.load();
@@ -58,11 +72,61 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastPointerPosition = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
+  const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
+  const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
   const RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
   const RICKROLL_COUNT_API_URL = `${RICKROLL_COUNTER_BASE_URL}/hit`;
   const RICKROLL_COUNT_READ_API_URL = `${RICKROLL_COUNTER_BASE_URL}/get`;
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
+  const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
+
+  function markBaseImageMissing() {
+    if (c64Wrapper) {
+      c64Wrapper.classList.add('base-image-missing');
+    }
+  }
+
+  if (c64Image) {
+    c64Image.addEventListener('error', markBaseImageMissing, { once: true });
+    if (c64Image.complete && c64Image.naturalWidth === 0) {
+      markBaseImageMissing();
+    }
+  }
+
+  function consumeIndexFadeInFlag() {
+    try {
+      const shouldFadeIn = window.sessionStorage.getItem(INDEX_FADE_IN_KEY) === '1';
+      if (shouldFadeIn) {
+        window.sessionStorage.removeItem(INDEX_FADE_IN_KEY);
+      }
+      return shouldFadeIn;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function runIndexFadeInIfNeeded() {
+    if (!consumeIndexFadeInFlag()) {
+      return;
+    }
+
+    const overlay = document.getElementById('page-fade-overlay');
+    if (!overlay) {
+      return;
+    }
+
+    // Make the overlay fully visible immediately so the subsequent class removal
+    // always fades from black to transparent instead of briefly animating toward black.
+    overlay.style.transition = 'none';
+    overlay.classList.add('visible');
+    void overlay.offsetHeight;
+    overlay.style.transition = '';
+
+    requestAnimationFrame(function() {
+      overlay.classList.remove('visible');
+    });
+  }
 
   function normalizeRickrollCount(value) {
     const parsedCount = Number(value);
@@ -81,6 +145,27 @@ document.addEventListener('DOMContentLoaded', function() {
     discordRickrollCounter.textContent = normalizedCount === null
       ? RICKROLL_COUNT_UNAVAILABLE_TEXT
       : String(normalizedCount).padStart(2, '0');
+  }
+
+  function readLocalRickrollCount() {
+    try {
+      const rawValue = window.localStorage.getItem(LOCAL_RICKROLL_COUNT_KEY);
+      const parsedCount = normalizeRickrollCount(rawValue);
+      return parsedCount === null ? 0 : parsedCount;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function writeLocalRickrollCount(count) {
+    const normalizedCount = normalizeRickrollCount(count);
+    if (normalizedCount === null) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(LOCAL_RICKROLL_COUNT_KEY, String(normalizedCount));
+    } catch (_) {}
   }
 
   async function fetchRickrollCount(url, options = {}) {
@@ -116,15 +201,24 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    const localCount = readLocalRickrollCount();
+    updateDiscordRickrollCounterDisplay(localCount);
+
     try {
       const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URL);
-      updateDiscordRickrollCounterDisplay(remoteCount);
+      const nextCount = Math.max(localCount, remoteCount);
+      writeLocalRickrollCount(nextCount);
+      updateDiscordRickrollCounterDisplay(nextCount);
     } catch (_) {
-      updateDiscordRickrollCounterDisplay(null);
+      updateDiscordRickrollCounterDisplay(localCount);
     }
   }
 
   async function incrementRickrollCount() {
+    const optimisticCount = readLocalRickrollCount() + 1;
+    writeLocalRickrollCount(optimisticCount);
+    updateDiscordRickrollCounterDisplay(optimisticCount);
+
     let controller = null;
     if (typeof AbortController === 'function') {
       try {
@@ -149,11 +243,12 @@ document.addEventListener('DOMContentLoaded', function() {
         keepalive: true,
         signal: controller ? controller.signal : undefined
       });
-      updateDiscordRickrollCounterDisplay(remoteCount);
-      return remoteCount;
+      const nextCount = Math.max(optimisticCount, remoteCount);
+      writeLocalRickrollCount(nextCount);
+      updateDiscordRickrollCounterDisplay(nextCount);
+      return nextCount;
     } catch (_) {
-      updateDiscordRickrollCounterDisplay(null);
-      return null;
+      return optimisticCount;
     } finally {
       requestSettled = true;
       if (timeoutId) {
@@ -178,6 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   renderDiscordRickrollCount();
+  runIndexFadeInIfNeeded();
 
   function primeWrongAudio() {
     wrongAudio.muted = true;
@@ -213,13 +309,58 @@ document.addEventListener('DOMContentLoaded', function() {
     bootInput.setSelectionRange(end, end);
   }
 
+  function selectBootEditableSuffix() {
+    if (!bootInput) {
+      return;
+    }
+
+    const prefixLen = BOOT_PREFIX.length;
+    const end = bootInput.value.length;
+    bootInput.focus();
+    bootInput.setSelectionRange(prefixLen, end);
+  }
+
   function resetBootInput() {
     if (!bootInput) {
       return;
     }
 
-    bootInput.value = BOOT_PREFIX;
-    placeBootCursorAtEnd();
+    bootInput.value = BOOT_DEFAULT_VALUE;
+    selectBootEditableSuffix();
+  }
+
+  function updateBootQuickLinkVisibility() {
+    if (!bootInput) {
+      return;
+    }
+
+    const inputValue = bootInput.value;
+    const currentUser = inputValue.startsWith(BOOT_PREFIX)
+      ? inputValue.slice(BOOT_PREFIX.length)
+      : '';
+    const visibility = BOOT_ROLE_VISIBILITY_BY_USER[currentUser] || {
+      showDiscordButton: true,
+      showCalendarButton: false,
+      showWhiteboardButton: false
+    };
+    const { showDiscordButton, showCalendarButton, showWhiteboardButton } = visibility;
+
+    if (bootSubmit) {
+      bootSubmit.style.visibility = showDiscordButton ? 'visible' : 'hidden';
+      bootSubmit.style.pointerEvents = showDiscordButton ? 'auto' : 'none';
+    }
+
+    if (bootCalendarBtn) {
+      bootCalendarBtn.style.display = showCalendarButton ? 'inline-flex' : 'none';
+    }
+
+    if (bootWhiteboardBtn) {
+      bootWhiteboardBtn.style.display = showWhiteboardButton ? 'inline-flex' : 'none';
+    }
+
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton) ? 'inline-flex' : 'none';
+    }
   }
 
   function resetFinalInput() {
@@ -270,15 +411,6 @@ document.addEventListener('DOMContentLoaded', function() {
     lastPointerPosition = currentPosition;
   }
 
-  function resetInteractiveState() {
-    if (shoutboxInput) {
-      shoutboxInput.disabled = false;
-    }
-
-    resetFinalInput();
-    resetHintReveal();
-  }
-
   function setBootScreenPoweringOff(isPoweringOff) {
     if (!bootScreen) {
       return;
@@ -297,6 +429,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (bootSubmit) {
       bootSubmit.style.display = 'none';
+    }
+    if (bootInlineSubmit) {
+      bootInlineSubmit.style.display = 'none';
+    }
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = 'none';
     }
     setDiscordRickrollCounterVisible(false);
     if (bootVideo) {
@@ -360,10 +498,18 @@ document.addEventListener('DOMContentLoaded', function() {
       bootInput.style.display = 'inline-block';
       resetBootInput();
       bootInput.focus();
+      selectBootEditableSuffix();
     }
     if (bootSubmit) {
       bootSubmit.style.display = 'inline-flex';
     }
+    if (bootInlineSubmit) {
+      bootInlineSubmit.style.display = 'inline-flex';
+    }
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = 'none';
+    }
+    updateBootQuickLinkVisibility();
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
@@ -571,9 +717,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.addEventListener('pointerdown', primeWrongAudio, { once: true });
 
+  if (bootCalendarBtn) {
+    bootCalendarBtn.addEventListener('click', function() {
+      playWrongSound();
+    });
+  }
+
+  if (bootWhiteboardBtn) {
+    bootWhiteboardBtn.addEventListener('click', function() {
+      window.open(WHITEBOARD_URL, '_blank', 'noopener,noreferrer');
+    });
+  }
+
   if (bootInput) {
-    bootInput.addEventListener('focus', placeBootCursorAtEnd);
-    bootInput.addEventListener('click', placeBootCursorAtEnd);
+    bootInput.addEventListener('focus', selectBootEditableSuffix);
+    bootInput.addEventListener('click', selectBootEditableSuffix);
     bootInput.addEventListener('keydown', function(e) {
       const prefixLen = BOOT_PREFIX.length;
       const selStart = bootInput.selectionStart;
@@ -591,9 +749,12 @@ document.addEventListener('DOMContentLoaded', function() {
     bootInput.addEventListener('input', function() {
       if (!bootInput.value.startsWith(BOOT_PREFIX)) {
         resetBootInput();
+        return;
       }
+      updateBootQuickLinkVisibility();
     });
-    placeBootCursorAtEnd();
+    resetBootInput();
+    updateBootQuickLinkVisibility();
   }
 
   if (shoutboxInput) {
@@ -669,7 +830,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    if (bootForm && bootInput && bootVideo && bootSubmit) {
+    if (bootForm && bootVideo && bootSubmit) {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (screenOn && !puzzleSolved) {
@@ -678,7 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    if (shoutboxForm && shoutboxInput && messages) {
+    if (shoutboxForm && shoutboxInput) {
       shoutboxForm.addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -769,12 +930,4 @@ function playZeldaSecretSound() {
       }
     });
   });
-}
-
-function addMessage(msg, messagesContainer) {
-  const div = document.createElement('div');
-  div.textContent = msg;
-  div.className = 'c64-message';
-  messagesContainer.appendChild(div);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }

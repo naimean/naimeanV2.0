@@ -35,11 +35,33 @@ body {
   width: min(608px, 100vw);
 }
 
+.c64-wrapper.base-image-missing {
+  aspect-ratio: 608 / 384;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 50% 34%, rgba(58, 63, 86, 0.65) 0%, rgba(18, 20, 28, 0.95) 68%),
+    linear-gradient(180deg, #1f2128 0%, #16181f 55%, #121318 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07), 0 14px 28px rgba(0, 0, 0, 0.45);
+}
+
+.c64-wrapper.base-image-missing::before {
+  content: '';
+  position: absolute;
+  inset: 2.8% 2.4% 8.8%;
+  border-radius: 10px;
+  border: 1px solid rgba(210, 220, 255, 0.12);
+  pointer-events: none;
+}
+
 .c64-img {
   width: 100%;
   height: auto;
   display: block;
   user-select: none;
+}
+
+.c64-wrapper.base-image-missing .c64-img {
+  display: none;
 }
 
 .return-bypass-btn {
@@ -136,7 +158,7 @@ body {
   background: transparent;
   opacity: 1;
   z-index: 11;
-  display: flex;
+  display: none;
   align-items: stretch;
   justify-content: stretch;
   pointer-events: auto;
@@ -146,6 +168,7 @@ body {
 }
 
 .boot-screen.visible {
+  display: flex;
   visibility: visible;
   opacity: 1;
 }
@@ -176,22 +199,53 @@ body {
   gap: 8px;
 }
 
+#boot-submit {
+  margin-top: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.boot-submit-stack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+}
+
 .boot-input {
   background: transparent;
-  border: none;
+  border: 1px solid rgba(180, 210, 255, 0.5);
   border-radius: 2px;
   color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
-  font-size: 1.05em;
+  font-size: 0.93em;
   outline: none;
-  width: 14em;
-  min-width: 14em;
-  max-width: 14em;
+  width: calc(14em + 75px);
+  min-width: calc(14em + 75px);
+  max-width: calc(14em + 75px);
   padding: 6px 8px;
   letter-spacing: 1.4px;
   caret-color: #c8deff;
   text-shadow: 0 0 6px #b0d0ff, 0 0 14px #5080c0, 0 0 2px #fff;
   filter: blur(0.3px);
+}
+
+.boot-input-row {
+  display: inline-flex;
+  align-items: flex-end;
+}
+
+.boot-input-row .boot-input {
+  border-right: 0;
+  border-radius: 2px 0 0 2px;
+}
+
+.boot-inline-submit {
+  gap: 0;
+  padding: 10px 8px;
+  font-size: 0.62em;
+  border-radius: 0 2px 2px 0;
+  text-transform: lowercase;
 }
 
 .boot-submit {
@@ -212,6 +266,32 @@ body {
 
 .boot-submit-label {
   font-weight: 700;
+}
+
+.boot-quick-links {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.boot-quick-link {
+  justify-content: center;
+  min-width: 42px;
+  width: 42px;
+  padding: 10px 0;
+  gap: 0;
+}
+
+.boot-quick-link-icon {
+  width: 18px;
+  height: 18px;
+  color: #c8deff;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 3px rgba(200, 222, 255, 0.45));
 }
 
 .discord-prefix-icon {
@@ -244,7 +324,7 @@ body {
 .discord-rickroll-counter {
   position: absolute;
   right: 28px;
-  bottom: 26px;
+  bottom: 91px;
   z-index: 2;
   min-width: 2.4ch;
   color: #c8deff;
@@ -572,6 +652,10 @@ body {
 }
 
 @media (max-width: 600px) {
+  :root {
+    --boot-mobile-button-scale: 0.85;
+  }
+
   .discord-widget-embed {
     --discord-widget-scale: 0.84;
   }
@@ -588,18 +672,36 @@ body {
   }
 
   .boot-input {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-    font-size: 0.7em;
-    letter-spacing: 0.8px;
-    filter: blur(0.21px);
+    width: 14em;
+    min-width: 14em;
+    max-width: 14em;
   }
 
   .boot-submit {
-    padding: 10px 8px;
-    font-size: 0.55em;
+    padding: calc(10px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
+    font-size: calc(0.55em * var(--boot-mobile-button-scale));
     white-space: nowrap;
+    gap: calc(10px * var(--boot-mobile-button-scale));
+  }
+
+  .boot-inline-submit {
+    padding: calc(10px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
+  }
+
+  .boot-quick-link {
+    min-width: calc(42px * var(--boot-mobile-button-scale));
+    width: calc(42px * var(--boot-mobile-button-scale));
+    padding: calc(10px * var(--boot-mobile-button-scale)) 0;
+  }
+
+  .boot-quick-link-icon {
+    width: calc(18px * var(--boot-mobile-button-scale));
+    height: calc(18px * var(--boot-mobile-button-scale));
+  }
+
+  .discord-prefix-icon {
+    width: calc(20px * var(--boot-mobile-button-scale));
+    height: calc(16px * var(--boot-mobile-button-scale));
   }
 
   .shoutbox-bottom {
