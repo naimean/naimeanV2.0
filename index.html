@@ -6,18 +6,22 @@
   <title>Naimean?</title>
   <style>
     .c64-wrapper {
+      /* Match the screen geometry used in styles.css so the first-paint mask aligns exactly. */
+      --screen-left: 4.44%;
+      --screen-top: 6.43%;
+      --screen-width: 90.11%;
+      --screen-height: 47.86%;
       position: relative;
     }
 
     .shadow-layer {
       position: absolute;
-      left: 4.44%;
-      top: 6.43%;
-      width: 90.11%;
-      height: 47.86%;
+      left: var(--screen-left);
+      top: var(--screen-top);
+      width: var(--screen-width);
+      height: var(--screen-height);
       border-radius: 8px;
       background: #111112;
-      opacity: 1;
       z-index: 10;
     }
 
