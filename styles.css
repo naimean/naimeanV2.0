@@ -286,6 +286,13 @@ body {
   white-space: nowrap;
 }
 
+@media (min-width: 601px) {
+  .discord-rickroll-counter {
+    right: 43px;
+    font-size: clamp(1.15em, 1.7vw, 1.5em);
+  }
+}
+
 .discord-widget-embed {
   position: absolute;
   inset: 0;
