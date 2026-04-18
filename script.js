@@ -164,8 +164,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const syncedCount = Math.max(nextLocalCount, remoteCount);
       writeLocalRickrollCount(syncedCount);
       updateDiscordRickrollCounterDisplay(syncedCount);
+      return syncedCount;
     } catch (_) {
       // Keep the local fallback count when the remote API is unavailable.
+      return nextLocalCount;
     } finally {
       requestSettled = true;
       if (timeoutId) {
