@@ -176,6 +176,10 @@ body {
   gap: 8px;
 }
 
+#boot-submit {
+  margin-top: 22px;
+}
+
 .boot-input {
   background: transparent;
   border: none;
@@ -609,19 +613,27 @@ body {
     gap: 8px;
   }
 
-  .boot-input {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-    font-size: 0.7em;
-    letter-spacing: 0.8px;
-    filter: blur(0.21px);
+  .boot-submit {
+    padding: 8.5px 6.8px;
+    font-size: 0.4675em;
+    white-space: nowrap;
+    gap: 8.5px;
   }
 
-  .boot-submit {
-    padding: 10px 8px;
-    font-size: 0.55em;
-    white-space: nowrap;
+  .boot-quick-link {
+    min-width: 35.7px;
+    width: 35.7px;
+    padding: 8.5px 0;
+  }
+
+  .boot-quick-link-icon {
+    width: 15.3px;
+    height: 15.3px;
+  }
+
+  .discord-prefix-icon {
+    width: 17px;
+    height: 13.6px;
   }
 
   .shoutbox-bottom {
