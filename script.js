@@ -170,7 +170,16 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
+  function setBootScreenPoweringOff(isPoweringOff) {
+    if (!bootScreen) {
+      return;
+    }
+
+    bootScreen.classList.toggle('is-powering-off', isPoweringOff);
+  }
+
   async function runNedryGateSequence() {
+    setBootScreenPoweringOff(false);
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
@@ -229,6 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function showBlueNedryGateScreen() {
+    setBootScreenPoweringOff(false);
     if (bootVideo) {
       bootVideo.pause();
       bootVideo.currentTime = 0;
@@ -361,6 +371,11 @@ document.addEventListener('DOMContentLoaded', function() {
   async function runPowerOffPrank() {
     if (prankRunning) return;
     prankRunning = true;
+    setBootScreenPoweringOff(true);
+
+    if (bootInput) {
+      bootInput.blur();
+    }
 
     const powerOffOverlay = document.getElementById('power-off-overlay');
     const powerOffVideo = document.getElementById('power-off-video');
