@@ -76,10 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
   const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
-  const RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
-  const RICKROLL_COUNT_API_URL = `${RICKROLL_COUNTER_BASE_URL}/hit`;
-  const RICKROLL_COUNT_READ_API_URL = `${RICKROLL_COUNTER_BASE_URL}/get`;
-  const RICKROLL_COUNT_TIMEOUT_MS = 2000;
+  const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
+  const RICKROLL_COUNT_TIMEOUT_MS = 8000;
   const DISCORD_WIDGET_ID = '1487898909224341534';
   const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
   const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
@@ -87,6 +85,20 @@ document.addEventListener('DOMContentLoaded', function() {
   const PRANK_REDIRECT_DELAY_MS = 5000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
+
+  function buildRickrollApiUrls(pathname) {
+    const candidates = [];
+    try {
+      if (window.location && window.location.origin) {
+        candidates.push(new URL(pathname, window.location.origin).toString());
+      }
+    } catch (_) {}
+    candidates.push(`${LEGACY_RICKROLL_COUNTER_BASE_URL}${pathname}`);
+    return Array.from(new Set(candidates));
+  }
+
+  const RICKROLL_COUNT_API_URLS = buildRickrollApiUrls('/hit');
+  const RICKROLL_COUNT_READ_API_URLS = buildRickrollApiUrls('/get');
 
   function markBaseImageMissing() {
     if (c64Wrapper) {
@@ -204,24 +216,35 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (_) {}
   }
 
-  async function fetchRickrollCount(url, options = {}) {
-    const response = await fetch(url, {
-      method: 'GET',
-      cache: 'no-store',
-      ...options
-    });
+  async function fetchRickrollCount(urls, options = {}) {
+    const candidateUrls = Array.isArray(urls) ? urls : [urls];
+    let lastError = new Error('Failed to fetch rickroll count');
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch rickroll count');
+    for (const candidateUrl of candidateUrls) {
+      try {
+        const response = await fetch(candidateUrl, {
+          method: 'GET',
+          cache: 'no-store',
+          ...options
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch rickroll count');
+        }
+
+        const payload = await response.json();
+        const remoteCount = normalizeRickrollCount(payload && payload.value);
+        if (remoteCount === null) {
+          throw new Error('Received invalid rickroll count');
+        }
+
+        return remoteCount;
+      } catch (err) {
+        lastError = err;
+      }
     }
 
-    const payload = await response.json();
-    const remoteCount = normalizeRickrollCount(payload && payload.value);
-    if (remoteCount === null) {
-      throw new Error('Received invalid rickroll count');
-    }
-
-    return remoteCount;
+    throw lastError;
   }
 
   function setDiscordRickrollCounterVisible(isVisible) {
@@ -241,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateDiscordRickrollCounterDisplay(localCount);
 
     try {
-      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URL);
+      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URLS);
       const nextCount = remoteCount;
       writeLocalRickrollCount(nextCount);
       updateDiscordRickrollCounterDisplay(nextCount);
@@ -275,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     try {
-      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URL, {
+      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URLS, {
         keepalive: true,
         signal: controller ? controller.signal : undefined
       });

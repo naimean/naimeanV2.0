@@ -282,8 +282,7 @@
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
     const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
-    const RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
-    const RICKROLL_COUNT_API_URL = `${RICKROLL_COUNTER_BASE_URL}/get`;
+    const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.25;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
@@ -293,6 +292,19 @@
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
     let rockRollContinuationPending = false;
+
+    function buildRickrollApiUrls(pathname) {
+      const candidates = [];
+      try {
+        if (window.location && window.location.origin) {
+          candidates.push(new URL(pathname, window.location.origin).toString());
+        }
+      } catch (_) {}
+      candidates.push(`${LEGACY_RICKROLL_COUNTER_BASE_URL}${pathname}`);
+      return Array.from(new Set(candidates));
+    }
+
+    const RICKROLL_COUNT_API_URLS = buildRickrollApiUrls('/get');
 
     function readLocalRickrollCount() {
       try {
@@ -315,6 +327,43 @@
       } catch (_) {}
     }
 
+    function normalizeRickrollCount(value) {
+      const parsedCount = Number(value);
+      if (!Number.isFinite(parsedCount) || parsedCount < 0) {
+        return null;
+      }
+      return Math.floor(parsedCount);
+    }
+
+    async function fetchRickrollCount(urls) {
+      const candidateUrls = Array.isArray(urls) ? urls : [urls];
+      let lastError = new Error('Failed to fetch rickroll count');
+
+      for (const candidateUrl of candidateUrls) {
+        try {
+          const response = await fetch(candidateUrl, {
+            method: 'GET',
+            cache: 'no-store'
+          });
+          if (!response.ok) {
+            throw new Error('Failed to fetch rickroll count');
+          }
+
+          const payload = await response.json();
+          const remoteCount = normalizeRickrollCount(payload && payload.value);
+          if (remoteCount === null) {
+            throw new Error('Received invalid rickroll count');
+          }
+
+          return remoteCount;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      throw lastError;
+    }
+
     async function renderRickrollCount() {
       if (!chapelTvCounter) {
         return;
@@ -324,19 +373,7 @@
       chapelTvCounter.textContent = String(localCount).padStart(2, '0');
 
       try {
-        const response = await fetch(RICKROLL_COUNT_API_URL, {
-          method: 'GET',
-          cache: 'no-store'
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch rickroll count');
-        }
-
-        const payload = await response.json();
-        const parsedCount = Number(payload && payload.value);
-        const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
-          ? Math.floor(parsedCount)
-          : 0;
+        const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URLS);
         const nextCount = remoteCount;
         writeLocalRickrollCount(nextCount);
         chapelTvCounter.textContent = String(nextCount).padStart(2, '0');
