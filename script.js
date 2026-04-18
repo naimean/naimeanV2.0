@@ -58,8 +58,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastPointerPosition = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
-  const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
-  const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
+  const RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
+  const RICKROLL_COUNT_API_URL = `${RICKROLL_COUNTER_BASE_URL}/hit`;
+  const RICKROLL_COUNT_READ_API_URL = `${RICKROLL_COUNTER_BASE_URL}/get`;
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
 

@@ -1,0 +1,10 @@
+name = "barrelroll-counter-worker"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "barrelroll-counter-db"
+# Replace <DATABASE_ID> with the actual ID shown in the Cloudflare dashboard
+# (Workers & Pages → D1 → barrelroll-counter-db → Database ID)
+database_id = "<DATABASE_ID>"
