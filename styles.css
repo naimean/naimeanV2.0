@@ -225,9 +225,9 @@ body {
 .discord-overlay {
   position: absolute;
   left: calc(var(--screen-left) + var(--screen-inner-inset));
-  top: calc(var(--screen-top) + var(--screen-inner-inset) - 10px);
+  top: calc(var(--screen-top) + var(--screen-inner-inset));
   width: calc(var(--screen-width) - var(--screen-inner-inset-double));
-  height: calc(var(--screen-height) - var(--screen-inner-inset-double) + 30px);
+  height: calc(var(--screen-height) - var(--screen-inner-inset-double));
   border-radius: 7px;
   display: none;
   z-index: 11;
@@ -247,9 +247,9 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  --discord-widget-crop-height: 178%;
+  --discord-widget-crop-height: calc(178% - 30px);
   --discord-widget-crop-offset-x: 0;
-  --discord-widget-crop-offset-y: calc(-35% + 62px);
+  --discord-widget-crop-offset-y: calc(-35% + 72px);
 }
 
 .discord-widget-embed iframe {
