@@ -394,6 +394,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  function getNormalizedBootUser() {
+    if (!bootInput) {
+      return '';
+    }
+
+    const inputValue = bootInput.value;
+    if (!inputValue.startsWith(BOOT_PREFIX)) {
+      return '';
+    }
+
+    return inputValue.slice(BOOT_PREFIX.length).trim().toUpperCase();
+  }
+
+  function isKnownBootUser(normalizedUser) {
+    return Object.prototype.hasOwnProperty.call(BOOT_ROLE_VISIBILITY_BY_USER, normalizedUser);
+  }
+
   function resetFinalInput() {
     if (!shoutboxInput) {
       return;
@@ -836,9 +853,9 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
-  if (powerBtn && powerLight && shoutboxContainer && bootScreen && shadowLayer) {
-    powerBtn.style.display = 'flex';
-    powerBtn.addEventListener('click', async function() {
+    if (powerBtn && powerLight && shoutboxContainer && bootScreen && shadowLayer) {
+      powerBtn.style.display = 'flex';
+      powerBtn.addEventListener('click', async function() {
       if (!screenOn) {
         // Turn on: green button, fade shadow, play static, show boot screen
         powerBtn.classList.add('on');
@@ -865,6 +882,13 @@ document.addEventListener('DOMContentLoaded', function() {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (screenOn && !puzzleSolved) {
+          const normalizedUser = getNormalizedBootUser();
+          if (!isKnownBootUser(normalizedUser)) {
+            playWrongSound();
+            resetBootInput();
+            updateBootQuickLinkVisibility();
+            return;
+          }
           await runNedryGateSequence();
         }
       });
