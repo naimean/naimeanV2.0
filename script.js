@@ -202,10 +202,14 @@ document.addEventListener('DOMContentLoaded', function() {
         startRandomClip();
       } else {
         metadataHandler = () => {
+          if (settled) {
+            return;
+          }
+          vid.removeEventListener('loadedmetadata', metadataHandler);
           metadataHandler = null;
           startRandomClip();
         };
-        vid.addEventListener('loadedmetadata', metadataHandler, { once: true });
+        vid.addEventListener('loadedmetadata', metadataHandler);
         vid.load();
         scheduleFinish(METADATA_LOAD_TIMEOUT_MS);
       }
