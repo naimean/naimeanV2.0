@@ -260,7 +260,7 @@
         return false;
       }
     })();
-    const hasRedirectedToDiscordThisSession = (function hasDiscordRedirectedThisSession() {
+    const hasRedirectedToDiscordThisSession = (function hasRedirectedToDiscordThisSession() {
       try {
         return window.sessionStorage.getItem(DISCORD_REDIRECTED_KEY) === '1';
       } catch (_) {
