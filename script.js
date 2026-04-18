@@ -352,8 +352,8 @@ document.addEventListener('DOMContentLoaded', function() {
         window.NaimeanDiag.log('increment: confirmed \u2192 ' + nextCount);
       }
       return nextCount;
-    } catch (_) {
-      if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: remote failed, resyncing from read endpoint'); }
+    } catch (error) {
+      if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: failed remote increment, resyncing from read endpoint' + (error && error.message ? ' (' + error.message + ')' : '')); }
       try {
         const syncedCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URLS);
         writeLocalRickrollCount(syncedCount);
@@ -364,9 +364,9 @@ document.addEventListener('DOMContentLoaded', function() {
           window.NaimeanDiag.log('increment: resynced \u2192 ' + syncedCount);
         }
         return syncedCount;
-      } catch (_) {
+      } catch (resyncError) {
         updateDiscordRickrollCounterDisplay(localCountBeforeIncrement);
-        if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: resync failed, keeping ' + localCountBeforeIncrement); }
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: failed read-endpoint resync, keeping ' + localCountBeforeIncrement + (resyncError && resyncError.message ? ' (' + resyncError.message + ')' : '')); }
         return localCountBeforeIncrement;
       }
     } finally {
