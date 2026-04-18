@@ -38,7 +38,12 @@
 <body>
   <div class="page-fade-overlay" id="page-fade-overlay"></div>
   <div class="c64-wrapper">
-    <img src="assets/commodore64.jpg" alt="Commodore 64" class="c64-img" />
+    <img
+      src="assets/commodore64.jpg"
+      alt="Commodore 64"
+      class="c64-img"
+      onerror="this.closest('.c64-wrapper')?.classList.add('base-image-missing'); this.style.display='none';"
+    />
     <button class="return-bypass-btn" id="return-bypass-btn" aria-label="Open Discord"></button>
     <button class="power-btn" id="power-btn" aria-label="Power">
       <span class="power-light" id="power-light"></span>
