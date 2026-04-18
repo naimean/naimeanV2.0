@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
   const bootSubmit = document.getElementById('boot-submit');
+  const bootCornerSubmit = document.getElementById('boot-corner-submit');
   const bootQuickLinks = document.getElementById('boot-quick-links');
   const bootCalendarBtn = document.getElementById('boot-calendar-btn');
   const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
@@ -48,7 +49,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const shoutboxHintShell = document.getElementById('shoutbox-hint-shell');
   const prankVideoOverlay = document.getElementById('prank-video-overlay');
   const prankVideo = document.getElementById('prank-video');
-  const BOOT_PREFIX = bootInput ? bootInput.value : '';
+  const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
+  const BOOT_DEFAULT_SUFFIX = 'Admin';
+  const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
+  const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
   wrongAudio.load();
@@ -283,13 +287,74 @@ document.addEventListener('DOMContentLoaded', function() {
     bootInput.setSelectionRange(end, end);
   }
 
+  function selectBootEditableSuffix() {
+    if (!bootInput) {
+      return;
+    }
+
+    const prefixLen = BOOT_PREFIX.length;
+    const end = bootInput.value.length;
+    bootInput.focus();
+    bootInput.setSelectionRange(prefixLen, end);
+  }
+
   function resetBootInput() {
     if (!bootInput) {
       return;
     }
 
-    bootInput.value = BOOT_PREFIX;
-    placeBootCursorAtEnd();
+    bootInput.value = BOOT_DEFAULT_VALUE;
+    selectBootEditableSuffix();
+  }
+
+  function updateBootQuickLinkVisibility() {
+    if (!bootInput) {
+      return;
+    }
+
+    const inputValue = bootInput.value;
+    let showDiscordButton = true;
+    let showCalendarButton = false;
+    let showWhiteboardButton = false;
+
+    switch (inputValue) {
+      case 'C:\\Naimean\\User\\RCA':
+        showDiscordButton = false;
+        showWhiteboardButton = true;
+        break;
+      case 'C:\\Naimean\\User\\MAD':
+        showDiscordButton = false;
+        showCalendarButton = true;
+        showWhiteboardButton = true;
+        break;
+      case 'C:\\Naimean\\User\\JV':
+        showDiscordButton = false;
+        showWhiteboardButton = true;
+        break;
+      case 'C:\\Naimean\\User\\RAD':
+        showDiscordButton = false;
+        showCalendarButton = true;
+        break;
+      default:
+        break;
+    }
+
+    if (bootSubmit) {
+      bootSubmit.style.visibility = showDiscordButton ? 'visible' : 'hidden';
+      bootSubmit.style.pointerEvents = showDiscordButton ? 'auto' : 'none';
+    }
+
+    if (bootCalendarBtn) {
+      bootCalendarBtn.style.display = showCalendarButton ? 'inline-flex' : 'none';
+    }
+
+    if (bootWhiteboardBtn) {
+      bootWhiteboardBtn.style.display = showWhiteboardButton ? 'inline-flex' : 'none';
+    }
+
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton) ? 'inline-flex' : 'none';
+    }
   }
 
   function resetFinalInput() {
@@ -359,6 +424,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootSubmit) {
       bootSubmit.style.display = 'none';
     }
+    if (bootCornerSubmit) {
+      bootCornerSubmit.style.display = 'none';
+    }
     if (bootQuickLinks) {
       bootQuickLinks.style.display = 'none';
     }
@@ -424,13 +492,18 @@ document.addEventListener('DOMContentLoaded', function() {
       bootInput.style.display = 'inline-block';
       resetBootInput();
       bootInput.focus();
+      selectBootEditableSuffix();
     }
     if (bootSubmit) {
       bootSubmit.style.display = 'inline-flex';
     }
-    if (bootQuickLinks) {
-      bootQuickLinks.style.display = 'inline-flex';
+    if (bootCornerSubmit) {
+      bootCornerSubmit.style.display = 'inline-flex';
     }
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = 'none';
+    }
+    updateBootQuickLinkVisibility();
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
@@ -651,8 +724,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (bootInput) {
-    bootInput.addEventListener('focus', placeBootCursorAtEnd);
-    bootInput.addEventListener('click', placeBootCursorAtEnd);
+    bootInput.addEventListener('focus', selectBootEditableSuffix);
+    bootInput.addEventListener('click', selectBootEditableSuffix);
     bootInput.addEventListener('keydown', function(e) {
       const prefixLen = BOOT_PREFIX.length;
       const selStart = bootInput.selectionStart;
@@ -670,9 +743,12 @@ document.addEventListener('DOMContentLoaded', function() {
     bootInput.addEventListener('input', function() {
       if (!bootInput.value.startsWith(BOOT_PREFIX)) {
         resetBootInput();
+        return;
       }
+      updateBootQuickLinkVisibility();
     });
-    placeBootCursorAtEnd();
+    resetBootInput();
+    updateBootQuickLinkVisibility();
   }
 
   if (shoutboxInput) {

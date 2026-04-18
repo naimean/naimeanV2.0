@@ -177,7 +177,19 @@ body {
 }
 
 #boot-submit {
-  margin-top: 22px;
+  margin-top: 0;
+}
+
+.boot-submit-stack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+}
+
+#boot-submit {
+  position: relative;
+  z-index: 2;
 }
 
 .boot-input {
@@ -186,7 +198,7 @@ body {
   border-radius: 2px;
   color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
-  font-size: 1.05em;
+  font-size: calc(1.05em - 2px);
   outline: none;
   width: 14em;
   min-width: 14em;
@@ -219,7 +231,11 @@ body {
 }
 
 .boot-quick-links {
-  display: inline-flex;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  display: none;
   align-items: center;
   gap: 8px;
 }
@@ -270,7 +286,7 @@ body {
 .discord-rickroll-counter {
   position: absolute;
   right: 28px;
-  bottom: 26px;
+  bottom: 101px;
   z-index: 2;
   min-width: 2.4ch;
   color: #c8deff;
@@ -284,6 +300,17 @@ body {
   filter: blur(0.3px);
   pointer-events: none;
   white-space: nowrap;
+}
+
+.boot-corner-submit {
+  position: absolute;
+  right: 22px;
+  bottom: 24px;
+  z-index: 2;
+  gap: 0;
+  font-size: 0.66em;
+  text-transform: lowercase;
+  padding: 9px 10px;
 }
 
 .discord-widget-embed {
@@ -622,6 +649,12 @@ body {
     font-size: calc(0.55em * var(--boot-mobile-button-scale));
     white-space: nowrap;
     gap: calc(10px * var(--boot-mobile-button-scale));
+  }
+
+  .boot-corner-submit {
+    right: 12px;
+    bottom: 14px;
+    padding: calc(9px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
   }
 
   .boot-quick-link {
