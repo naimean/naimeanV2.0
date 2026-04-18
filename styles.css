@@ -707,8 +707,13 @@ body {
     min-width: 14em;
     max-width: 14em;
     font-family: 'VT323', monospace;
+    font-size: calc(0.93em + 1px);
     font-weight: 400;
     letter-spacing: 0.25px;
+  }
+
+  .boot-input-row {
+    margin-left: -15px;
   }
 
   .boot-submit {
