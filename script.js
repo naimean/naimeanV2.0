@@ -59,9 +59,40 @@ document.addEventListener('DOMContentLoaded', function() {
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
+  const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
+
+  function consumeIndexFadeInFlag() {
+    try {
+      const shouldFadeIn = window.sessionStorage.getItem(INDEX_FADE_IN_KEY) === '1';
+      if (shouldFadeIn) {
+        window.sessionStorage.removeItem(INDEX_FADE_IN_KEY);
+      }
+      return shouldFadeIn;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function runIndexFadeInIfNeeded() {
+    if (!consumeIndexFadeInFlag()) {
+      return;
+    }
+
+    const overlay = document.getElementById('page-fade-overlay');
+    if (!overlay) {
+      return;
+    }
+
+    overlay.classList.add('visible');
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        overlay.classList.remove('visible');
+      });
+    });
+  }
 
   function readLocalRickrollCount() {
     try {
@@ -200,6 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   renderDiscordRickrollCount();
+  runIndexFadeInIfNeeded();
 
   function primeWrongAudio() {
     wrongAudio.muted = true;
