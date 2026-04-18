@@ -28,9 +28,12 @@ const ALLOWED_ORIGINS = [
 ];
 
 function corsHeaders(origin) {
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  if (!ALLOWED_ORIGINS.includes(origin)) {
+    // Origin not in allowlist – omit the ACAO header so browsers block the request.
+    return {};
+  }
   return {
-    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
@@ -56,11 +59,12 @@ async function getCount(db) {
 }
 
 async function incrementCount(db) {
-  await db
-    .prepare('UPDATE rickroll_counter SET value = value + 1 WHERE id = ?')
+  // Use RETURNING to atomically increment and return the new value in one statement.
+  const row = await db
+    .prepare('UPDATE rickroll_counter SET value = value + 1 WHERE id = ? RETURNING value')
     .bind(COUNTER_ID)
-    .run();
-  return getCount(db);
+    .first();
+  return row ? row.value : 0;
 }
 
 export default {
