@@ -92,6 +92,14 @@ document.addEventListener('DOMContentLoaded', function() {
     discordRickrollCounter.textContent = String(Math.floor(count)).padStart(2, '0');
   }
 
+  function setDiscordRickrollCounterVisible(isVisible) {
+    if (!discordRickrollCounter) {
+      return;
+    }
+
+    discordRickrollCounter.style.display = isVisible ? '' : 'none';
+  }
+
   async function renderDiscordRickrollCount() {
     if (!discordRickrollCounter) {
       return;
@@ -312,6 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootSubmit) {
       bootSubmit.style.display = 'none';
     }
+    setDiscordRickrollCounterVisible(false);
     if (bootVideo) {
       bootVideo.style.display = 'block';
       try {
@@ -326,6 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
       } finally {
         bootVideo.pause();
         bootVideo.style.display = 'none';
+        setDiscordRickrollCounterVisible(true);
       }
     }
 
@@ -362,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function showBlueNedryGateScreen() {
     setBootScreenPoweringOff(false);
+    setDiscordRickrollCounterVisible(true);
     if (bootVideo) {
       bootVideo.pause();
       bootVideo.currentTime = 0;
