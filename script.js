@@ -55,6 +55,20 @@ document.addEventListener('DOMContentLoaded', function() {
   let powerButtonCooldownUntil = 0;
   let hintRevealProgress = 0;
   let lastPointerPosition = null;
+  const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
+
+  function persistRockRollPlaybackState() {
+    if (!prankVideo) {
+      return;
+    }
+
+    try {
+      const playbackState = {
+        currentTime: Number.isFinite(prankVideo.currentTime) && prankVideo.currentTime >= 0 ? prankVideo.currentTime : 0
+      };
+      window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_KEY, JSON.stringify(playbackState));
+    } catch (_) {}
+  }
 
   function primeWrongAudio() {
     wrongAudio.muted = true;
@@ -365,6 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (_) {}
 
     await delay(5000);
+    persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }
 
@@ -393,6 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await delay(5000);
+    persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }
 

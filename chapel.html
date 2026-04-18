@@ -239,8 +239,88 @@
 
     const congregationAudio = document.getElementById('congregation-audio');
     congregationAudio.volume = 0.04;
+    const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
+    const ROCK_ROLL_START_VOLUME = 0.25;
+    const ROCK_ROLL_FADE_DURATION_MS = 5000;
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
+    let rockRollContinuationActive = false;
+    let rockRollContinuationAudio = null;
+
+    function consumeRockRollContinuation() {
+      try {
+        const raw = window.sessionStorage.getItem(ROCK_ROLL_CONTINUATION_KEY);
+        window.sessionStorage.removeItem(ROCK_ROLL_CONTINUATION_KEY);
+        if (!raw) {
+          return null;
+        }
+
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Number.isFinite(parsed.currentTime) || parsed.currentTime < 0) {
+          return null;
+        }
+
+        return parsed;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function startRockRollContinuation(playbackState) {
+      if (!playbackState) {
+        return;
+      }
+
+      rockRollContinuationActive = true;
+      rockRollContinuationAudio = new Audio('assets/notarickroll.mp4');
+      rockRollContinuationAudio.preload = 'auto';
+      rockRollContinuationAudio.volume = ROCK_ROLL_START_VOLUME;
+
+      const applyPlaybackPosition = function () {
+        try {
+          rockRollContinuationAudio.currentTime = playbackState.currentTime;
+        } catch (_) {}
+      };
+
+      if (rockRollContinuationAudio.readyState > 0) {
+        applyPlaybackPosition();
+      } else {
+        rockRollContinuationAudio.addEventListener('loadedmetadata', applyPlaybackPosition, { once: true });
+      }
+
+      const playPromise = rockRollContinuationAudio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function () {
+          rockRollContinuationActive = false;
+        });
+      }
+
+      const fadeStart = performance.now();
+      function fadeStep(now) {
+        if (!rockRollContinuationAudio) {
+          rockRollContinuationActive = false;
+          return;
+        }
+
+        const elapsed = now - fadeStart;
+        const progress = Math.min(elapsed / ROCK_ROLL_FADE_DURATION_MS, 1);
+        const nextVolume = ROCK_ROLL_START_VOLUME * (1 - progress);
+        rockRollContinuationAudio.volume = Math.max(0, nextVolume);
+
+        if (progress >= 1) {
+          rockRollContinuationAudio.pause();
+          rockRollContinuationAudio.volume = 0;
+          rockRollContinuationActive = false;
+          return;
+        }
+
+        requestAnimationFrame(fadeStep);
+      }
+
+      requestAnimationFrame(fadeStep);
+    }
+
+    startRockRollContinuation(consumeRockRollContinuation());
 
     function playDoorOpeningSound() {
       const audioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -283,6 +363,10 @@
     }
 
     function startCongregationAudio() {
+      if (rockRollContinuationActive) {
+        return;
+      }
+
       if (congregationStarted) {
         return;
       }
@@ -346,6 +430,9 @@
 
       playDoorOpeningSound();
       congregationAudio.pause();
+      if (rockRollContinuationAudio) {
+        rockRollContinuationAudio.pause();
+      }
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
@@ -360,6 +447,9 @@
       isNavigatingFromChapel = true;
 
       congregationAudio.pause();
+      if (rockRollContinuationAudio) {
+        rockRollContinuationAudio.pause();
+      }
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
