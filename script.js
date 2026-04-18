@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const STATIC_CLIP_SECONDS = 0.75;
       const STATIC_CLIP_MS = Math.round(STATIC_CLIP_SECONDS * 1000);
       const MIN_STATIC_CLIP_MS = 200;
+      const METADATA_LOAD_TIMEOUT_MS = 4000;
       const overlay = document.getElementById('static-overlay');
       const vid = document.getElementById('static-video');
       if (!overlay || !vid) { resolve(); return; }
@@ -180,7 +181,11 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
           vid.currentTime = 0;
           const remainingMs = duration > 0 ? Math.ceil(duration * 1000) : STATIC_CLIP_MS;
-          scheduleFinish(Math.min(STATIC_CLIP_MS, Math.max(remainingMs, MIN_STATIC_CLIP_MS)));
+          const boundedClipDurationMs = Math.max(
+            MIN_STATIC_CLIP_MS,
+            Math.min(remainingMs, STATIC_CLIP_MS)
+          );
+          scheduleFinish(boundedClipDurationMs);
         }
 
         vid.play().catch(() => {
@@ -200,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         vid.addEventListener('loadedmetadata', metadataHandler, { once: true });
         vid.load();
-        scheduleFinish(4000);
+        scheduleFinish(METADATA_LOAD_TIMEOUT_MS);
       }
     });
   }
