@@ -363,7 +363,7 @@ body {
     max-width: none;
     padding-top: 9px;
     padding-bottom: 9px;
-    font-family: 'IBM Plex Mono', 'VT323', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 0.9em;
     letter-spacing: 0.3px;
   }
