@@ -164,9 +164,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (endTimer) {
           clearTimeout(endTimer);
         }
-        if (metadataHandler) {
-          vid.removeEventListener('loadedmetadata', metadataHandler);
-        }
         vid.pause();
         overlay.classList.remove('visible');
         resolve();
@@ -180,12 +177,12 @@ document.addEventListener('DOMContentLoaded', function() {
           scheduleFinish(STATIC_CLIP_MS);
         } else {
           vid.currentTime = 0;
-          const remainingMs = duration > 0 ? Math.ceil(duration * 1000) : STATIC_CLIP_MS;
-          const boundedClipDurationMs = Math.max(
-            MIN_STATIC_CLIP_MS,
-            Math.min(remainingMs, STATIC_CLIP_MS)
-          );
-          scheduleFinish(boundedClipDurationMs);
+          if (duration > 0) {
+            const remainingMs = Math.ceil(duration * 1000);
+            scheduleFinish(Math.min(remainingMs, STATIC_CLIP_MS));
+          } else {
+            scheduleFinish(MIN_STATIC_CLIP_MS);
+          }
         }
 
         vid.play().catch(() => {
