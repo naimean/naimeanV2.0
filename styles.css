@@ -288,6 +288,17 @@ body {
   gap: 0;
 }
 
+.boot-quick-link--capex {
+  min-width: auto;
+  width: auto;
+  padding: 10px 8px;
+}
+
+.boot-capex-label {
+  font-size: 0.72em;
+  letter-spacing: 0.6px;
+}
+
 .boot-quick-link-icon {
   width: 18px;
   height: 18px;
@@ -754,6 +765,12 @@ body {
     min-width: calc(42px * var(--boot-mobile-button-scale));
     width: calc(42px * var(--boot-mobile-button-scale));
     padding: calc(10px * var(--boot-mobile-button-scale)) 0;
+  }
+
+  .boot-quick-link--capex {
+    min-width: auto;
+    width: auto;
+    padding: calc(10px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
   }
 
   .boot-quick-link-icon {

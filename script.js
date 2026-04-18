@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootQuickLinks = document.getElementById('boot-quick-links');
   const bootCalendarBtn = document.getElementById('boot-calendar-btn');
   const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
+  const bootCapExBtn = document.getElementById('boot-capex-btn');
   const returnBypassBtn = document.getElementById('return-bypass-btn');
   const discordRickrollCounter = document.getElementById('discord-rickroll-counter');
   const c64Screen = document.querySelector('.c64-screen');
@@ -56,12 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
   const BOOT_ROLE_VISIBILITY_BY_USER = {
-    ADMIN: { showDiscordButton: true,  showCalendarButton: false, showWhiteboardButton: false },
-    RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true  },
-    MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true  },
-    JV:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true  },
-    RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false },
-    SED:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false }
+    ADMIN: { showDiscordButton: true,  showCalendarButton: false, showWhiteboardButton: false, showCapExButton: false },
+    RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: false },
+    MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true,  showCapExButton: true  },
+    JV:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
+    RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false },
+    SED:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false }
   };
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
@@ -87,6 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const PRANK_REDIRECT_DELAY_MS = 5000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
+  const CAP_EX_URL = 'https://app.smartsheet.com/b/form/70b07591b76a4289bc6f5d5e1aabac91?';
 
   function markBaseImageMissing() {
     if (c64Wrapper) {
@@ -378,9 +380,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const visibility = BOOT_ROLE_VISIBILITY_BY_USER[normalizedUser] || {
       showDiscordButton: true,
       showCalendarButton: false,
-      showWhiteboardButton: false
+      showWhiteboardButton: false,
+      showCapExButton: false
     };
-    const { showDiscordButton, showCalendarButton, showWhiteboardButton } = visibility;
+    const { showDiscordButton, showCalendarButton, showWhiteboardButton, showCapExButton } = visibility;
 
     if (bootSubmit) {
       bootSubmit.style.visibility = showDiscordButton ? 'visible' : 'hidden';
@@ -395,8 +398,12 @@ document.addEventListener('DOMContentLoaded', function() {
       bootWhiteboardBtn.style.display = showWhiteboardButton ? 'inline-flex' : 'none';
     }
 
+    if (bootCapExBtn) {
+      bootCapExBtn.style.display = showCapExButton ? 'inline-flex' : 'none';
+    }
+
     if (bootQuickLinks) {
-      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton) ? 'inline-flex' : 'none';
+      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton || showCapExButton) ? 'inline-flex' : 'none';
     }
   }
 
@@ -843,6 +850,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if (bootWhiteboardBtn) {
     bootWhiteboardBtn.addEventListener('click', function() {
       window.open(WHITEBOARD_URL, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  if (bootCapExBtn) {
+    bootCapExBtn.addEventListener('click', function() {
+      window.open(CAP_EX_URL, '_blank', 'noopener,noreferrer');
     });
   }
 
