@@ -243,15 +243,16 @@ body {
   height: 100%;
   overflow: hidden;
   --discord-widget-crop-height: 178%;
-  --discord-widget-crop-offset-y: -35%;
+  --discord-widget-crop-offset-x: -10%;
+  --discord-widget-crop-offset-y: calc(-35% + 25px);
 }
 
 .discord-widget-embed iframe {
   width: 125%;
   height: var(--discord-widget-crop-height);
   border: 0;
-  transform-origin: center center;
-  transform: translate(-10%, var(--discord-widget-crop-offset-y)) scale(0.8);
+  transform-origin: top left;
+  transform: translate(var(--discord-widget-crop-offset-x), var(--discord-widget-crop-offset-y)) scale(0.84);
 }
 
 .boot-submit:hover {
