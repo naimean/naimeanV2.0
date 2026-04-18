@@ -9,6 +9,7 @@
  * Endpoints:
  *   GET  /get  – return the current counter value
  *   GET  /hit  – increment the counter by 1, return the new value
+ *   GET  /increment  – alias of /hit for backward compatibility
  *
  * Counter endpoints return JSON: { "value": <integer> }
  */
@@ -86,7 +87,7 @@ export default {
     const origin = request.headers.get('Origin') || '';
     const { pathname } = new URL(request.url);
     const isGetRoute = pathname === '/get';
-    const isHitRoute = pathname === '/hit';
+    const isHitRoute = pathname === '/hit' || pathname === '/increment';
     const isCounterRoute = isGetRoute || isHitRoute;
 
     // Serve static assets for all non-counter paths.
