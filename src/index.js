@@ -2,12 +2,18 @@ const COUNTER_WORKER_URL = "https://barrelrollcounter-worker.naimean.workers.dev
 
 const PROXY_PATHS = ["/get", "/increment", "/board", "/board-upload", "/board-delete", "/uploads/"];
 
+function shouldProxyPath(pathname) {
+  return PROXY_PATHS.some((path) => (
+    path.endsWith("/") ? pathname.startsWith(path) : pathname === path
+  ));
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     // Proxy counter-related paths to the barrelrollcounter-worker
-    if (PROXY_PATHS.some(p => url.pathname.startsWith(p))) {
+    if (shouldProxyPath(url.pathname)) {
       const proxyUrl = new URL(`${url.pathname}${url.search}`, COUNTER_WORKER_URL);
       const method = request.method.toUpperCase();
       const methodsWithBody = new Set(["POST", "PUT", "PATCH", "DELETE"]);

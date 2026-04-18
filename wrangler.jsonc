@@ -6,7 +6,6 @@
   "observability": {
     "enabled": true
   },
-  "main": "src/index.js",
   "assets": {
     "directory": "."
   },
