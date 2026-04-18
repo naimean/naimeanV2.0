@@ -462,6 +462,7 @@ function playZeldaSecretSound() {
   return new Promise((resolve) => {
     const AUDIO_END_PADDING_MS = 250;
     const SYNTH_END_PADDING_MS = 50;
+    const DEFAULT_AUDIO_FALLBACK_DURATION_MS = 8000;
     let settled = false;
     let fallbackTimer = null;
 
@@ -485,7 +486,7 @@ function playZeldaSecretSound() {
     zeldaSecretAudio.play().then(() => {
       const durationMs = Number.isFinite(zeldaSecretAudio.duration) && zeldaSecretAudio.duration > 0
         ? Math.ceil(zeldaSecretAudio.duration * 1000) + AUDIO_END_PADDING_MS
-        : 8000;
+        : DEFAULT_AUDIO_FALLBACK_DURATION_MS;
       fallbackTimer = setTimeout(finish, durationMs);
     }).catch(() => {
       // If the mp3 file is missing, fall back to a short chime sequence.
@@ -494,7 +495,7 @@ function playZeldaSecretSound() {
         const notes = [783.99, 987.77, 1174.66, 1567.98];
         const noteSpacingSeconds = 0.14;
         const noteLengthSeconds = 0.13;
-        const totalDurationSeconds = ((notes.length - 1) * noteSpacingSeconds) + noteLengthSeconds;
+        const noteSequenceDurationSeconds = ((notes.length - 1) * noteSpacingSeconds) + noteLengthSeconds;
         const start = ctx.currentTime;
         notes.forEach((freq, i) => {
           const osc = ctx.createOscillator();
@@ -509,7 +510,7 @@ function playZeldaSecretSound() {
           osc.start(start + i * noteSpacingSeconds);
           osc.stop(start + i * noteSpacingSeconds + noteLengthSeconds);
         });
-        fallbackTimer = setTimeout(finish, Math.ceil(totalDurationSeconds * 1000) + SYNTH_END_PADDING_MS);
+        fallbackTimer = setTimeout(finish, Math.ceil(noteSequenceDurationSeconds * 1000) + SYNTH_END_PADDING_MS);
       } catch (_) {
         finish();
       }
