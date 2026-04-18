@@ -61,6 +61,12 @@ document.addEventListener('DOMContentLoaded', function() {
     RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: false },
     MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true,  showCapExButton: true  },
     JV:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
+    KB:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
+    JY:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
+    RD:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
+    JS:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
+    DL:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
+    EW:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: true  },
     RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false },
     SED:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false }
   };
