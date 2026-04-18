@@ -1,0 +1,16 @@
+{
+  "name": "router-bridge",
+  "version": "1.0.0",
+  "description": "Local polling bridge — watches Cloudflare for a reboot command and reboots the RS200 Nighthawk.",
+  "type": "module",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
