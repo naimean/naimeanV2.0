@@ -264,15 +264,15 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (_) {}
   }
 
-  renderDiscordRickrollCount();
-  runIndexFadeInIfNeeded();
-
   if (c64Image) {
     c64Image.addEventListener('error', applyBaseImageFallback, { once: true });
     if (c64Image.complete && c64Image.naturalWidth === 0) {
       applyBaseImageFallback();
     }
   }
+
+  renderDiscordRickrollCount();
+  runIndexFadeInIfNeeded();
 
   function primeWrongAudio() {
     wrongAudio.muted = true;
