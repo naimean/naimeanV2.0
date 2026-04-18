@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
   const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
   const DISCORD_OVERLAY_DISPLAY_DURATION_MS = 5000;
+  const PRANK_REDIRECT_DELAY_MS = 5000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
 
@@ -737,7 +738,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (discordOverlay) {
       discordOverlay.classList.add('visible');
       discordOverlay.setAttribute('aria-hidden', 'false');
-      await delay(5000);
+      await delay(DISCORD_OVERLAY_DISPLAY_DURATION_MS);
       discordOverlay.classList.remove('visible');
       discordOverlay.setAttribute('aria-hidden', 'true');
       return true;
@@ -771,7 +772,7 @@ document.addEventListener('DOMContentLoaded', function() {
       await prankVideo.play();
     } catch (_) {}
 
-      await delay(DISCORD_OVERLAY_DISPLAY_DURATION_MS);
+    await delay(PRANK_REDIRECT_DELAY_MS);
     await incrementRickrollCount();
     persistRockRollPlaybackState();
     window.location.assign('chapel.html');
@@ -788,6 +789,7 @@ document.addEventListener('DOMContentLoaded', function() {
       shoutboxInput.blur();
     }
 
+    // Let the audio cue play in parallel so the prank video appears immediately.
     void playZeldaSecretSound();
     await playStaticTransition();
 
@@ -801,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Continue to redirect even if autoplay is blocked.
     }
 
-    await delay(5000);
+    await delay(PRANK_REDIRECT_DELAY_MS);
     await incrementRickrollCount();
     persistRockRollPlaybackState();
     if (await serveDiscordInviteOrFallback()) {
