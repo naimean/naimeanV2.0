@@ -230,7 +230,6 @@ body {
   letter-spacing: 0.9px;
   caret-color: #c8deff;
   text-shadow: 0 0 6px #b0d0ff, 0 0 14px #5080c0, 0 0 2px #fff;
-  filter: blur(0.3px);
 }
 
 .boot-input-row {
@@ -327,7 +326,7 @@ body {
 .discord-rickroll-counter {
   position: absolute;
   right: 28px;
-  bottom: 91px;
+  bottom: 81px;
   z-index: 2;
   min-width: 2.4ch;
   color: #c8deff;
@@ -338,15 +337,14 @@ body {
   text-align: right;
   letter-spacing: 0.08em;
   text-shadow: 0 0 6px #b0d0ff, 0 0 14px #5080c0, 0 0 2px #fff;
-  filter: blur(0.3px);
   pointer-events: none;
   white-space: nowrap;
 }
 
 @media (min-width: 601px) {
   .discord-widget-embed {
-    /* 97px base offset + 100px desktop adjustment */
-    --discord-widget-crop-offset-y: calc(-35% + 197px);
+    /* 97px base offset + 120px desktop adjustment */
+    --discord-widget-crop-offset-y: calc(-35% + 217px);
   }
 
   .boot-form {
@@ -375,7 +373,7 @@ body {
 
   .discord-rickroll-counter {
     right: calc(var(--desktop-counter-right) + 40px);
-    bottom: 86px;
+    bottom: 76px;
     font-size: clamp(1.15em, 1.7vw, 1.5em);
   }
 }
@@ -726,7 +724,6 @@ body {
     font-size: calc(0.93em + 1px);
     font-weight: 400;
     letter-spacing: 0.25px;
-    filter: blur(0.15px);
   }
 
   .boot-input-row {
@@ -771,8 +768,7 @@ body {
 
   .discord-rickroll-counter {
     right: 17px;
-    bottom: 81px;
-    filter: blur(0.15px);
+    bottom: 71px;
   }
 
   .shoutbox-bottom {
