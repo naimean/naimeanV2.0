@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const shoutboxContainer = document.getElementById('shoutbox-container');
   const bootScreen = document.getElementById('boot-screen');
   const shadowLayer = document.getElementById('shadow-layer');
+  const discordOverlay = document.getElementById('discord-overlay');
   const bootInput = document.getElementById('boot-input');
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
@@ -155,15 +156,62 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
-  async function runInitialPowerOnSequence() {
-    await playStaticTransition();
-
+  async function runNedryGateSequence() {
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
     if (bootInput) {
-      bootInput.focus();
+      bootInput.style.display = 'none';
     }
+    if (bootSubmit) {
+      bootSubmit.style.display = 'none';
+    }
+    if (bootVideo) {
+      bootVideo.style.display = 'block';
+      try {
+        bootVideo.currentTime = 0;
+        await bootVideo.play();
+        const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
+          ? Math.ceil(bootVideo.duration * 1000) + 2000
+          : 12000;
+        await waitForVideoToEnd(bootVideo, waitMs);
+      } catch (_) {
+        // If autoplay/playback fails, continue to the prompt instead of hanging.
+      } finally {
+        bootVideo.pause();
+        bootVideo.style.display = 'none';
+      }
+    }
+
+    if (bootScreen) {
+      bootScreen.classList.remove('visible');
+    }
+    if (shoutboxContainer) {
+      shoutboxContainer.classList.add('visible');
+    }
+    await playStaticTransition();
+    if (shoutboxInput) {
+      resetFinalInput();
+      shoutboxInput.focus();
+    }
+    puzzleSolved = true;
+  }
+
+  async function runInitialPowerOnSequence() {
+    if (discordOverlay) {
+      discordOverlay.classList.add('visible');
+      discordOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    await delay(3000);
+
+    if (discordOverlay) {
+      discordOverlay.classList.remove('visible');
+      discordOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    await playStaticTransition();
+    await runNedryGateSequence();
   }
 
   function playStaticTransition() {
@@ -461,35 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (screenOn && !puzzleSolved) {
-          // Hide form controls and play static, then the newman-gate video.
-          bootInput.style.display = 'none';
-          bootSubmit.style.display = 'none';
-          await playStaticTransition();
-          bootVideo.style.display = 'block';
-          try {
-            bootVideo.currentTime = 0;
-            await bootVideo.play();
-            const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
-              ? Math.ceil(bootVideo.duration * 1000) + 2000
-              : 12000;
-            await waitForVideoToEnd(bootVideo, waitMs);
-          } catch (_) {
-            // If autoplay/playback fails, continue to the prompt instead of hanging.
-          } finally {
-            bootVideo.pause();
-            bootVideo.style.display = 'none';
-          }
-
-          // Transition to input prompt (with native blinking caret) instead of a Discord screen.
-          // Show the green prompt screen behind static first so the blue boot frame never flashes.
-          bootScreen.classList.remove('visible');
-          shoutboxContainer.classList.add('visible');
-          await playStaticTransition();
-          if (shoutboxInput) {
-            resetFinalInput();
-            shoutboxInput.focus();
-          }
-          puzzleSolved = true;
+          await runNedryGateSequence();
         }
       });
     }
