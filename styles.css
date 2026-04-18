@@ -246,10 +246,10 @@ body {
 
 .discord-widget-embed iframe {
   width: 125%;
-  height: 165%;
+  height: 178%;
   border: 0;
   transform-origin: center center;
-  transform: translate(-10%, -27%) scale(0.8);
+  transform: translate(-10%, -35%) scale(0.8);
 }
 
 .boot-submit:hover {
