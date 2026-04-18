@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
+  const RICKROLL_COUNT_TIMEOUT_MS = 2000;
 
   async function renderDiscordRickrollCount() {
     if (!discordRickrollCounter) {
@@ -87,11 +88,38 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function incrementRickrollCount() {
-    fetch(RICKROLL_COUNT_API_URL, {
+    let controller = null;
+    if (typeof AbortController === 'function') {
+      try {
+        controller = new AbortController();
+      } catch (_) {
+        controller = null;
+      }
+    }
+    let timeoutId = null;
+    let requestSettled = false;
+
+    if (controller) {
+      timeoutId = setTimeout(() => {
+        if (!requestSettled) {
+          controller.abort();
+        }
+      }, RICKROLL_COUNT_TIMEOUT_MS);
+    }
+
+    const request = fetch(RICKROLL_COUNT_API_URL, {
       method: 'GET',
       cache: 'no-store',
-      keepalive: true
-    }).catch(() => {});
+      keepalive: true,
+      signal: controller ? controller.signal : undefined
+    }).catch(() => {}).finally(() => {
+      requestSettled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    });
+
+    return request;
   }
 
   function persistRockRollPlaybackState() {
@@ -435,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (_) {}
 
     await delay(5000);
-    incrementRickrollCount();
+    await incrementRickrollCount();
     persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }
@@ -465,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await delay(5000);
-    incrementRickrollCount();
+    await incrementRickrollCount();
     persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }
