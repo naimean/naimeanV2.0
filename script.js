@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
+  const RICKROLL_COUNT_TIMEOUT_MS = 2000;
 
   async function renderDiscordRickrollCount() {
     if (!discordRickrollCounter) {
@@ -95,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (controller) {
       timeoutId = setTimeout(() => {
         controller.abort();
-      }, 2000);
+      }, RICKROLL_COUNT_TIMEOUT_MS);
     }
 
     const request = fetch(RICKROLL_COUNT_API_URL, {
