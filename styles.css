@@ -715,6 +715,7 @@ body {
   .boot-submit-stack {
     align-self: flex-start;
     justify-content: flex-start;
+    margin-left: 7px;
   }
 
   .boot-input {
@@ -728,9 +729,9 @@ body {
   }
 
   .boot-input-row {
-    width: calc(100% - 35px);
-    margin-left: 20px;
-    margin-right: 15px;
+    width: calc(100% - 7px);
+    margin-left: 7px;
+    margin-right: 0;
   }
 
   .boot-input-row .boot-input {
