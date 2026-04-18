@@ -727,7 +727,16 @@ body {
   }
 
   .boot-input-row {
-    margin-left: -15px;
+    width: calc(100% - 35px);
+    margin-left: 20px;
+    margin-right: 15px;
+  }
+
+  .boot-input-row .boot-input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
   }
 
   .boot-submit {
