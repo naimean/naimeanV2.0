@@ -267,6 +267,7 @@
     congregationAudio.volume = 0.04;
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
     const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
+    const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.25;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
@@ -277,10 +278,34 @@
     let rockRollContinuationRetryBound = false;
     let rockRollContinuationPending = false;
 
+    function readLocalRickrollCount() {
+      try {
+        const rawValue = window.localStorage.getItem(LOCAL_RICKROLL_COUNT_KEY);
+        const parsedCount = Number(rawValue);
+        if (Number.isFinite(parsedCount) && parsedCount >= 0) {
+          return Math.floor(parsedCount);
+        }
+      } catch (_) {}
+      return 0;
+    }
+
+    function writeLocalRickrollCount(count) {
+      if (!Number.isFinite(count) || count < 0) {
+        return;
+      }
+
+      try {
+        window.localStorage.setItem(LOCAL_RICKROLL_COUNT_KEY, String(Math.floor(count)));
+      } catch (_) {}
+    }
+
     async function renderRickrollCount() {
       if (!chapelTvCounter) {
         return;
       }
+
+      const localCount = readLocalRickrollCount();
+      chapelTvCounter.textContent = String(localCount).padStart(2, '0');
 
       try {
         const response = await fetch(RICKROLL_COUNT_API_URL, {
@@ -293,13 +318,13 @@
 
         const payload = await response.json();
         const parsedCount = Number(payload && payload.value);
-        const count = Number.isFinite(parsedCount) && parsedCount >= 0
+        const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
           ? Math.floor(parsedCount)
           : 0;
-        chapelTvCounter.textContent = String(count).padStart(2, '0');
-      } catch (_) {
-        chapelTvCounter.textContent = '--';
-      }
+        const nextCount = Math.max(localCount, remoteCount);
+        writeLocalRickrollCount(nextCount);
+        chapelTvCounter.textContent = String(nextCount).padStart(2, '0');
+      } catch (_) {}
     }
 
     function clearRockRollContinuationState() {
