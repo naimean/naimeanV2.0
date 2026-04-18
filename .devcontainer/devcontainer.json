@@ -1,0 +1,5 @@
+{
+  "name": "naimeanV2.0",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "postStartCommand": "git -C /workspaces/naimeanV2.0 fetch --prune && git -C /workspaces/naimeanV2.0 pull --rebase --autostash"
+}
