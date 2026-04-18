@@ -317,10 +317,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function incrementRickrollCount() {
-    const optimisticCount = readLocalRickrollCount() + 1;
-    writeLocalRickrollCount(optimisticCount);
-    updateDiscordRickrollCounterDisplay(optimisticCount);
-    if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: optimistic \u2192 ' + optimisticCount); }
+    const localCountBeforeIncrement = readLocalRickrollCount();
+    updateDiscordRickrollCounterDisplay(localCountBeforeIncrement);
 
     let controller = null;
     if (typeof AbortController === 'function') {
@@ -356,8 +354,22 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       return nextCount;
     } catch (_) {
-      if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: remote failed, keeping ' + optimisticCount); }
-      return optimisticCount;
+      if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: remote failed, resyncing from read endpoint'); }
+      try {
+        const syncedCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URLS);
+        writeLocalRickrollCount(syncedCount);
+        updateDiscordRickrollCounterDisplay(syncedCount);
+        if (window.NaimeanDiag) {
+          window.NaimeanDiag.set('remote count', syncedCount);
+          window.NaimeanDiag.set('local count', syncedCount);
+          window.NaimeanDiag.log('increment: resynced \u2192 ' + syncedCount);
+        }
+        return syncedCount;
+      } catch (_) {
+        updateDiscordRickrollCounterDisplay(localCountBeforeIncrement);
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: resync failed, keeping ' + localCountBeforeIncrement); }
+        return localCountBeforeIncrement;
+      }
     } finally {
       requestSettled = true;
       if (timeoutId) {
