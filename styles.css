@@ -715,6 +715,7 @@ body {
   .boot-submit-stack {
     align-self: flex-start;
     justify-content: flex-start;
+    margin-left: 7px;
   }
 
   .boot-input {
@@ -725,12 +726,13 @@ body {
     font-size: calc(0.93em + 1px);
     font-weight: 400;
     letter-spacing: 0.25px;
+    filter: blur(0.15px);
   }
 
   .boot-input-row {
-    width: calc(100% - 35px);
+    width: calc(100% - 7px);
     margin-left: 7px;
-    margin-right: 15px;
+    margin-right: 0;
   }
 
   .boot-input-row .boot-input {
@@ -770,6 +772,7 @@ body {
   .discord-rickroll-counter {
     right: 17px;
     bottom: 81px;
+    filter: blur(0.15px);
   }
 
   .shoutbox-bottom {
