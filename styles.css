@@ -241,6 +241,25 @@ body {
   display: block;
 }
 
+.discord-rickroll-counter {
+  position: absolute;
+  right: 28px;
+  bottom: 26px;
+  z-index: 2;
+  min-width: 2.4ch;
+  color: #c8deff;
+  font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
+  font-size: clamp(0.95em, 1.4vw, 1.3em);
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 6px #b0d0ff, 0 0 14px #5080c0, 0 0 2px #fff;
+  filter: blur(0.3px);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .discord-widget-embed {
   position: absolute;
   inset: 0;

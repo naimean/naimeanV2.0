@@ -178,13 +178,13 @@
 
     .chapel-tv-counter {
       position: absolute;
-      left: 46.85%;
-      top: 53.55%;
-      width: 7.5%;
-      min-height: 2.6%;
+      right: calc(45.2% + 8px);
+      top: calc(53.55% + 38px);
+      min-width: 1.8ch;
+      min-height: 2.2%;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-end;
       pointer-events: none;
       z-index: 8;
       color: #ffffff;
@@ -193,7 +193,7 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       line-height: 1.1;
-      text-align: center;
+      text-align: right;
       text-shadow: 0 0 3px rgba(150, 210, 255, 0.85);
       white-space: nowrap;
     }
@@ -245,7 +245,7 @@
       <div class="chapel-power-btn" aria-hidden="true">
         <span class="chapel-power-light"></span>
       </div>
-      <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">RICKROLLS: 0</div>
+      <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
     </div>
@@ -295,9 +295,9 @@
         const count = Number.isFinite(payload && payload.value) && payload.value >= 0
           ? payload.value
           : 0;
-        chapelTvCounter.textContent = 'RICKROLLS: ' + count;
+        chapelTvCounter.textContent = String(count).padStart(2, '0');
       } catch (_) {
-        chapelTvCounter.textContent = 'RICKROLLS: --';
+        chapelTvCounter.textContent = '--';
       }
     }
 

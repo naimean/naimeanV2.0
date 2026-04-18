@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootVideo = document.getElementById('boot-video');
   const bootSubmit = document.getElementById('boot-submit');
   const returnBypassBtn = document.getElementById('return-bypass-btn');
+  const discordRickrollCounter = document.getElementById('discord-rickroll-counter');
   const c64Screen = document.querySelector('.c64-screen');
   const shoutboxForm = document.getElementById('shoutbox-form');
   const shoutboxInput = document.getElementById('shoutbox-input');
@@ -58,6 +59,31 @@ document.addEventListener('DOMContentLoaded', function() {
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
+  const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
+
+  async function renderDiscordRickrollCount() {
+    if (!discordRickrollCounter) {
+      return;
+    }
+
+    try {
+      const response = await fetch(RICKROLL_COUNT_READ_API_URL, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch rickroll count');
+      }
+
+      const payload = await response.json();
+      const count = Number.isFinite(payload && payload.value) && payload.value >= 0
+        ? payload.value
+        : 0;
+      discordRickrollCounter.textContent = String(count).padStart(2, '0');
+    } catch (_) {
+      discordRickrollCounter.textContent = '--';
+    }
+  }
 
   function incrementRickrollCount() {
     fetch(RICKROLL_COUNT_API_URL, {
@@ -81,6 +107,8 @@ document.addEventListener('DOMContentLoaded', function() {
       window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_PENDING_KEY, '1');
     } catch (_) {}
   }
+
+  renderDiscordRickrollCount();
 
   function primeWrongAudio() {
     wrongAudio.muted = true;
