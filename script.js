@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const messages = document.getElementById('messages');
   const prankVideoOverlay = document.getElementById('prank-video-overlay');
   const prankVideo = document.getElementById('prank-video');
+  const BOOT_PREFIX = bootInput ? bootInput.value : '';
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
   wrongAudio.load();
@@ -78,6 +79,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const end = shoutboxInput.value.length;
     shoutboxInput.setSelectionRange(end, end);
+  }
+
+  function placeBootCursorAtEnd() {
+    if (!bootInput) {
+      return;
+    }
+
+    const end = bootInput.value.length;
+    bootInput.setSelectionRange(end, end);
+  }
+
+  function resetBootInput() {
+    if (!bootInput) {
+      return;
+    }
+
+    bootInput.value = BOOT_PREFIX;
+    placeBootCursorAtEnd();
   }
 
   function resetFinalInput() {
@@ -352,6 +371,31 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   document.addEventListener('pointerdown', primeWrongAudio, { once: true });
+
+  if (bootInput) {
+    bootInput.addEventListener('focus', placeBootCursorAtEnd);
+    bootInput.addEventListener('click', placeBootCursorAtEnd);
+    bootInput.addEventListener('keydown', function(e) {
+      const prefixLen = BOOT_PREFIX.length;
+      const selStart = bootInput.selectionStart;
+      const selEnd = bootInput.selectionEnd;
+      if (e.key === 'Backspace' && selStart <= prefixLen && selStart === selEnd) {
+        e.preventDefault();
+      }
+      if (e.key === 'Delete' && selStart < prefixLen && selStart === selEnd) {
+        e.preventDefault();
+      }
+      if (selStart < prefixLen && selEnd > selStart && (e.key === 'Backspace' || e.key === 'Delete')) {
+        e.preventDefault();
+      }
+    });
+    bootInput.addEventListener('input', function() {
+      if (!bootInput.value.startsWith(BOOT_PREFIX)) {
+        resetBootInput();
+      }
+    });
+    placeBootCursorAtEnd();
+  }
 
   if (shoutboxInput) {
     shoutboxInput.addEventListener('focus', placeFinalCursorAtEnd);
