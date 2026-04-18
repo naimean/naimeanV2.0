@@ -214,6 +214,28 @@ body {
   font-weight: 700;
 }
 
+.boot-quick-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.boot-quick-link {
+  justify-content: center;
+  min-width: 42px;
+  width: 42px;
+  padding: 10px 0;
+  gap: 0;
+}
+
+.boot-quick-link-icon {
+  width: 18px;
+  height: 18px;
+  color: #c8deff;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 3px rgba(200, 222, 255, 0.45));
+}
+
 .discord-prefix-icon {
   width: 20px;
   height: 16px;
