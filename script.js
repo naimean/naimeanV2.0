@@ -223,15 +223,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootInput) {
       bootInput.style.display = '';
       resetBootInput();
+      bootInput.focus();
     }
     if (bootSubmit) {
       bootSubmit.style.display = '';
     }
     if (bootScreen) {
       bootScreen.classList.add('visible');
-    }
-    if (bootInput) {
-      bootInput.focus();
     }
   }
 
