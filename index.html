@@ -4,6 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Naimean?</title>
+  <style>
+    .c64-wrapper {
+      /* Keep in sync with styles.css :root --screen-left/top/width/height values for exact first-paint alignment. */
+      --screen-left: 4.44%;
+      --screen-top: 6.43%;
+      --screen-width: 90.11%;
+      --screen-height: 47.86%;
+      position: relative;
+    }
+
+    .shadow-layer {
+      position: absolute;
+      left: var(--screen-left);
+      top: var(--screen-top);
+      width: var(--screen-width);
+      height: var(--screen-height);
+      border-radius: 8px;
+      background: #111112;
+      z-index: 10;
+    }
+
+    .boot-screen,
+    .shoutbox-container,
+    .discord-overlay,
+    .static-overlay,
+    .power-off-overlay {
+      display: none;
+    }
+  </style>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 </head>
