@@ -86,12 +86,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function incrementRickrollCount() {
-    fetch(RICKROLL_COUNT_API_URL, {
+  function incrementRickrollCount(options) {
+    const awaitCompletion = Boolean(options && options.awaitCompletion);
+    const supportsAbortController = typeof window !== 'undefined' && typeof window.AbortController === 'function';
+    const controller = supportsAbortController ? new window.AbortController() : null;
+    let timeoutId = null;
+
+    if (controller) {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 2000);
+    }
+
+    const request = fetch(RICKROLL_COUNT_API_URL, {
       method: 'GET',
       cache: 'no-store',
-      keepalive: true
-    }).catch(() => {});
+      keepalive: true,
+      signal: controller ? controller.signal : undefined
+    }).catch(() => {}).finally(() => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    });
+
+    if (awaitCompletion) {
+      return request;
+    }
   }
 
   function persistRockRollPlaybackState() {
@@ -435,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (_) {}
 
     await delay(5000);
-    incrementRickrollCount();
+    await incrementRickrollCount({ awaitCompletion: true });
     persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }
@@ -465,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await delay(5000);
-    incrementRickrollCount();
+    await incrementRickrollCount({ awaitCompletion: true });
     persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }
