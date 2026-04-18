@@ -87,6 +87,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     overlay.classList.add('visible');
+    // Wait two frames so the browser paints the visible state before removing it,
+    // which reliably triggers the CSS opacity transition back to transparent.
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
         overlay.classList.remove('visible');
