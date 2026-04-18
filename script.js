@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
   const bootSubmit = document.getElementById('boot-submit');
+  const bootQuickLinks = document.getElementById('boot-quick-links');
+  const bootCalendarBtn = document.getElementById('boot-calendar-btn');
+  const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
   const returnBypassBtn = document.getElementById('return-bypass-btn');
   const discordRickrollCounter = document.getElementById('discord-rickroll-counter');
   const c64Screen = document.querySelector('.c64-screen');
@@ -63,6 +66,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
+  const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
+  const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
 
   function consumeIndexFadeInFlag() {
     try {
@@ -96,25 +101,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function readLocalRickrollCount() {
-    try {
-      const rawValue = window.localStorage.getItem(LOCAL_RICKROLL_COUNT_KEY);
-      const parsedCount = Number(rawValue);
-      if (Number.isFinite(parsedCount) && parsedCount >= 0) {
-        return Math.floor(parsedCount);
-      }
-    } catch (_) {}
-    return 0;
-  }
-
-  function writeLocalRickrollCount(count) {
-    if (!Number.isFinite(count) || count < 0) {
-      return;
+  function normalizeRickrollCount(value) {
+    const parsedCount = Number(value);
+    if (!Number.isFinite(parsedCount) || parsedCount < 0) {
+      return null;
     }
-
-    try {
-      window.localStorage.setItem(LOCAL_RICKROLL_COUNT_KEY, String(Math.floor(count)));
-    } catch (_) {}
+    return Math.floor(parsedCount);
   }
 
   function updateDiscordRickrollCounterDisplay(count) {
@@ -122,7 +114,51 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    discordRickrollCounter.textContent = String(Math.floor(count)).padStart(2, '0');
+    const normalizedCount = normalizeRickrollCount(count);
+    discordRickrollCounter.textContent = normalizedCount === null
+      ? RICKROLL_COUNT_UNAVAILABLE_TEXT
+      : String(normalizedCount).padStart(2, '0');
+  }
+
+  function readLocalRickrollCount() {
+    try {
+      const rawValue = window.localStorage.getItem(LOCAL_RICKROLL_COUNT_KEY);
+      const parsedCount = normalizeRickrollCount(rawValue);
+      return parsedCount === null ? 0 : parsedCount;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function writeLocalRickrollCount(count) {
+    const normalizedCount = normalizeRickrollCount(count);
+    if (normalizedCount === null) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(LOCAL_RICKROLL_COUNT_KEY, String(normalizedCount));
+    } catch (_) {}
+  }
+
+  async function fetchRickrollCount(url, options = {}) {
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      ...options
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch rickroll count');
+    }
+
+    const payload = await response.json();
+    const remoteCount = normalizeRickrollCount(payload && payload.value);
+    if (remoteCount === null) {
+      throw new Error('Received invalid rickroll count');
+    }
+
+    return remoteCount;
   }
 
   function setDiscordRickrollCounterVisible(isVisible) {
@@ -142,30 +178,19 @@ document.addEventListener('DOMContentLoaded', function() {
     updateDiscordRickrollCounterDisplay(localCount);
 
     try {
-      const response = await fetch(RICKROLL_COUNT_READ_API_URL, {
-        method: 'GET',
-        cache: 'no-store'
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch rickroll count');
-      }
-
-      const payload = await response.json();
-      const parsedCount = Number(payload && payload.value);
-      const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
-        ? Math.floor(parsedCount)
-        : 0;
+      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URL);
       const nextCount = Math.max(localCount, remoteCount);
       writeLocalRickrollCount(nextCount);
       updateDiscordRickrollCounterDisplay(nextCount);
-    } catch (_) {}
+    } catch (_) {
+      updateDiscordRickrollCounterDisplay(localCount);
+    }
   }
 
   async function incrementRickrollCount() {
-    const currentLocalCount = readLocalRickrollCount();
-    const nextLocalCount = currentLocalCount + 1;
-    writeLocalRickrollCount(nextLocalCount);
-    updateDiscordRickrollCounterDisplay(nextLocalCount);
+    const optimisticCount = readLocalRickrollCount() + 1;
+    writeLocalRickrollCount(optimisticCount);
+    updateDiscordRickrollCounterDisplay(optimisticCount);
 
     let controller = null;
     if (typeof AbortController === 'function') {
@@ -187,28 +212,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     try {
-      const response = await fetch(RICKROLL_COUNT_API_URL, {
-        method: 'GET',
-        cache: 'no-store',
+      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URL, {
         keepalive: true,
         signal: controller ? controller.signal : undefined
       });
-      if (!response.ok) {
-        throw new Error('Failed to increment rickroll count');
-      }
-
-      const payload = await response.json();
-      const parsedCount = Number(payload && payload.value);
-      const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
-        ? Math.floor(parsedCount)
-        : nextLocalCount;
-      const syncedCount = Math.max(nextLocalCount, remoteCount);
-      writeLocalRickrollCount(syncedCount);
-      updateDiscordRickrollCounterDisplay(syncedCount);
-      return syncedCount;
+      const nextCount = Math.max(optimisticCount, remoteCount);
+      writeLocalRickrollCount(nextCount);
+      updateDiscordRickrollCounterDisplay(nextCount);
+      return nextCount;
     } catch (_) {
-      // Keep the local fallback count when the remote API is unavailable.
-      return nextLocalCount;
+      return optimisticCount;
     } finally {
       requestSettled = true;
       if (timeoutId) {
@@ -354,6 +367,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootSubmit) {
       bootSubmit.style.display = 'none';
     }
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = 'none';
+    }
     setDiscordRickrollCounterVisible(false);
     if (bootVideo) {
       bootVideo.style.display = 'block';
@@ -419,6 +435,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (bootSubmit) {
       bootSubmit.style.display = 'inline-flex';
+    }
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = 'inline-flex';
     }
     if (bootScreen) {
       bootScreen.classList.add('visible');
@@ -627,6 +646,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.addEventListener('pointerdown', primeWrongAudio, { once: true });
 
+  if (bootCalendarBtn) {
+    bootCalendarBtn.addEventListener('click', function() {
+      playWrongSound();
+    });
+  }
+
+  if (bootWhiteboardBtn) {
+    bootWhiteboardBtn.addEventListener('click', function() {
+      window.open(WHITEBOARD_URL, '_blank', 'noopener,noreferrer');
+    });
+  }
+
   if (bootInput) {
     bootInput.addEventListener('focus', placeBootCursorAtEnd);
     bootInput.addEventListener('click', placeBootCursorAtEnd);
@@ -725,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    if (bootForm && bootInput && bootVideo && bootSubmit) {
+    if (bootForm && bootVideo && bootSubmit) {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (screenOn && !puzzleSolved) {
