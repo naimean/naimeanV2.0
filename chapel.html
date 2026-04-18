@@ -663,9 +663,11 @@
 
     // Enter key → same behavior
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        navigateToSite();
+      if (e.key !== 'Enter' || e.repeat || !document.body.classList.contains('loaded')) {
+        return;
       }
+
+      navigateToSite();
     });
   </script>
 </body>
