@@ -282,8 +282,11 @@
         } catch (_) {}
       };
 
-      rockRollContinuationAudio.addEventListener('loadedmetadata', applyPlaybackPosition, { once: true });
-      applyPlaybackPosition();
+      if (rockRollContinuationAudio.readyState > 0) {
+        applyPlaybackPosition();
+      } else {
+        rockRollContinuationAudio.addEventListener('loadedmetadata', applyPlaybackPosition, { once: true });
+      }
 
       const playPromise = rockRollContinuationAudio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
