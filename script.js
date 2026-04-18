@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     try {
       const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URL);
-      const nextCount = Math.max(localCount, remoteCount);
+      const nextCount = remoteCount;
       writeLocalRickrollCount(nextCount);
       updateDiscordRickrollCounterDisplay(nextCount);
     } catch (_) {
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         keepalive: true,
         signal: controller ? controller.signal : undefined
       });
-      const nextCount = Math.max(optimisticCount, remoteCount);
+      const nextCount = remoteCount;
       writeLocalRickrollCount(nextCount);
       updateDiscordRickrollCounterDisplay(nextCount);
       return nextCount;

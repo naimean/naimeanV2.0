@@ -337,7 +337,7 @@
         const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
           ? Math.floor(parsedCount)
           : 0;
-        const nextCount = Math.max(localCount, remoteCount);
+        const nextCount = remoteCount;
         writeLocalRickrollCount(nextCount);
         chapelTvCounter.textContent = String(nextCount).padStart(2, '0');
       } catch (_) {}
