@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootQuickLinks = document.getElementById('boot-quick-links');
   const bootCalendarBtn = document.getElementById('boot-calendar-btn');
   const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
+  const bootRebootBtn = document.getElementById('boot-reboot-btn');
   const returnBypassBtn = document.getElementById('return-bypass-btn');
   const discordRickrollCounter = document.getElementById('discord-rickroll-counter');
   const c64Screen = document.querySelector('.c64-screen');
@@ -56,11 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
   const BOOT_ROLE_VISIBILITY_BY_USER = {
-    ADMIN: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: false },
-    RCA: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true },
-    MAD: { showDiscordButton: false, showCalendarButton: true, showWhiteboardButton: true },
-    JV: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true },
-    RAD: { showDiscordButton: false, showCalendarButton: true, showWhiteboardButton: false }
+    ADMIN: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: false, showRebootButton: false },
+    RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showRebootButton: false },
+    MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true,  showRebootButton: true  },
+    JV:    { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showRebootButton: false },
+    RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showRebootButton: false },
+    SED:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showRebootButton: true  }
   };
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
@@ -372,9 +374,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const visibility = BOOT_ROLE_VISIBILITY_BY_USER[normalizedUser] || {
       showDiscordButton: true,
       showCalendarButton: false,
-      showWhiteboardButton: false
+      showWhiteboardButton: false,
+      showRebootButton: false
     };
-    const { showDiscordButton, showCalendarButton, showWhiteboardButton } = visibility;
+    const { showDiscordButton, showCalendarButton, showWhiteboardButton, showRebootButton } = visibility;
 
     if (bootSubmit) {
       bootSubmit.style.visibility = showDiscordButton ? 'visible' : 'hidden';
@@ -389,8 +392,12 @@ document.addEventListener('DOMContentLoaded', function() {
       bootWhiteboardBtn.style.display = showWhiteboardButton ? 'inline-flex' : 'none';
     }
 
+    if (bootRebootBtn) {
+      bootRebootBtn.style.display = showRebootButton ? 'inline-flex' : 'none';
+    }
+
     if (bootQuickLinks) {
-      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton) ? 'inline-flex' : 'none';
+      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton || showRebootButton) ? 'inline-flex' : 'none';
     }
   }
 
@@ -757,6 +764,20 @@ document.addEventListener('DOMContentLoaded', function() {
   if (bootWhiteboardBtn) {
     bootWhiteboardBtn.addEventListener('click', function() {
       window.open(WHITEBOARD_URL, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  if (bootRebootBtn) {
+    bootRebootBtn.addEventListener('click', function() {
+      const overlay = document.getElementById('page-fade-overlay');
+      if (overlay) {
+        overlay.classList.add('visible');
+        setTimeout(function() {
+          window.location.assign('router.html');
+        }, 900);
+      } else {
+        window.location.assign('router.html');
+      }
     });
   }
 

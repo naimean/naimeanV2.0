@@ -5,8 +5,11 @@ compatibility_date = "2024-01-01"
 # ⚠️  Before deploying, replace <DATABASE_ID> below with the actual ID shown in
 #     the Cloudflare dashboard under Workers & Pages → D1 → barrelroll-counter-db → Database ID.
 #
-# Then run once to initialise the table:
+# Then run once to initialise the tables:
 #   wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
+#
+# Set the router secret (never commit the value — it is stored by Cloudflare):
+#   wrangler secret put ROUTER_SECRET
 #
 # And deploy with:
 #   wrangler deploy
