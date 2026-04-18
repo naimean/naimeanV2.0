@@ -76,10 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
   const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
-  const RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
-  const RICKROLL_COUNT_API_URL = `${RICKROLL_COUNTER_BASE_URL}/hit`;
-  const RICKROLL_COUNT_READ_API_URL = `${RICKROLL_COUNTER_BASE_URL}/get`;
-  const RICKROLL_COUNT_TIMEOUT_MS = 2000;
+  const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
+  const RICKROLL_COUNT_TIMEOUT_MS = 8000;
   const DISCORD_WIDGET_ID = '1487898909224341534';
   const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
   const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
@@ -87,6 +85,24 @@ document.addEventListener('DOMContentLoaded', function() {
   const PRANK_REDIRECT_DELAY_MS = 5000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
+
+  function buildRickrollApiUrls(pathname) {
+    const candidates = [];
+    try {
+      if (window.location && window.location.origin) {
+        candidates.push(new URL(pathname, window.location.origin).toString());
+      }
+    } catch (_) {}
+    candidates.push(`${LEGACY_RICKROLL_COUNTER_BASE_URL}${pathname}`);
+    const urls = Array.from(new Set(candidates));
+    if (window.NaimeanDiag) {
+      window.NaimeanDiag.log('endpoints ' + pathname + ': ' + urls.join(', '));
+    }
+    return urls;
+  }
+
+  const RICKROLL_COUNT_API_URLS = buildRickrollApiUrls('/hit');
+  const RICKROLL_COUNT_READ_API_URLS = buildRickrollApiUrls('/get');
 
   function markBaseImageMissing() {
     if (c64Wrapper) {
@@ -204,24 +220,39 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (_) {}
   }
 
-  async function fetchRickrollCount(url, options = {}) {
-    const response = await fetch(url, {
-      method: 'GET',
-      cache: 'no-store',
-      ...options
-    });
+  async function fetchRickrollCount(urls, options = {}) {
+    const candidateUrls = Array.isArray(urls) ? urls : [urls];
+    let lastError = null;
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch rickroll count');
+    for (const candidateUrl of candidateUrls) {
+      if (window.NaimeanDiag) { window.NaimeanDiag.log('try: ' + candidateUrl); }
+      try {
+        const response = await fetch(candidateUrl, {
+          method: 'GET',
+          cache: 'no-store',
+          ...options
+        });
+
+        if (!response.ok) {
+          if (window.NaimeanDiag) { window.NaimeanDiag.log('fail(' + response.status + '): ' + candidateUrl); }
+          throw new Error('Failed to fetch rickroll count');
+        }
+
+        const payload = await response.json();
+        const remoteCount = normalizeRickrollCount(payload && payload.value);
+        if (remoteCount === null) {
+          if (window.NaimeanDiag) { window.NaimeanDiag.log('invalid payload: ' + candidateUrl); }
+          throw new Error('Received invalid rickroll count');
+        }
+
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('ok: ' + candidateUrl + ' \u2192 ' + remoteCount); }
+        return remoteCount;
+      } catch (err) {
+        lastError = err;
+      }
     }
 
-    const payload = await response.json();
-    const remoteCount = normalizeRickrollCount(payload && payload.value);
-    if (remoteCount === null) {
-      throw new Error('Received invalid rickroll count');
-    }
-
-    return remoteCount;
+    throw new Error(`All rickroll count endpoints failed${lastError && lastError.message ? `: ${lastError.message}` : ''}`);
   }
 
   function setDiscordRickrollCounterVisible(isVisible) {
@@ -238,15 +269,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const localCount = readLocalRickrollCount();
+    if (window.NaimeanDiag) {
+      window.NaimeanDiag.set('local count', localCount);
+      window.NaimeanDiag.set('count src', 'local');
+    }
     updateDiscordRickrollCounterDisplay(localCount);
 
     try {
-      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URL);
+      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URLS);
       const nextCount = remoteCount;
       writeLocalRickrollCount(nextCount);
       updateDiscordRickrollCounterDisplay(nextCount);
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.set('remote count', nextCount);
+        window.NaimeanDiag.set('count src', 'remote');
+        window.NaimeanDiag.set('local count', nextCount);
+      }
     } catch (_) {
       updateDiscordRickrollCounterDisplay(localCount);
+      if (window.NaimeanDiag) { window.NaimeanDiag.set('count src', 'local (fallback)'); }
     }
   }
 
@@ -254,6 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const optimisticCount = readLocalRickrollCount() + 1;
     writeLocalRickrollCount(optimisticCount);
     updateDiscordRickrollCounterDisplay(optimisticCount);
+    if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: optimistic \u2192 ' + optimisticCount); }
 
     let controller = null;
     if (typeof AbortController === 'function') {
@@ -275,15 +317,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     try {
-      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URL, {
+      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URLS, {
         keepalive: true,
         signal: controller ? controller.signal : undefined
       });
       const nextCount = remoteCount;
       writeLocalRickrollCount(nextCount);
       updateDiscordRickrollCounterDisplay(nextCount);
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.set('remote count', nextCount);
+        window.NaimeanDiag.set('local count', nextCount);
+        window.NaimeanDiag.log('increment: confirmed \u2192 ' + nextCount);
+      }
       return nextCount;
     } catch (_) {
+      if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: remote failed, keeping ' + optimisticCount); }
       return optimisticCount;
     } finally {
       requestSettled = true;
