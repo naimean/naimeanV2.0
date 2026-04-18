@@ -57,6 +57,15 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastPointerPosition = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
+  const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
+
+  function incrementRickrollCount() {
+    fetch(RICKROLL_COUNT_API_URL, {
+      method: 'GET',
+      cache: 'no-store',
+      keepalive: true
+    }).catch(() => {});
+  }
 
   function persistRockRollPlaybackState() {
     if (!prankVideo) {
@@ -426,6 +435,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await delay(5000);
+    incrementRickrollCount();
+    incrementRickrollCount();
     persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }

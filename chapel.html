@@ -176,6 +176,28 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .chapel-tv-counter {
+      position: absolute;
+      left: 46.85%;
+      top: 53.55%;
+      width: 7.5%;
+      min-height: 2.6%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 8;
+      color: #ffffff;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: clamp(7px, 0.82vw, 10px);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      line-height: 1.1;
+      text-align: center;
+      text-shadow: 0 0 3px rgba(150, 210, 255, 0.85);
+      white-space: nowrap;
+    }
+
     /* Invisible hotspot over the trap door square area. */
     .trapdoor-btn {
       position: absolute;
@@ -223,6 +245,7 @@
       <div class="chapel-power-btn" aria-hidden="true">
         <span class="chapel-power-light"></span>
       </div>
+      <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">RICKROLLS: 0</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
     </div>
@@ -240,9 +263,11 @@
 
     const congregationAudio = document.getElementById('congregation-audio');
     const rockRollContinuationMedia = document.getElementById('rock-roll-continuation-media');
+    const chapelTvCounter = document.getElementById('chapel-tv-counter');
     congregationAudio.volume = 0.04;
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
     const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
+    const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.25;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
     let congregationStarted = false;
@@ -251,6 +276,30 @@
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
     let rockRollContinuationPending = false;
+
+    async function renderRickrollCount() {
+      if (!chapelTvCounter) {
+        return;
+      }
+
+      try {
+        const response = await fetch(RICKROLL_COUNT_API_URL, {
+          method: 'GET',
+          cache: 'no-store'
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch rickroll count');
+        }
+
+        const payload = await response.json();
+        const count = Number.isFinite(payload && payload.value) && payload.value >= 0
+          ? payload.value
+          : 0;
+        chapelTvCounter.textContent = 'RICKROLLS: ' + count;
+      } catch (_) {
+        chapelTvCounter.textContent = 'RICKROLLS: --';
+      }
+    }
 
     function clearRockRollContinuationState() {
       rockRollContinuationPending = false;
@@ -395,6 +444,7 @@
       requestAnimationFrame(fadeStep);
     }
 
+    renderRickrollCount();
     startRockRollContinuation(consumeRockRollContinuation());
 
     function playDoorOpeningSound() {
