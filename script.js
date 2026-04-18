@@ -319,6 +319,9 @@ document.addEventListener('DOMContentLoaded', function() {
       const active = document.activeElement;
       const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'BUTTON' || active.tagName === 'TEXTAREA');
       if (!isInput) {
+        try {
+          window.sessionStorage.setItem('naimean-skip-discord-redirect', '1');
+        } catch (_) {}
         fadeToChapel();
       }
     }
