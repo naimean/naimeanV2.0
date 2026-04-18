@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const shoutboxContainer = document.getElementById('shoutbox-container');
   const bootScreen = document.getElementById('boot-screen');
   const shadowLayer = document.getElementById('shadow-layer');
-  const discordOverlay = document.getElementById('discord-overlay');
   const bootInput = document.getElementById('boot-input');
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
@@ -157,18 +156,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function runInitialPowerOnSequence() {
-    if (discordOverlay) {
-      discordOverlay.classList.add('visible');
-      discordOverlay.setAttribute('aria-hidden', 'false');
-    }
-
-    await delay(3000);
-
-    if (discordOverlay) {
-      discordOverlay.classList.remove('visible');
-      discordOverlay.setAttribute('aria-hidden', 'true');
-    }
-
     await playStaticTransition();
 
     if (bootScreen) {
