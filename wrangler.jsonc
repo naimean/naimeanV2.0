@@ -9,6 +9,12 @@
   "assets": {
     "directory": "."
   },
+  "services": [
+    {
+      "binding": "COUNTER",
+      "service": "barrelrollcounter-worker"
+    }
+  ],
   "compatibility_flags": [
     "nodejs_compat"
   ]
