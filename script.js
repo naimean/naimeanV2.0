@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const returnBypassBtn = document.getElementById('return-bypass-btn');
   const discordRickrollCounter = document.getElementById('discord-rickroll-counter');
   const c64Screen = document.querySelector('.c64-screen');
+  const c64Wrapper = document.querySelector('.c64-wrapper');
+  const c64Image = document.querySelector('.c64-img');
   const shoutboxForm = document.getElementById('shoutbox-form');
   const shoutboxInput = document.getElementById('shoutbox-input');
   const shoutboxHintShell = document.getElementById('shoutbox-hint-shell');
@@ -77,6 +79,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
+
+  function applyBaseImageFallback() {
+    if (c64Wrapper) {
+      c64Wrapper.classList.add('base-image-missing');
+    }
+  }
 
   function consumeIndexFadeInFlag() {
     try {
@@ -258,6 +266,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   renderDiscordRickrollCount();
   runIndexFadeInIfNeeded();
+
+  if (c64Image) {
+    c64Image.addEventListener('error', applyBaseImageFallback, { once: true });
+    if (c64Image.complete && c64Image.naturalWidth === 0) {
+      applyBaseImageFallback();
+    }
+  }
 
   function primeWrongAudio() {
     wrongAudio.muted = true;
