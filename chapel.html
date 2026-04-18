@@ -282,7 +282,8 @@
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
     const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
-    const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
+    const RICKROLL_COUNTER_BASE_URL = 'https://barrelroll-counter-worker.naimean.workers.dev';
+    const RICKROLL_COUNT_API_URL = `${RICKROLL_COUNTER_BASE_URL}/get`;
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.25;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
