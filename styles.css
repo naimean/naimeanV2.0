@@ -220,9 +220,9 @@ body {
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
   font-size: 0.93em;
   outline: none;
-  width: 14em;
-  min-width: 14em;
-  max-width: 14em;
+  width: calc(14em + 75px);
+  min-width: calc(14em + 75px);
+  max-width: calc(14em + 75px);
   padding: 6px 8px;
   letter-spacing: 1.4px;
   caret-color: #c8deff;
@@ -232,7 +232,7 @@ body {
 
 .boot-input-row {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
 }
 
 .boot-input-row .boot-input {
@@ -324,7 +324,7 @@ body {
 .discord-rickroll-counter {
   position: absolute;
   right: 28px;
-  bottom: 101px;
+  bottom: 91px;
   z-index: 2;
   min-width: 2.4ch;
   color: #c8deff;
@@ -669,6 +669,12 @@ body {
     right: 12px;
     bottom: 14px;
     gap: 8px;
+  }
+
+  .boot-input {
+    width: 14em;
+    min-width: 14em;
+    max-width: 14em;
   }
 
   .boot-submit {
