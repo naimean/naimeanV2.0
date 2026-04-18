@@ -248,6 +248,7 @@
 
     const DISCORD_PAGE_URL = resolveDiscordPageUrl();
     const SKIP_DISCORD_REDIRECT_KEY = 'naimean-skip-discord-redirect';
+    const DISCORD_REDIRECTED_KEY = 'naimean-discord-redirected';
     const shouldSkipDiscordRedirect = (function consumeSkipDiscordRedirectFlag() {
       try {
         const shouldSkip = window.sessionStorage.getItem(SKIP_DISCORD_REDIRECT_KEY) === '1';
@@ -255,6 +256,13 @@
           window.sessionStorage.removeItem(SKIP_DISCORD_REDIRECT_KEY);
         }
         return shouldSkip;
+      } catch (_) {
+        return false;
+      }
+    })();
+    const hasRedirectedToDiscordThisSession = (function hasRedirectedToDiscordThisSession() {
+      try {
+        return window.sessionStorage.getItem(DISCORD_REDIRECTED_KEY) === '1';
       } catch (_) {
         return false;
       }
@@ -362,7 +370,7 @@
     });
 
     function navigateToDiscord() {
-      if (shouldSkipDiscordRedirect) {
+      if (shouldSkipDiscordRedirect || hasRedirectedToDiscordThisSession) {
         return;
       }
 
@@ -374,11 +382,14 @@
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
+        try {
+          window.sessionStorage.setItem(DISCORD_REDIRECTED_KEY, '1');
+        } catch (_) {}
         window.location.assign(DISCORD_PAGE_URL);
       }, 900);
     }
 
-    if (!shouldSkipDiscordRedirect) {
+    if (!shouldSkipDiscordRedirect && !hasRedirectedToDiscordThisSession) {
       congregationAudio.addEventListener('playing', navigateToDiscord, { once: true });
       if (!congregationAudio.paused && !congregationAudio.ended && congregationAudio.currentTime > 0) {
         navigateToDiscord();

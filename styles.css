@@ -197,9 +197,30 @@ body {
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
   font-size: 0.82em;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 10px;
   text-transform: none;
   filter: blur(0.3px);
+}
+
+.discord-pixel-logo {
+  width: 2px;
+  height: 2px;
+  background: #c8deff;
+  image-rendering: pixelated;
+  box-shadow:
+    2px 0 #c8deff, 4px 0 #c8deff, 6px 0 #c8deff, 8px 0 #c8deff, 10px 0 #c8deff, 12px 0 #c8deff,
+    0 2px #c8deff, 14px 2px #c8deff,
+    0 4px #c8deff, 14px 4px #c8deff,
+    0 6px #c8deff, 14px 6px #c8deff,
+    0 8px #c8deff, 14px 8px #c8deff,
+    2px 10px #c8deff, 12px 10px #c8deff,
+    4px 12px #c8deff, 6px 12px #c8deff, 8px 12px #c8deff, 10px 12px #c8deff,
+    4px 4px #5f75ff, 10px 4px #5f75ff;
+  transform: scale(1.35);
+  transform-origin: left center;
 }
 
 .boot-submit:hover {
