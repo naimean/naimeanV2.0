@@ -14,14 +14,7 @@ export default {
     // Proxy counter-related paths to barrelrollcounter-worker
     if (shouldProxyPath(url.pathname)) {
       const proxyUrl = new URL(url.pathname + url.search, `https://barrelrollcounter-worker.naimean.workers.dev`);
-      const method = request.method.toUpperCase();
-      const hasBody = method === "POST" || method === "PUT" || method === "PATCH";
-      return fetch(new Request(proxyUrl, {
-        method,
-        headers: request.headers,
-        body: hasBody ? request.body : null,
-        redirect: "manual",
-      }));
+      return fetch(new Request(proxyUrl, request), { redirect: "manual" });
     }
 
     // Serve static assets for everything else
