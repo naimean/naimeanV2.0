@@ -713,9 +713,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       const payload = await response.json();
-      return typeof payload?.instant_invite === 'string' && payload.instant_invite
-        ? payload.instant_invite
-        : null;
+      const instantInvite = typeof payload?.instant_invite === 'string'
+        ? payload.instant_invite.trim()
+        : '';
+      return instantInvite || null;
     } catch (_) {
       return null;
     } finally {
@@ -735,6 +736,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (discordOverlay) {
       discordOverlay.classList.add('visible');
       discordOverlay.setAttribute('aria-hidden', 'false');
+      await delay(5000);
+      discordOverlay.classList.remove('visible');
+      discordOverlay.setAttribute('aria-hidden', 'true');
+      return true;
     }
 
     return false;
