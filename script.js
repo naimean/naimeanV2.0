@@ -58,14 +58,47 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastPointerPosition = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
+  const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
+
+  function readLocalRickrollCount() {
+    try {
+      const rawValue = window.localStorage.getItem(LOCAL_RICKROLL_COUNT_KEY);
+      const parsedCount = Number(rawValue);
+      if (Number.isFinite(parsedCount) && parsedCount >= 0) {
+        return Math.floor(parsedCount);
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  function writeLocalRickrollCount(count) {
+    if (!Number.isFinite(count) || count < 0) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(LOCAL_RICKROLL_COUNT_KEY, String(Math.floor(count)));
+    } catch (_) {}
+  }
+
+  function updateDiscordRickrollCounterDisplay(count) {
+    if (!discordRickrollCounter) {
+      return;
+    }
+
+    discordRickrollCounter.textContent = String(Math.floor(count)).padStart(2, '0');
+  }
 
   async function renderDiscordRickrollCount() {
     if (!discordRickrollCounter) {
       return;
     }
+
+    const localCount = readLocalRickrollCount();
+    updateDiscordRickrollCounterDisplay(localCount);
 
     try {
       const response = await fetch(RICKROLL_COUNT_READ_API_URL, {
@@ -78,16 +111,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const payload = await response.json();
       const parsedCount = Number(payload && payload.value);
-      const count = Number.isFinite(parsedCount) && parsedCount >= 0
+      const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
         ? Math.floor(parsedCount)
         : 0;
-      discordRickrollCounter.textContent = String(count).padStart(2, '0');
-    } catch (_) {
-      discordRickrollCounter.textContent = '--';
-    }
+      const nextCount = Math.max(localCount, remoteCount);
+      writeLocalRickrollCount(nextCount);
+      updateDiscordRickrollCounterDisplay(nextCount);
+    } catch (_) {}
   }
 
-  function incrementRickrollCount() {
+  async function incrementRickrollCount() {
+    const currentLocalCount = readLocalRickrollCount();
+    const nextLocalCount = currentLocalCount + 1;
+    writeLocalRickrollCount(nextLocalCount);
+    updateDiscordRickrollCounterDisplay(nextLocalCount);
+
     let controller = null;
     if (typeof AbortController === 'function') {
       try {
@@ -107,19 +145,33 @@ document.addEventListener('DOMContentLoaded', function() {
       }, RICKROLL_COUNT_TIMEOUT_MS);
     }
 
-    const request = fetch(RICKROLL_COUNT_API_URL, {
-      method: 'GET',
-      cache: 'no-store',
-      keepalive: true,
-      signal: controller ? controller.signal : undefined
-    }).catch(() => {}).finally(() => {
+    try {
+      const response = await fetch(RICKROLL_COUNT_API_URL, {
+        method: 'GET',
+        cache: 'no-store',
+        keepalive: true,
+        signal: controller ? controller.signal : undefined
+      });
+      if (!response.ok) {
+        throw new Error('Failed to increment rickroll count');
+      }
+
+      const payload = await response.json();
+      const parsedCount = Number(payload && payload.value);
+      const remoteCount = Number.isFinite(parsedCount) && parsedCount >= 0
+        ? Math.floor(parsedCount)
+        : nextLocalCount;
+      const syncedCount = Math.max(nextLocalCount, remoteCount);
+      writeLocalRickrollCount(syncedCount);
+      updateDiscordRickrollCounterDisplay(syncedCount);
+    } catch (_) {
+      // Keep the local fallback count when the remote API is unavailable.
+    } finally {
       requestSettled = true;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-    });
-
-    return request;
+    }
   }
 
   function persistRockRollPlaybackState() {
