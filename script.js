@@ -80,9 +80,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
 
-  function applyBaseImageFallback() {
+  function markBaseImageMissing() {
     if (c64Wrapper) {
       c64Wrapper.classList.add('base-image-missing');
+    }
+  }
+
+  if (c64Image) {
+    c64Image.addEventListener('error', markBaseImageMissing, { once: true });
+    if (c64Image.complete && c64Image.naturalWidth === 0) {
+      markBaseImageMissing();
     }
   }
 
@@ -262,13 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
       window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_KEY, JSON.stringify(playbackState));
       window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_PENDING_KEY, '1');
     } catch (_) {}
-  }
-
-  if (c64Image) {
-    c64Image.addEventListener('error', applyBaseImageFallback, { once: true });
-    if (c64Image.complete && c64Image.naturalWidth === 0) {
-      applyBaseImageFallback();
-    }
   }
 
   renderDiscordRickrollCount();
