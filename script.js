@@ -140,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return new Promise((resolve) => {
       const STATIC_CLIP_SECONDS = 0.75;
       const STATIC_CLIP_MS = Math.round(STATIC_CLIP_SECONDS * 1000);
+      const MIN_STATIC_CLIP_MS = 200;
       const overlay = document.getElementById('static-overlay');
       const vid = document.getElementById('static-video');
       if (!overlay || !vid) { resolve(); return; }
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
           vid.currentTime = 0;
           const remainingMs = duration > 0 ? Math.ceil(duration * 1000) : STATIC_CLIP_MS;
-          scheduleFinish(Math.min(STATIC_CLIP_MS, Math.max(remainingMs, 200)));
+          scheduleFinish(Math.min(STATIC_CLIP_MS, Math.max(remainingMs, MIN_STATIC_CLIP_MS)));
         }
 
         vid.play().catch(() => {
@@ -195,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function() {
         startRandomClip();
       } else {
         metadataHandler = () => {
-          metadataHandler = null;
           startRandomClip();
         };
         vid.addEventListener('loadedmetadata', metadataHandler, { once: true });
