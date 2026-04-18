@@ -708,7 +708,12 @@ body {
     right: 12px;
     bottom: 14px;
     gap: 8px;
-    align-items: flex-end;
+    align-items: flex-start;
+  }
+
+  .boot-submit-stack {
+    align-self: flex-start;
+    justify-content: flex-start;
   }
 
   .boot-input {
