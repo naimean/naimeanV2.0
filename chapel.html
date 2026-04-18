@@ -303,6 +303,17 @@
       document.addEventListener('touchstart', handleFirstInteraction);
     }
 
+    function finishRockRollContinuation() {
+      rockRollContinuationActive = false;
+      rockRollContinuationPlaybackState = null;
+
+      if (isNavigatingFromChapel) {
+        return;
+      }
+
+      startCongregationAudio();
+    }
+
     function startRockRollContinuation(playbackState) {
       if (!playbackState || !rockRollContinuationMedia) {
         rockRollContinuationPlaybackState = null;
@@ -340,7 +351,6 @@
       const fadeStart = performance.now();
       function fadeStep(now) {
         if (!rockRollContinuationMedia || !rockRollContinuationActive) {
-          rockRollContinuationActive = false;
           return;
         }
 
@@ -352,8 +362,7 @@
         if (progress >= 1) {
           rockRollContinuationMedia.pause();
           rockRollContinuationMedia.volume = 0;
-          rockRollContinuationActive = false;
-          rockRollContinuationPlaybackState = null;
+          finishRockRollContinuation();
           return;
         }
 
@@ -406,6 +415,10 @@
     }
 
     function startCongregationAudio() {
+      if (rockRollContinuationPlaybackState) {
+        return;
+      }
+
       if (rockRollContinuationActive) {
         return;
       }
