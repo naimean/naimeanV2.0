@@ -64,7 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     try {
       const playbackState = {
-        currentTime: Number.isFinite(prankVideo.currentTime) && prankVideo.currentTime >= 0 ? prankVideo.currentTime : 0
+        currentTime: Number.isFinite(prankVideo.currentTime) && prankVideo.currentTime >= 0 ? prankVideo.currentTime : 0,
+        volume: Number.isFinite(prankVideo.volume) ? prankVideo.volume : 1
       };
       window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_KEY, JSON.stringify(playbackState));
     } catch (_) {}

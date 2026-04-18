@@ -213,6 +213,7 @@
 <body>
   <div class="fade-overlay" id="fade-overlay"></div>
   <audio id="congregation-audio" src="assets/congregation.mp3" preload="auto"></audio>
+  <video id="rock-roll-continuation-media" src="assets/notarickroll.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
 
   <div class="chapel-outer">
     <div class="chapel-wrapper">
@@ -238,14 +239,16 @@
     const ORIGINAL_CHAPEL_HEIGHT_RATIO = ORIGINAL_CHAPEL_HEIGHT / STITCHED_CHAPEL_HEIGHT;
 
     const congregationAudio = document.getElementById('congregation-audio');
+    const rockRollContinuationMedia = document.getElementById('rock-roll-continuation-media');
     congregationAudio.volume = 0.04;
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
-    const ROCK_ROLL_START_VOLUME = 0.25;
+    const ROCK_ROLL_START_VOLUME_FACTOR = 0.25;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
-    let rockRollContinuationAudio = null;
+    let rockRollContinuationPlaybackState = null;
+    let rockRollContinuationRetryBound = false;
 
     function consumeRockRollContinuation() {
       try {
@@ -266,51 +269,91 @@
       }
     }
 
-    function startRockRollContinuation(playbackState) {
-      if (!playbackState) {
+    function getRockRollContinuationStartVolume(playbackState) {
+      const sourceVolume = playbackState && Number.isFinite(playbackState.volume)
+        ? playbackState.volume
+        : 1;
+
+      return Math.max(0, Math.min(1, sourceVolume * ROCK_ROLL_START_VOLUME_FACTOR));
+    }
+
+    function bindRockRollContinuationRetry() {
+      if (rockRollContinuationRetryBound) {
         return;
       }
 
+      rockRollContinuationRetryBound = true;
+
+      function handleFirstInteraction() {
+        rockRollContinuationRetryBound = false;
+        document.removeEventListener('pointerdown', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+
+        if (rockRollContinuationPlaybackState) {
+          startRockRollContinuation(rockRollContinuationPlaybackState);
+          return;
+        }
+
+        startCongregationAudio();
+      }
+
+      document.addEventListener('pointerdown', handleFirstInteraction);
+      document.addEventListener('keydown', handleFirstInteraction);
+      document.addEventListener('touchstart', handleFirstInteraction);
+    }
+
+    function startRockRollContinuation(playbackState) {
+      if (!playbackState || !rockRollContinuationMedia) {
+        rockRollContinuationPlaybackState = null;
+        return;
+      }
+
+      rockRollContinuationPlaybackState = playbackState;
       rockRollContinuationActive = true;
-      rockRollContinuationAudio = new Audio('assets/notarickroll.mp4');
-      rockRollContinuationAudio.preload = 'auto';
-      rockRollContinuationAudio.volume = ROCK_ROLL_START_VOLUME;
+      const startVolume = getRockRollContinuationStartVolume(playbackState);
+      rockRollContinuationMedia.pause();
+      rockRollContinuationMedia.preload = 'auto';
+      rockRollContinuationMedia.muted = false;
+      rockRollContinuationMedia.volume = startVolume;
 
       const applyPlaybackPosition = function () {
         try {
-          rockRollContinuationAudio.currentTime = playbackState.currentTime;
+          rockRollContinuationMedia.currentTime = playbackState.currentTime;
         } catch (_) {}
       };
 
-      if (rockRollContinuationAudio.readyState > 0) {
+      if (rockRollContinuationMedia.readyState > 0) {
         applyPlaybackPosition();
       } else {
-        rockRollContinuationAudio.addEventListener('loadedmetadata', applyPlaybackPosition, { once: true });
+        rockRollContinuationMedia.addEventListener('loadedmetadata', applyPlaybackPosition, { once: true });
       }
 
-      const playPromise = rockRollContinuationAudio.play();
+      const playPromise = rockRollContinuationMedia.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(function () {
           rockRollContinuationActive = false;
+          bindRockRollContinuationRetry();
         });
       }
 
       const fadeStart = performance.now();
       function fadeStep(now) {
-        if (!rockRollContinuationAudio) {
+        if (!rockRollContinuationMedia || !rockRollContinuationActive) {
           rockRollContinuationActive = false;
           return;
         }
 
         const elapsed = now - fadeStart;
         const progress = Math.min(elapsed / ROCK_ROLL_FADE_DURATION_MS, 1);
-        const nextVolume = ROCK_ROLL_START_VOLUME * (1 - progress);
-        rockRollContinuationAudio.volume = Math.max(0, nextVolume);
+        const nextVolume = startVolume * (1 - progress);
+        rockRollContinuationMedia.volume = Math.max(0, nextVolume);
 
         if (progress >= 1) {
-          rockRollContinuationAudio.pause();
-          rockRollContinuationAudio.volume = 0;
+          rockRollContinuationMedia.pause();
+          rockRollContinuationMedia.volume = 0;
           rockRollContinuationActive = false;
+          rockRollContinuationPlaybackState = null;
           return;
         }
 
@@ -384,6 +427,10 @@
 
     function bindCongregationFallback() {
       function handleFirstInteraction() {
+        if (rockRollContinuationPlaybackState) {
+          return;
+        }
+
         startCongregationAudio();
         document.removeEventListener('pointerdown', handleFirstInteraction);
         document.removeEventListener('keydown', handleFirstInteraction);
@@ -430,8 +477,8 @@
 
       playDoorOpeningSound();
       congregationAudio.pause();
-      if (rockRollContinuationAudio) {
-        rockRollContinuationAudio.pause();
+      if (rockRollContinuationMedia) {
+        rockRollContinuationMedia.pause();
       }
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
@@ -447,8 +494,8 @@
       isNavigatingFromChapel = true;
 
       congregationAudio.pause();
-      if (rockRollContinuationAudio) {
-        rockRollContinuationAudio.pause();
+      if (rockRollContinuationMedia) {
+        rockRollContinuationMedia.pause();
       }
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
