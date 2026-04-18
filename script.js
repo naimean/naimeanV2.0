@@ -88,14 +88,22 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function incrementRickrollCount() {
-    const controller = typeof AbortController === 'function'
-      ? new AbortController()
-      : null;
+    let controller = null;
+    if (typeof AbortController === 'function') {
+      try {
+        controller = new AbortController();
+      } catch (_) {
+        controller = null;
+      }
+    }
     let timeoutId = null;
+    let requestSettled = false;
 
     if (controller) {
       timeoutId = setTimeout(() => {
-        controller.abort();
+        if (!requestSettled) {
+          controller.abort();
+        }
       }, RICKROLL_COUNT_TIMEOUT_MS);
     }
 
@@ -105,6 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
       keepalive: true,
       signal: controller ? controller.signal : undefined
     }).catch(() => {}).finally(() => {
+      requestSettled = true;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
