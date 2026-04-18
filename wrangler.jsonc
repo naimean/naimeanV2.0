@@ -1,10 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "naimeanv2",
+  "main": "src/index.js",
   "compatibility_date": "2026-04-18",
   "observability": {
     "enabled": true
   },
+  "main": "src/index.js",
   "assets": {
     "directory": "."
   },
