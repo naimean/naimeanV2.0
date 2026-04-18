@@ -1,3 +1,4 @@
+// Paths ending with "/" are prefix matches; all others are exact matches.
 const PROXY_PATHS = ["/get", "/increment", "/board", "/board-upload", "/board-delete", "/uploads/"];
 
 function shouldProxyPath(pathname) {
@@ -14,7 +15,7 @@ export default {
     if (shouldProxyPath(url.pathname)) {
       const proxyUrl = new URL(url.pathname + url.search, `https://barrelrollcounter-worker.naimean.workers.dev`);
       const method = request.method.toUpperCase();
-      const hasBody = method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
+      const hasBody = request.body !== null && method !== "GET" && method !== "HEAD";
       return fetch(new Request(proxyUrl, {
         method,
         headers: request.headers,
