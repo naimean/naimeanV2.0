@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastPointerPosition = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
+  const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
   const RICKROLL_COUNT_API_URL = 'https://api.countapi.xyz/hit/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
@@ -80,6 +81,27 @@ document.addEventListener('DOMContentLoaded', function() {
     discordRickrollCounter.textContent = normalizedCount === null
       ? RICKROLL_COUNT_UNAVAILABLE_TEXT
       : String(normalizedCount).padStart(2, '0');
+  }
+
+  function readLocalRickrollCount() {
+    try {
+      const rawValue = window.localStorage.getItem(LOCAL_RICKROLL_COUNT_KEY);
+      const parsedCount = normalizeRickrollCount(rawValue);
+      return parsedCount === null ? 0 : parsedCount;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function writeLocalRickrollCount(count) {
+    const normalizedCount = normalizeRickrollCount(count);
+    if (normalizedCount === null) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(LOCAL_RICKROLL_COUNT_KEY, String(normalizedCount));
+    } catch (_) {}
   }
 
   async function fetchRickrollCount(url, options = {}) {
@@ -115,15 +137,24 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    const localCount = readLocalRickrollCount();
+    updateDiscordRickrollCounterDisplay(localCount);
+
     try {
       const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URL);
-      updateDiscordRickrollCounterDisplay(remoteCount);
+      const nextCount = Math.max(localCount, remoteCount);
+      writeLocalRickrollCount(nextCount);
+      updateDiscordRickrollCounterDisplay(nextCount);
     } catch (_) {
-      updateDiscordRickrollCounterDisplay(null);
+      updateDiscordRickrollCounterDisplay(localCount);
     }
   }
 
   async function incrementRickrollCount() {
+    const optimisticCount = readLocalRickrollCount() + 1;
+    writeLocalRickrollCount(optimisticCount);
+    updateDiscordRickrollCounterDisplay(optimisticCount);
+
     let controller = null;
     if (typeof AbortController === 'function') {
       try {
@@ -148,11 +179,12 @@ document.addEventListener('DOMContentLoaded', function() {
         keepalive: true,
         signal: controller ? controller.signal : undefined
       });
-      updateDiscordRickrollCounterDisplay(remoteCount);
-      return remoteCount;
+      const nextCount = Math.max(optimisticCount, remoteCount);
+      writeLocalRickrollCount(nextCount);
+      updateDiscordRickrollCounterDisplay(nextCount);
+      return nextCount;
     } catch (_) {
-      updateDiscordRickrollCounterDisplay(null);
-      return null;
+      return optimisticCount;
     } finally {
       requestSettled = true;
       if (timeoutId) {
