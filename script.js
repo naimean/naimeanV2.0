@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootForm = document.getElementById('boot-form');
   const bootVideo = document.getElementById('boot-video');
   const bootSubmit = document.getElementById('boot-submit');
+  const bootQuickLinks = document.getElementById('boot-quick-links');
+  const bootCalendarBtn = document.getElementById('boot-calendar-btn');
+  const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
   const returnBypassBtn = document.getElementById('return-bypass-btn');
   const discordRickrollCounter = document.getElementById('discord-rickroll-counter');
   const c64Screen = document.querySelector('.c64-screen');
@@ -63,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const RICKROLL_COUNT_READ_API_URL = 'https://api.countapi.xyz/get/naimeanV2_0/rickrolls';
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
+  const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
 
   function normalizeRickrollCount(value) {
     const parsedCount = Number(value);
@@ -329,6 +333,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootSubmit) {
       bootSubmit.style.display = 'none';
     }
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = 'none';
+    }
     setDiscordRickrollCounterVisible(false);
     if (bootVideo) {
       bootVideo.style.display = 'block';
@@ -394,6 +401,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (bootSubmit) {
       bootSubmit.style.display = 'inline-flex';
+    }
+    if (bootQuickLinks) {
+      bootQuickLinks.style.display = 'inline-flex';
     }
     if (bootScreen) {
       bootScreen.classList.add('visible');
@@ -601,6 +611,18 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   document.addEventListener('pointerdown', primeWrongAudio, { once: true });
+
+  if (bootCalendarBtn) {
+    bootCalendarBtn.addEventListener('click', function() {
+      playWrongSound();
+    });
+  }
+
+  if (bootWhiteboardBtn) {
+    bootWhiteboardBtn.addEventListener('click', function() {
+      window.open(WHITEBOARD_URL, '_blank', 'noopener,noreferrer');
+    });
+  }
 
   if (bootInput) {
     bootInput.addEventListener('focus', placeBootCursorAtEnd);
