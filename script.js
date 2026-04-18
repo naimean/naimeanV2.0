@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let hintRevealProgress = 0;
   let lastPointerPosition = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
+  const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
 
   function persistRockRollPlaybackState() {
     if (!prankVideo) {
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
         volume: Number.isFinite(prankVideo.volume) ? prankVideo.volume : 1
       };
       window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_KEY, JSON.stringify(playbackState));
+      window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_PENDING_KEY, '1');
     } catch (_) {}
   }
 

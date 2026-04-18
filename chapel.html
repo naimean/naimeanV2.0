@@ -242,6 +242,7 @@
     const rockRollContinuationMedia = document.getElementById('rock-roll-continuation-media');
     congregationAudio.volume = 0.04;
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
+    const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.25;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
     let congregationStarted = false;
@@ -249,22 +250,36 @@
     let rockRollContinuationActive = false;
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
+    let rockRollContinuationPending = false;
+
+    function clearRockRollContinuationState() {
+      rockRollContinuationPending = false;
+      rockRollContinuationPlaybackState = null;
+
+      try {
+        window.sessionStorage.removeItem(ROCK_ROLL_CONTINUATION_KEY);
+        window.sessionStorage.removeItem(ROCK_ROLL_CONTINUATION_PENDING_KEY);
+      } catch (_) {}
+    }
 
     function consumeRockRollContinuation() {
       try {
+        rockRollContinuationPending = window.sessionStorage.getItem(ROCK_ROLL_CONTINUATION_PENDING_KEY) === '1';
         const raw = window.sessionStorage.getItem(ROCK_ROLL_CONTINUATION_KEY);
-        window.sessionStorage.removeItem(ROCK_ROLL_CONTINUATION_KEY);
         if (!raw) {
+          rockRollContinuationPending = false;
           return null;
         }
 
         const parsed = JSON.parse(raw);
         if (!parsed || !Number.isFinite(parsed.currentTime) || parsed.currentTime < 0) {
+          clearRockRollContinuationState();
           return null;
         }
 
         return parsed;
       } catch (_) {
+        clearRockRollContinuationState();
         return null;
       }
     }
@@ -305,7 +320,7 @@
 
     function finishRockRollContinuation() {
       rockRollContinuationActive = false;
-      rockRollContinuationPlaybackState = null;
+      clearRockRollContinuationState();
 
       if (isNavigatingFromChapel) {
         return;
@@ -316,17 +331,18 @@
 
     function startRockRollContinuation(playbackState) {
       if (!playbackState || !rockRollContinuationMedia) {
-        rockRollContinuationPlaybackState = null;
+        clearRockRollContinuationState();
         return;
       }
 
+      rockRollContinuationPending = true;
       rockRollContinuationPlaybackState = playbackState;
       rockRollContinuationActive = true;
       const startVolume = getRockRollContinuationStartVolume(playbackState);
       rockRollContinuationMedia.pause();
       rockRollContinuationMedia.preload = 'auto';
-      rockRollContinuationMedia.muted = false;
-      rockRollContinuationMedia.volume = startVolume;
+      rockRollContinuationMedia.muted = true;
+      rockRollContinuationMedia.volume = 0;
 
       const applyPlaybackPosition = function () {
         try {
@@ -346,6 +362,13 @@
           rockRollContinuationActive = false;
           bindRockRollContinuationRetry();
         });
+        playPromise.then(function () {
+          rockRollContinuationMedia.muted = false;
+          rockRollContinuationMedia.volume = startVolume;
+        });
+      } else {
+        rockRollContinuationMedia.muted = false;
+        rockRollContinuationMedia.volume = startVolume;
       }
 
       const fadeStart = performance.now();
@@ -415,7 +438,7 @@
     }
 
     function startCongregationAudio() {
-      if (rockRollContinuationPlaybackState) {
+      if (rockRollContinuationPending || rockRollContinuationPlaybackState) {
         return;
       }
 
@@ -440,7 +463,7 @@
 
     function bindCongregationFallback() {
       function handleFirstInteraction() {
-        if (rockRollContinuationPlaybackState) {
+        if (rockRollContinuationPending || rockRollContinuationPlaybackState) {
           return;
         }
 
