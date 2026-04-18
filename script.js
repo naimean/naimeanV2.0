@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
-  function showBootDiscordPromptScreen() {
+  function showBootDiscordPromptScreen(showBootControls = true) {
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
@@ -170,11 +170,13 @@ document.addEventListener('DOMContentLoaded', function() {
       bootVideo.currentTime = 0;
     }
     if (bootInput) {
-      bootInput.style.display = '';
-      resetBootInput();
+      bootInput.style.display = showBootControls ? '' : 'none';
+      if (showBootControls) {
+        resetBootInput();
+      }
     }
     if (bootSubmit) {
-      bootSubmit.style.display = '';
+      bootSubmit.style.display = showBootControls ? '' : 'none';
     }
   }
 
@@ -184,13 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     gateSequenceRunning = true;
 
-    showBootDiscordPromptScreen();
-    if (bootInput) {
-      bootInput.style.display = 'none';
-    }
-    if (bootSubmit) {
-      bootSubmit.style.display = 'none';
-    }
+    showBootDiscordPromptScreen(false);
     try {
       await playStaticTransition();
       if (bootVideo) {
