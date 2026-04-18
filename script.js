@@ -728,7 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  async function serveDiscordInviteOrFallback() {
+  async function serveDiscordInviteIfPossible() {
     const inviteUrl = await resolveDiscordInviteUrl();
     if (inviteUrl) {
       window.location.assign(inviteUrl);
@@ -790,7 +790,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Let the audio cue play in parallel so the prank video appears immediately.
-    void playZeldaSecretSound();
+    playZeldaSecretSound().catch(() => {});
     await playStaticTransition();
 
     shoutboxContainer.classList.add('visible');
@@ -806,7 +806,8 @@ document.addEventListener('DOMContentLoaded', function() {
     await delay(PRANK_REDIRECT_DELAY_MS);
     await incrementRickrollCount();
     persistRockRollPlaybackState();
-    if (await serveDiscordInviteOrFallback()) {
+    const inviteServed = await serveDiscordInviteIfPossible();
+    if (inviteServed) {
       return;
     }
     window.location.assign('chapel.html');
