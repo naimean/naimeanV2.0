@@ -157,26 +157,26 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
-  function displayBootPromptScreen(showBootControls = true) {
+  function setupBootScreen(hideBootControls = false, resetBootMedia = false) {
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
     if (shoutboxContainer) {
       shoutboxContainer.classList.remove('visible');
     }
-    if (bootVideo) {
+    if (bootVideo && resetBootMedia) {
       bootVideo.pause();
       bootVideo.style.display = 'none';
       bootVideo.currentTime = 0;
     }
     if (bootInput) {
-      bootInput.style.display = showBootControls ? '' : 'none';
-      if (showBootControls) {
+      bootInput.style.display = hideBootControls ? 'none' : 'block';
+      if (!hideBootControls) {
         resetBootInput();
       }
     }
     if (bootSubmit) {
-      bootSubmit.style.display = showBootControls ? '' : 'none';
+      bootSubmit.style.display = hideBootControls ? 'none' : 'inline-flex';
     }
   }
 
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     gateSequenceRunning = true;
 
-    displayBootPromptScreen(false);
+    setupBootScreen(true, true);
     try {
       await playStaticTransition();
       if (bootVideo) {
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await playStaticTransition();
-    displayBootPromptScreen();
+    setupBootScreen();
   }
 
   function playStaticTransition() {
