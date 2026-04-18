@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let screenOn = false;
   let puzzleSolved = false;
   let prankRunning = false;
+  let gateSequenceRunning = false;
   let powerButtonCooldownUntil = 0;
   let hintRevealProgress = 0;
   let lastPointerPosition = null;
@@ -156,45 +157,73 @@ document.addEventListener('DOMContentLoaded', function() {
     resetHintReveal();
   }
 
-  async function runNedryGateSequence() {
+  function showBootDiscordPromptScreen() {
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
+    if (shoutboxContainer) {
+      shoutboxContainer.classList.remove('visible');
+    }
+    if (bootVideo) {
+      bootVideo.pause();
+      bootVideo.style.display = 'none';
+      bootVideo.currentTime = 0;
+    }
+    if (bootInput) {
+      bootInput.style.display = '';
+      resetBootInput();
+    }
+    if (bootSubmit) {
+      bootSubmit.style.display = '';
+    }
+  }
+
+  async function runNedryGateSequence() {
+    if (gateSequenceRunning) {
+      return;
+    }
+    gateSequenceRunning = true;
+
+    showBootDiscordPromptScreen();
     if (bootInput) {
       bootInput.style.display = 'none';
     }
     if (bootSubmit) {
       bootSubmit.style.display = 'none';
     }
-    if (bootVideo) {
-      bootVideo.style.display = 'block';
-      try {
-        bootVideo.currentTime = 0;
-        await bootVideo.play();
-        const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
-          ? Math.ceil(bootVideo.duration * 1000) + 2000
-          : 12000;
-        await waitForVideoToEnd(bootVideo, waitMs);
-      } catch (_) {
-        // If autoplay/playback fails, continue to the prompt instead of hanging.
-      } finally {
-        bootVideo.pause();
-        bootVideo.style.display = 'none';
+    try {
+      await playStaticTransition();
+      if (bootVideo) {
+        bootVideo.style.display = 'block';
+        try {
+          bootVideo.currentTime = 0;
+          await bootVideo.play();
+          const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
+            ? Math.ceil(bootVideo.duration * 1000) + 2000
+            : 12000;
+          await waitForVideoToEnd(bootVideo, waitMs);
+        } catch (_) {
+          // If autoplay/playback fails, continue to the prompt instead of hanging.
+        } finally {
+          bootVideo.pause();
+          bootVideo.style.display = 'none';
+        }
       }
-    }
 
-    if (bootScreen) {
-      bootScreen.classList.remove('visible');
+      if (bootScreen) {
+        bootScreen.classList.remove('visible');
+      }
+      if (shoutboxContainer) {
+        shoutboxContainer.classList.add('visible');
+      }
+      if (shoutboxInput) {
+        resetFinalInput();
+        shoutboxInput.focus();
+      }
+      puzzleSolved = true;
+    } finally {
+      gateSequenceRunning = false;
     }
-    if (shoutboxContainer) {
-      shoutboxContainer.classList.add('visible');
-    }
-    await playStaticTransition();
-    if (shoutboxInput) {
-      resetFinalInput();
-      shoutboxInput.focus();
-    }
-    puzzleSolved = true;
   }
 
   async function runInitialPowerOnSequence() {
@@ -211,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await playStaticTransition();
-    await runNedryGateSequence();
+    showBootDiscordPromptScreen();
   }
 
   function playStaticTransition() {
