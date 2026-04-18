@@ -294,7 +294,18 @@ body {
   padding: 10px 8px;
 }
 
+.boot-quick-link--snow {
+  min-width: auto;
+  width: auto;
+  padding: 10px 8px;
+}
+
 .boot-capex-label {
+  font-size: 0.72em;
+  letter-spacing: 0.6px;
+}
+
+.boot-snow-label {
   font-size: 0.72em;
   letter-spacing: 0.6px;
 }
@@ -768,6 +779,12 @@ body {
   }
 
   .boot-quick-link--capex {
+    min-width: auto;
+    width: auto;
+    padding: calc(10px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
+  }
+
+  .boot-quick-link--snow {
     min-width: auto;
     width: auto;
     padding: calc(10px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
