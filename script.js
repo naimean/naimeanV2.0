@@ -429,9 +429,10 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           // Transition to input prompt (with native blinking caret) instead of a Discord screen.
+          // Show the green prompt screen behind static first so the blue boot frame never flashes.
           bootScreen.classList.remove('visible');
-          await playStaticTransition();
           shoutboxContainer.classList.add('visible');
+          await playStaticTransition();
           if (shoutboxInput) {
             resetFinalInput();
             shoutboxInput.focus();
