@@ -282,14 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
       shoutboxInput.blur();
     }
 
-    playZeldaSecretSound();
-    await new Promise((resolve) => {
-      const onEnd = () => { zeldaSecretAudio.removeEventListener('ended', onEnd); zeldaSecretAudio.removeEventListener('error', onEnd); resolve(); };
-      zeldaSecretAudio.addEventListener('ended', onEnd, { once: true });
-      zeldaSecretAudio.addEventListener('error', onEnd, { once: true });
-      setTimeout(resolve, 8000); // fallback cap
-    });
-    await delay(500);
+    await playZeldaSecretSound();
     await playStaticTransition();
 
     shoutboxContainer.classList.add('visible');
@@ -466,24 +459,58 @@ const zeldaSecretAudio = new Audio('assets/zelda-secret.mp3');
 zeldaSecretAudio.preload = 'auto';
 
 function playZeldaSecretSound() {
-  zeldaSecretAudio.currentTime = 0;
-  zeldaSecretAudio.play().catch(() => {
-    // If the mp3 file is missing, fall back to a short chime sequence.
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [783.99, 987.77, 1174.66, 1567.98];
-    const start = ctx.currentTime;
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, start + i * 0.14);
-      gain.gain.exponentialRampToValueAtTime(0.14, start + i * 0.14 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + i * 0.14 + 0.13);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start + i * 0.14);
-      osc.stop(start + i * 0.14 + 0.13);
+  return new Promise((resolve) => {
+    let settled = false;
+    let fallbackTimer = null;
+
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+      }
+      zeldaSecretAudio.removeEventListener('ended', finish);
+      zeldaSecretAudio.removeEventListener('error', finish);
+      resolve();
+    };
+
+    zeldaSecretAudio.currentTime = 0;
+    zeldaSecretAudio.addEventListener('ended', finish, { once: true });
+    zeldaSecretAudio.addEventListener('error', finish, { once: true });
+
+    zeldaSecretAudio.play().then(() => {
+      const durationMs = Number.isFinite(zeldaSecretAudio.duration) && zeldaSecretAudio.duration > 0
+        ? Math.ceil(zeldaSecretAudio.duration * 1000) + 250
+        : 8000;
+      fallbackTimer = setTimeout(finish, durationMs);
+    }).catch(() => {
+      // If the mp3 file is missing, fall back to a short chime sequence.
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [783.99, 987.77, 1174.66, 1567.98];
+        const noteSpacingSeconds = 0.14;
+        const noteLengthSeconds = 0.13;
+        const totalDurationSeconds = ((notes.length - 1) * noteSpacingSeconds) + noteLengthSeconds;
+        const start = ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.0001, start + i * noteSpacingSeconds);
+          gain.gain.exponentialRampToValueAtTime(0.14, start + i * noteSpacingSeconds + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + i * noteSpacingSeconds + noteLengthSeconds);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start + i * noteSpacingSeconds);
+          osc.stop(start + i * noteSpacingSeconds + noteLengthSeconds);
+        });
+        fallbackTimer = setTimeout(finish, Math.ceil(totalDurationSeconds * 1000) + 50);
+      } catch (_) {
+        finish();
+      }
     });
   });
 }
