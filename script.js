@@ -81,6 +81,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const RICKROLL_COUNT_API_URL = `${RICKROLL_COUNTER_BASE_URL}/hit`;
   const RICKROLL_COUNT_READ_API_URL = `${RICKROLL_COUNTER_BASE_URL}/get`;
   const RICKROLL_COUNT_TIMEOUT_MS = 2000;
+  const DISCORD_WIDGET_ID = '1487898909224341534';
+  const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
+  const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
 
@@ -681,6 +684,62 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  async function resolveDiscordInviteUrl() {
+    let controller = null;
+    if (typeof AbortController === 'function') {
+      try {
+        controller = new AbortController();
+      } catch (_) {
+        controller = null;
+      }
+    }
+
+    let timeoutId = null;
+    if (controller) {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+      }, DISCORD_INVITE_RESOLVE_TIMEOUT_MS);
+    }
+
+    try {
+      const response = await fetch(DISCORD_WIDGET_API_URL, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller ? controller.signal : undefined
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const payload = await response.json();
+      return typeof payload?.instant_invite === 'string' && payload.instant_invite
+        ? payload.instant_invite
+        : null;
+    } catch (_) {
+      return null;
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+  }
+
+  async function serveDiscordInviteOrFallback() {
+    const inviteUrl = await resolveDiscordInviteUrl();
+    if (inviteUrl) {
+      window.location.assign(inviteUrl);
+      return true;
+    }
+
+    if (discordOverlay) {
+      discordOverlay.classList.add('visible');
+      discordOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    return false;
+  }
+
   async function runPowerOffPrank() {
     if (prankRunning) return;
     prankRunning = true;
@@ -723,7 +782,7 @@ document.addEventListener('DOMContentLoaded', function() {
       shoutboxInput.blur();
     }
 
-    await playZeldaSecretSound();
+    playZeldaSecretSound();
     await playStaticTransition();
 
     shoutboxContainer.classList.add('visible');
@@ -739,6 +798,9 @@ document.addEventListener('DOMContentLoaded', function() {
     await delay(5000);
     await incrementRickrollCount();
     persistRockRollPlaybackState();
+    if (await serveDiscordInviteOrFallback()) {
+      return;
+    }
     window.location.assign('chapel.html');
   }
 
