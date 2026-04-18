@@ -176,6 +176,10 @@ body {
   gap: 8px;
 }
 
+#boot-submit {
+  margin-top: 22px;
+}
+
 .boot-input {
   background: transparent;
   border: none;
@@ -594,6 +598,10 @@ body {
 }
 
 @media (max-width: 600px) {
+  :root {
+    --boot-mobile-button-scale: 0.85;
+  }
+
   .discord-widget-embed {
     --discord-widget-scale: 0.84;
   }
@@ -609,19 +617,27 @@ body {
     gap: 8px;
   }
 
-  .boot-input {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-    font-size: 0.7em;
-    letter-spacing: 0.8px;
-    filter: blur(0.21px);
+  .boot-submit {
+    padding: calc(10px * var(--boot-mobile-button-scale)) calc(8px * var(--boot-mobile-button-scale));
+    font-size: calc(0.55em * var(--boot-mobile-button-scale));
+    white-space: nowrap;
+    gap: calc(10px * var(--boot-mobile-button-scale));
   }
 
-  .boot-submit {
-    padding: 10px 8px;
-    font-size: 0.55em;
-    white-space: nowrap;
+  .boot-quick-link {
+    min-width: calc(42px * var(--boot-mobile-button-scale));
+    width: calc(42px * var(--boot-mobile-button-scale));
+    padding: calc(10px * var(--boot-mobile-button-scale)) 0;
+  }
+
+  .boot-quick-link-icon {
+    width: calc(18px * var(--boot-mobile-button-scale));
+    height: calc(18px * var(--boot-mobile-button-scale));
+  }
+
+  .discord-prefix-icon {
+    width: calc(20px * var(--boot-mobile-button-scale));
+    height: calc(16px * var(--boot-mobile-button-scale));
   }
 
   .shoutbox-bottom {

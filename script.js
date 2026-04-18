@@ -722,7 +722,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    if (bootForm && bootInput && bootVideo && bootSubmit) {
+    if (bootForm && bootVideo && bootSubmit) {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (screenOn && !puzzleSolved) {
