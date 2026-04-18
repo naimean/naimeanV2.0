@@ -159,6 +159,23 @@
       100% { box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff; filter: brightness(1); }
     }
 
+    /* Invisible hotspot over the chapel computer screen to return to index. */
+    .chapel-return-btn {
+      position: absolute;
+      left: 46.4%;
+      top: 53.2%;
+      width: 8.4%;
+      height: 4.5%;
+      background: transparent;
+      opacity: 0;
+      pointer-events: auto;
+      border: none;
+      cursor: pointer;
+      z-index: 10;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     /* Invisible hotspot over the trap door square area. */
     .trapdoor-btn {
       position: absolute;
@@ -205,6 +222,7 @@
       <div class="chapel-power-btn" aria-hidden="true">
         <span class="chapel-power-light"></span>
       </div>
+      <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to the main screen"></button>
       <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
     </div>
   </div>
@@ -222,7 +240,7 @@
     const congregationAudio = document.getElementById('congregation-audio');
     congregationAudio.volume = 0.04;
     let congregationStarted = false;
-    let isNavigatingToDescent = false;
+    let isNavigatingFromChapel = false;
 
     function playDoorOpeningSound() {
       const audioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -321,10 +339,10 @@
     });
 
     function navigateToSite() {
-      if (isNavigatingToDescent) {
+      if (isNavigatingFromChapel) {
         return;
       }
-      isNavigatingToDescent = true;
+      isNavigatingFromChapel = true;
 
       playDoorOpeningSound();
       congregationAudio.pause();
@@ -334,6 +352,22 @@
         window.location.assign('bedroom_antechamber.html');
       }, 900);
     }
+
+    function navigateBackToIndex() {
+      if (isNavigatingFromChapel) {
+        return;
+      }
+      isNavigatingFromChapel = true;
+
+      congregationAudio.pause();
+      const overlay = document.getElementById('fade-overlay');
+      overlay.classList.add('fading');
+      setTimeout(function () {
+        window.location.assign('index.html');
+      }, 900);
+    }
+
+    document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
 
     // Invisible button click → bedroom_antechamber.html
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
