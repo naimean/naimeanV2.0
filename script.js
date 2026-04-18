@@ -53,6 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_DEFAULT_SUFFIX = 'Admin';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
+  const BOOT_ROLE_VISIBILITY_BY_USER = {
+    RCA: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true },
+    MAD: { showDiscordButton: false, showCalendarButton: true, showWhiteboardButton: true },
+    JV: { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true },
+    RAD: { showDiscordButton: false, showCalendarButton: true, showWhiteboardButton: false }
+  };
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
   wrongAudio.load();
@@ -313,31 +319,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const inputValue = bootInput.value;
-    let showDiscordButton = true;
-    let showCalendarButton = false;
-    let showWhiteboardButton = false;
-
-    switch (inputValue) {
-      case 'C:\\Naimean\\User\\RCA':
-        showDiscordButton = false;
-        showWhiteboardButton = true;
-        break;
-      case 'C:\\Naimean\\User\\MAD':
-        showDiscordButton = false;
-        showCalendarButton = true;
-        showWhiteboardButton = true;
-        break;
-      case 'C:\\Naimean\\User\\JV':
-        showDiscordButton = false;
-        showWhiteboardButton = true;
-        break;
-      case 'C:\\Naimean\\User\\RAD':
-        showDiscordButton = false;
-        showCalendarButton = true;
-        break;
-      default:
-        break;
-    }
+    const currentUser = inputValue.startsWith(BOOT_PREFIX)
+      ? inputValue.slice(BOOT_PREFIX.length)
+      : '';
+    const visibility = BOOT_ROLE_VISIBILITY_BY_USER[currentUser] || {
+      showDiscordButton: true,
+      showCalendarButton: false,
+      showWhiteboardButton: false
+    };
+    const { showDiscordButton, showCalendarButton, showWhiteboardButton } = visibility;
 
     if (bootSubmit) {
       bootSubmit.style.visibility = showDiscordButton ? 'visible' : 'hidden';

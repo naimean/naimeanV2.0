@@ -178,6 +178,8 @@ body {
 
 #boot-submit {
   margin-top: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .boot-submit-stack {
@@ -185,11 +187,6 @@ body {
   display: inline-flex;
   align-items: center;
   min-height: 42px;
-}
-
-#boot-submit {
-  position: relative;
-  z-index: 2;
 }
 
 .boot-input {
