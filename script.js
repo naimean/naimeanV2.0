@@ -317,10 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function incrementRickrollCount() {
-    const optimisticCount = readLocalRickrollCount() + 1;
-    writeLocalRickrollCount(optimisticCount);
-    updateDiscordRickrollCounterDisplay(optimisticCount);
-    if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: optimistic \u2192 ' + optimisticCount); }
+    const localCountBeforeIncrement = readLocalRickrollCount();
 
     let controller = null;
     if (typeof AbortController === 'function') {
@@ -355,9 +352,25 @@ document.addEventListener('DOMContentLoaded', function() {
         window.NaimeanDiag.log('increment: confirmed \u2192 ' + nextCount);
       }
       return nextCount;
-    } catch (_) {
-      if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: remote failed, keeping ' + optimisticCount); }
-      return optimisticCount;
+    } catch (error) {
+      const incrementErrorSuffix = error && error.message ? ` (${error.message})` : '';
+      if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: failed remote increment, resyncing from read endpoint' + incrementErrorSuffix); }
+      try {
+        const syncedCount = await fetchRickrollCount(RICKROLL_COUNT_READ_API_URLS);
+        writeLocalRickrollCount(syncedCount);
+        updateDiscordRickrollCounterDisplay(syncedCount);
+        if (window.NaimeanDiag) {
+          window.NaimeanDiag.set('remote count', syncedCount);
+          window.NaimeanDiag.set('local count', syncedCount);
+          window.NaimeanDiag.log('increment: resynced \u2192 ' + syncedCount);
+        }
+        return syncedCount;
+      } catch (resyncError) {
+        updateDiscordRickrollCounterDisplay(localCountBeforeIncrement);
+        const resyncErrorSuffix = resyncError && resyncError.message ? ` (${resyncError.message})` : '';
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: failed read-endpoint resync, keeping ' + localCountBeforeIncrement + resyncErrorSuffix); }
+        return localCountBeforeIncrement;
+      }
     } finally {
       requestSettled = true;
       if (timeoutId) {

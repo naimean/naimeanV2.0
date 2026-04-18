@@ -319,10 +319,10 @@ body {
 
 .discord-overlay {
   position: absolute;
-  left: calc(var(--screen-left) + var(--screen-inner-inset));
-  top: calc(var(--screen-top) + var(--screen-inner-inset));
-  width: calc(var(--screen-width) - var(--screen-inner-inset-double));
-  height: calc(var(--screen-height) - var(--screen-inner-inset-double));
+  left: calc(var(--screen-left) + 1px);
+  top: calc(var(--screen-top) + 1px);
+  width: calc(var(--screen-width) - 2px);
+  height: calc(var(--screen-height) - 2px);
   border-radius: 7px;
   display: none;
   z-index: 11;
