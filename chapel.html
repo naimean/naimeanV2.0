@@ -247,6 +247,18 @@
     }
 
     const DISCORD_PAGE_URL = resolveDiscordPageUrl();
+    const SKIP_DISCORD_REDIRECT_KEY = 'naimean-skip-discord-redirect';
+    const shouldSkipDiscordRedirect = (function consumeSkipDiscordRedirectFlag() {
+      try {
+        const shouldSkip = window.sessionStorage.getItem(SKIP_DISCORD_REDIRECT_KEY) === '1';
+        if (shouldSkip) {
+          window.sessionStorage.removeItem(SKIP_DISCORD_REDIRECT_KEY);
+        }
+        return shouldSkip;
+      } catch (_) {
+        return false;
+      }
+    })();
     const congregationAudio = document.getElementById('congregation-audio');
     congregationAudio.volume = 0.3;
     let congregationStarted = false;
@@ -350,6 +362,10 @@
     });
 
     function navigateToDiscord() {
+      if (shouldSkipDiscordRedirect) {
+        return;
+      }
+
       if (isNavigatingToDiscord || isNavigatingToDescent) {
         return;
       }
@@ -362,9 +378,11 @@
       }, 900);
     }
 
-    congregationAudio.addEventListener('playing', navigateToDiscord, { once: true });
-    if (!congregationAudio.paused && !congregationAudio.ended && congregationAudio.currentTime > 0) {
-      navigateToDiscord();
+    if (!shouldSkipDiscordRedirect) {
+      congregationAudio.addEventListener('playing', navigateToDiscord, { once: true });
+      if (!congregationAudio.paused && !congregationAudio.ended && congregationAudio.currentTime > 0) {
+        navigateToDiscord();
+      }
     }
 
     function navigateToSite() {
