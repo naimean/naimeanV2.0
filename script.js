@@ -91,13 +91,15 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    // Make the overlay fully visible immediately so the subsequent class removal
+    // always fades from black to transparent instead of briefly animating toward black.
+    overlay.style.transition = 'none';
     overlay.classList.add('visible');
-    // Wait two frames so the browser paints the visible state before removing it,
-    // which reliably triggers the CSS opacity transition back to transparent.
+    void overlay.offsetHeight;
+    overlay.style.transition = '';
+
     requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        overlay.classList.remove('visible');
-      });
+      overlay.classList.remove('visible');
     });
   }
 
