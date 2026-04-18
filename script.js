@@ -138,19 +138,70 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function playStaticTransition() {
     return new Promise((resolve) => {
+      const STATIC_CLIP_SECONDS = 0.75;
+      const STATIC_CLIP_MS = Math.round(STATIC_CLIP_SECONDS * 1000);
       const overlay = document.getElementById('static-overlay');
       const vid = document.getElementById('static-video');
       if (!overlay || !vid) { resolve(); return; }
-      overlay.classList.add('visible');
-      vid.currentTime = 0;
-      vid.play().catch(() => {});
-      const onEnd = () => {
+      let settled = false;
+      let endTimer = null;
+      let metadataHandler = null;
+
+      const scheduleFinish = (ms) => {
+        if (endTimer) {
+          clearTimeout(endTimer);
+        }
+        endTimer = setTimeout(finish, ms);
+      };
+
+      const finish = () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        if (endTimer) {
+          clearTimeout(endTimer);
+        }
+        if (metadataHandler) {
+          vid.removeEventListener('loadedmetadata', metadataHandler);
+        }
+        vid.pause();
         overlay.classList.remove('visible');
         resolve();
       };
-      vid.addEventListener('ended', onEnd, { once: true });
-      vid.addEventListener('error', onEnd, { once: true });
-      setTimeout(() => { overlay.classList.remove('visible'); resolve(); }, 4000);
+
+      const startRandomClip = () => {
+        const duration = Number.isFinite(vid.duration) ? vid.duration : 0;
+        if (duration > STATIC_CLIP_SECONDS) {
+          const maxStart = duration - STATIC_CLIP_SECONDS;
+          vid.currentTime = Math.random() * maxStart;
+          scheduleFinish(STATIC_CLIP_MS);
+        } else {
+          vid.currentTime = 0;
+          const remainingMs = duration > 0 ? Math.ceil(duration * 1000) : STATIC_CLIP_MS;
+          scheduleFinish(Math.min(STATIC_CLIP_MS, Math.max(remainingMs, 200)));
+        }
+
+        vid.play().catch(() => {
+          finish();
+        });
+      };
+
+      overlay.classList.add('visible');
+      vid.addEventListener('ended', finish, { once: true });
+      vid.addEventListener('error', finish, { once: true });
+
+      if (Number.isFinite(vid.duration) && vid.duration > 0) {
+        startRandomClip();
+      } else {
+        metadataHandler = () => {
+          metadataHandler = null;
+          startRandomClip();
+        };
+        vid.addEventListener('loadedmetadata', metadataHandler, { once: true });
+        vid.load();
+        scheduleFinish(4000);
+      }
     });
   }
 
