@@ -699,12 +699,16 @@ body {
     right: 12px;
     bottom: 14px;
     gap: 8px;
+    align-items: flex-end;
   }
 
   .boot-input {
     width: 14em;
     min-width: 14em;
     max-width: 14em;
+    font-family: 'VT323', monospace;
+    font-weight: 400;
+    letter-spacing: 0.25px;
   }
 
   .boot-submit {
@@ -732,6 +736,10 @@ body {
   .discord-prefix-icon {
     width: calc(20px * var(--boot-mobile-button-scale));
     height: calc(16px * var(--boot-mobile-button-scale));
+  }
+
+  .discord-rickroll-counter {
+    right: 12px;
   }
 
   .shoutbox-bottom {
