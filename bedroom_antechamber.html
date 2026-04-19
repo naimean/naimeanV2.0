@@ -103,18 +103,25 @@
     <button class="bedroom-enter-btn" id="bedroom-enter-btn" aria-label="Enter the bedroom"></button>
   </div>
   <script>
-    const NAV_FADE_DURATION_MS = 900;
+    const DEFAULT_NAV_FADE_DURATION_MS = 900;
     let isNavigatingBackUp = false;
     let isNavigatingToBedroom = false;
 
+    function getNavFadeDurationMs() {
+      const rootStyles = getComputedStyle(document.documentElement);
+      const navFadeDurationSeconds = parseFloat(rootStyles.getPropertyValue('--nav-fade-duration'));
+      if (!Number.isFinite(navFadeDurationSeconds) || navFadeDurationSeconds <= 0) {
+        return DEFAULT_NAV_FADE_DURATION_MS;
+      }
+      return navFadeDurationSeconds * 1000;
+    }
+
     function fadeOutAndNavigate(pathname) {
       const overlay = document.getElementById('fade-overlay');
-      if (overlay) {
-        overlay.classList.add('fading');
-      }
+      overlay.classList.add('fading');
       setTimeout(function () {
         window.location.assign(pathname);
-      }, NAV_FADE_DURATION_MS);
+      }, getNavFadeDurationMs());
     }
 
     function navigateBackUp() {
