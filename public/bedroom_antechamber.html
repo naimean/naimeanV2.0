@@ -17,12 +17,15 @@
     }
 
     :root {
-      --top-blue-hotspot-height: 16%;
-      --doorway-hotspot-left: 36%;
-      --doorway-hotspot-top: 29%;
-      --doorway-hotspot-width: 28%;
-      --doorway-hotspot-height: 58%;
-      --bottom-hotspot-height: 22%;
+      --top-blue-hotspot-left: 0%;
+      --top-blue-hotspot-top: 0%;
+      --top-blue-hotspot-width: 33%;
+      --top-blue-hotspot-height: 18%;
+      --doorway-hotspot-left: 40%;
+      --doorway-hotspot-top: 30%;
+      --doorway-hotspot-width: 20%;
+      --doorway-hotspot-height: 55%;
+      --bottom-hotspot-height: 12%;
       --nav-fade-duration: 0.9s;
     }
 
@@ -52,9 +55,9 @@
 
     .trapdoor-up-btn {
       position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
+      left: var(--top-blue-hotspot-left);
+      top: var(--top-blue-hotspot-top);
+      width: var(--top-blue-hotspot-width);
       height: var(--top-blue-hotspot-height);
       background: transparent;
       opacity: 0;
@@ -176,7 +179,7 @@
         return;
       }
       isNavigatingToFirstLevel = true;
-      window.location.assign('first_level.html');
+      window.location.assign('level_one.html');
     }
 
     function playDoorClosingSound() {
