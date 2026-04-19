@@ -556,12 +556,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function resetMiniGameState() {
-    miniGameState = {
-      isActive: false,
-      targetNumber: 0,
-      attemptsUsed: 0,
-      maxAttempts: 4
-    };
+    miniGameState.isActive = false;
+    miniGameState.targetNumber = 0;
+    miniGameState.attemptsUsed = 0;
+    miniGameState.maxAttempts = 4;
   }
 
   function startMiniGame() {
