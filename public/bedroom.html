@@ -144,6 +144,7 @@
       clearTimeout(mouseScrollLockTimer);
       mouseScrollLockTimer = window.setTimeout(function () {
         isMouseScrollInProgress = false;
+        mouseScrollLockTimer = 0;
       }, SCROLL_LOCK_MS);
 
       bedroomScroller.scrollBy({
@@ -197,6 +198,7 @@
       shouldScrollLeftOnMouseUp = false;
       isMouseScrollInProgress = false;
       clearTimeout(mouseScrollLockTimer);
+      mouseScrollLockTimer = 0;
     });
   </script>
 </body>
