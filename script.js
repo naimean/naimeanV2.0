@@ -149,9 +149,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const baseImageCandidates = Array.from(
       new Set([
         c64Image.getAttribute('src'),
-        'assets/commodore64.png',
         'assets/commodore64.jpg',
-        'assets/commodore64.jpeg'
+        'assets/commodore64.jpeg',
+        'assets/commodore64.png'
       ].filter(Boolean))
     );
     let baseImageCandidateIndex = Math.max(baseImageCandidates.indexOf(c64Image.getAttribute('src')), 0);
