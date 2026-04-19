@@ -1,0 +1,10 @@
+name = "naimeanv2"
+compatibility_date = "2026-04-18"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+
+[[services]]
+binding = "COUNTER"
+service = "barrelrollcounter-worker"
