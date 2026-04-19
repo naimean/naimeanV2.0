@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fifth Level</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #000; color: #fff; font-family: Arial, sans-serif; }
+    .level-screen { min-height: 100%; display: flex; flex-direction: column; }
+    .level-image { width: 100%; height: calc(100vh - 72px); height: calc(100dvh - 72px); object-fit: cover; display: block; background: #000; }
+    .level-nav { height: 72px; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px; background: #111; border-top: 1px solid #333; }
+    .level-nav a { display: inline-block; padding: 10px 18px; border: 1px solid #fff; color: #fff; text-decoration: none; border-radius: 4px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="level-screen">
+    <img src="assets/fifth_level.png" alt="Fifth Level" class="level-image" />
+    <nav class="level-nav" aria-label="Fifth Level navigation">
+      <a href="fourth_level.html">Back</a>
+      <a href="sixth_level.html">Forward</a>
+    </nav>
+  </main>
+</body>
+</html>

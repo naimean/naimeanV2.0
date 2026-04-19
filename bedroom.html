@@ -11,15 +11,25 @@
       padding: 0;
     }
 
+    :root {
+      --doorway-center-x: 50%;
+      --doorway-hitbox-left: 43%;
+      --doorway-hitbox-top: 29%;
+      --doorway-hitbox-width: 14%;
+      --doorway-hitbox-height: 46%;
+    }
+
     html, body {
-      background: #000;
+      width: 100%;
       height: 100%;
+      background: #000;
       overflow: hidden;
     }
 
     body {
       opacity: 0;
       transition: opacity 0.9s ease;
+      touch-action: pan-x;
     }
 
     body.loaded {
@@ -33,74 +43,108 @@
       overflow-x: auto;
       overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      overscroll-behavior-x: contain;
+      overscroll-behavior-y: none;
     }
 
-    .bedroom-track {
-      display: flex;
-      align-items: stretch;
+    .bedroom-scroller::-webkit-scrollbar {
+      display: none;
+    }
+
+    .bedroom-scene {
+      position: relative;
       height: 100%;
-      min-width: max-content;
+      width: max-content;
     }
 
     .bedroom-img {
-      width: auto;
       height: 100%;
-      flex: 0 0 auto;
+      width: auto;
+      min-width: 100vw;
       display: block;
       user-select: none;
       -webkit-user-drag: none;
     }
+
+    .doorway-btn {
+      position: absolute;
+      left: var(--doorway-hitbox-left);
+      top: var(--doorway-hitbox-top);
+      width: var(--doorway-hitbox-width);
+      height: var(--doorway-hitbox-height);
+      background: transparent;
+      opacity: 0;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      z-index: 2;
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
-<body data-door-center-ratio="0.5">
+<body>
   <div class="bedroom-scroller" id="bedroom-scroller">
-    <div class="bedroom-track">
+    <div class="bedroom-scene" id="bedroom-scene">
       <img src="assets/bedroom.png" alt="Bedroom" class="bedroom-img" id="bedroom-img" />
+      <button class="doorway-btn" id="doorway-btn" aria-label="Enter the antechamber"></button>
     </div>
   </div>
   <script>
+    let isNavigatingToAntechamber = false;
     let resizeFrame = 0;
 
-    function centerOnDoor() {
+    function centerDoorway() {
       const scroller = document.getElementById('bedroom-scroller');
-      const img = document.getElementById('bedroom-img');
-      if (!scroller || !img) {
-        return;
-      }
+      const scene = document.getElementById('bedroom-scene');
+      const doorwayCenterX = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--doorway-center-x')
+      ) || 50;
 
-      // Horizontal door focal point within the image width (0.5 = 50%).
-      const ratioValue = Number(document.body.dataset.doorCenterRatio || '0.5');
-      const doorCenterRatio = Number.isFinite(ratioValue) ? Math.min(1, Math.max(0, ratioValue)) : 0.5;
-      const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
-      // Scroll so the door focal point lands at the center of the viewport.
-      const target = (img.clientWidth * doorCenterRatio) - (scroller.clientWidth / 2);
-      scroller.scrollLeft = Math.min(maxScroll, Math.max(0, target));
+      const sceneWidth = scene.offsetWidth;
+      const viewportWidth = scroller.clientWidth;
+      const targetCenterX = sceneWidth * (doorwayCenterX / 100);
+      const targetScrollLeft = Math.max(0, Math.min(sceneWidth - viewportWidth, targetCenterX - (viewportWidth / 2)));
+
+      scroller.scrollLeft = targetScrollLeft;
     }
 
-    function scheduleCenterOnDoor() {
+    function scheduleCenterDoorway() {
       if (resizeFrame) {
         return;
       }
       resizeFrame = requestAnimationFrame(function () {
         resizeFrame = 0;
-        centerOnDoor();
+        centerDoorway();
       });
     }
 
-    window.addEventListener('load', function () {
-      const img = document.getElementById('bedroom-img');
-      if (img && !img.complete) {
-        img.addEventListener('load', function () {
-          scheduleCenterOnDoor();
-        }, { once: true });
+    function navigateToAntechamber() {
+      if (isNavigatingToAntechamber) {
+        return;
       }
-      scheduleCenterOnDoor();
+      isNavigatingToAntechamber = true;
+      window.location.assign('bedroom-antechamber.html');
+    }
+
+    window.addEventListener('load', function () {
+      const bedroomImage = document.getElementById('bedroom-img');
+      if (typeof bedroomImage.decode === 'function') {
+        bedroomImage.decode().catch(function () {}).finally(scheduleCenterDoorway);
+      } else if (bedroomImage.complete) {
+        scheduleCenterDoorway();
+      } else {
+        bedroomImage.addEventListener('load', scheduleCenterDoorway, { once: true });
+      }
+
+      scheduleCenterDoorway();
       requestAnimationFrame(function () {
         document.body.classList.add('loaded');
       });
     });
 
-    window.addEventListener('resize', scheduleCenterOnDoor);
+    window.addEventListener('resize', scheduleCenterDoorway);
+    document.getElementById('doorway-btn').addEventListener('click', navigateToAntechamber);
   </script>
 </body>
 </html>
