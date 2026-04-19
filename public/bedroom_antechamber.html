@@ -128,6 +128,26 @@
     let isNavigatingToFirstLevel = false;
     const fadeOverlay = document.getElementById('fade-overlay');
 
+    // Fallback reveal in case full window load is delayed by media/network activity.
+    const LOAD_REVEAL_FALLBACK_MS = 1200;
+
+    function revealPage() {
+      if (document.body.classList.contains('loaded')) {
+        return;
+      }
+      requestAnimationFrame(function () {
+        document.body.classList.add('loaded');
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+      }, { once: true });
+    } else {
+      window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+    }
+
     function parseCssDurationToMs(durationValue) {
       const firstDuration = String(durationValue || '').split(',')[0].trim();
       if (firstDuration.endsWith('ms')) {
@@ -262,9 +282,7 @@
 
     window.addEventListener('load', function () {
       playDoorClosingSound();
-      requestAnimationFrame(function () {
-        document.body.classList.add('loaded');
-      });
+      revealPage();
     });
 
     document.getElementById('trapdoor-up-btn').addEventListener('click', navigateBackUp);
