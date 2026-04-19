@@ -13,7 +13,8 @@
 
     html, body {
       background: #000;
-      min-height: 100%;
+      height: 100%;
+      overflow: hidden;
     }
 
     body {
@@ -25,15 +26,25 @@
       opacity: 1;
     }
 
-    .bedroom-outer {
+    .bedroom-scroller {
       width: 100%;
-      max-width: 820px;
-      margin: 0 auto;
+      height: 100dvh;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .bedroom-track {
+      display: flex;
+      align-items: stretch;
+      height: 100%;
+      min-width: max-content;
     }
 
     .bedroom-img {
-      width: 100%;
-      height: auto;
+      width: auto;
+      height: 100%;
+      flex: 0 0 auto;
       display: block;
       user-select: none;
       -webkit-user-drag: none;
@@ -41,15 +52,36 @@
   </style>
 </head>
 <body>
-  <div class="bedroom-outer">
-    <img src="assets/bedroom1.PNG" alt="Bedroom" class="bedroom-img" />
+  <div class="bedroom-scroller" id="bedroom-scroller">
+    <div class="bedroom-track">
+      <img src="assets/bedroom1.png" alt="Bedroom" class="bedroom-img" id="bedroom-img" />
+    </div>
   </div>
   <script>
+    var DOOR_FOCUS_RATIO = 0.5;
+
+    function centerOnDoor() {
+      var scroller = document.getElementById('bedroom-scroller');
+      var img = document.getElementById('bedroom-img');
+      if (!scroller || !img) {
+        return;
+      }
+
+      var maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+      var target = (img.clientWidth * DOOR_FOCUS_RATIO) - (scroller.clientWidth / 2);
+      scroller.scrollLeft = Math.min(maxScroll, Math.max(0, target));
+    }
+
     window.addEventListener('load', function () {
+      centerOnDoor();
+      setTimeout(centerOnDoor, 120);
+      setTimeout(centerOnDoor, 320);
       requestAnimationFrame(function () {
         document.body.classList.add('loaded');
       });
     });
+
+    window.addEventListener('resize', centerOnDoor);
   </script>
 </body>
 </html>
