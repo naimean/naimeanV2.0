@@ -58,6 +58,7 @@
     </div>
   </div>
   <script>
+    // Horizontal door focal point within the image width (0.5 = 50%).
     var DOOR_CENTER_RATIO = 0.5;
 
     function centerOnDoor() {
@@ -68,6 +69,7 @@
       }
 
       var maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+      // Scroll so the door focal point lands at the center of the viewport.
       var target = (img.clientWidth * DOOR_CENTER_RATIO) - (scroller.clientWidth / 2);
       scroller.scrollLeft = Math.min(maxScroll, Math.max(0, target));
     }
