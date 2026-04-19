@@ -51,7 +51,7 @@
     }
   </style>
 </head>
-<body>
+<body data-door-center-ratio="0.5">
   <div class="bedroom-scroller" id="bedroom-scroller">
     <div class="bedroom-track">
       <img src="assets/bedroom1.png" alt="Bedroom" class="bedroom-img" id="bedroom-img" />
@@ -59,7 +59,7 @@
   </div>
   <script>
     // Horizontal door focal point within the image width (0.5 = 50%).
-    var DOOR_CENTER_RATIO = 0.5;
+    var DOOR_CENTER_RATIO = Number(document.body.dataset.doorCenterRatio || '0.5');
 
     function centerOnDoor() {
       var scroller = document.getElementById('bedroom-scroller');
@@ -76,11 +76,14 @@
 
     window.addEventListener('load', function () {
       var img = document.getElementById('bedroom-img');
+      var shouldCenterImmediately = true;
       if (img && !img.complete) {
         img.addEventListener('load', function () {
           requestAnimationFrame(centerOnDoor);
         }, { once: true });
-      } else {
+        shouldCenterImmediately = false;
+      }
+      if (shouldCenterImmediately) {
         requestAnimationFrame(centerOnDoor);
       }
       requestAnimationFrame(function () {
