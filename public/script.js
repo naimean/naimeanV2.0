@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const bootInlineSubmit = document.getElementById('boot-inline-submit');
   const bootQuickLinks = document.getElementById('boot-quick-links');
   const bootCalendarBtn = document.getElementById('boot-calendar-btn');
-  const bootWhiteboardBtn = document.getElementById('boot-whiteboard-btn');
   const bootCapExBtn = document.getElementById('boot-capex-btn');
   const bootSnowBtn = document.getElementById('boot-snow-btn');
   const returnBypassBtn = document.getElementById('return-bypass-btn');
@@ -57,34 +56,32 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_DEFAULT_SUFFIX = 'Admin';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
-  const BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY = {
+  const BOOT_CAPEX_VISIBILITY = {
     showDiscordButton: false,
     showCalendarButton: false,
-    showWhiteboardButton: true,
     showCapExButton: true,
     showSnowButton: false
   };
-  const BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY = {
+  const BOOT_CAPEX_AND_SNOW_VISIBILITY = {
     showDiscordButton: false,
     showCalendarButton: false,
-    showWhiteboardButton: true,
     showCapExButton: true,
     showSnowButton: true
   };
   const BOOT_ROLE_VISIBILITY_BY_USER = {
-    ADMIN: { showDiscordButton: true,  showCalendarButton: false, showWhiteboardButton: false, showCapExButton: false, showSnowButton: false },
-    RCA:   { showDiscordButton: false, showCalendarButton: false, showWhiteboardButton: true,  showCapExButton: false, showSnowButton: false },
-    MAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: true,  showCapExButton: true,  showSnowButton: true  },
-    JV:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    KB:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    JY:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    RD:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    JS:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    JD:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    DL:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    EW:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    RAD:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false, showSnowButton: false },
-    SED:   { showDiscordButton: false, showCalendarButton: true,  showWhiteboardButton: false, showCapExButton: false, showSnowButton: false }
+    ADMIN: { showDiscordButton: true,  showCalendarButton: false, showCapExButton: false, showSnowButton: false },
+    RCA:   { showDiscordButton: false, showCalendarButton: false, showCapExButton: false, showSnowButton: false },
+    MAD:   { showDiscordButton: false, showCalendarButton: true,  showCapExButton: true,  showSnowButton: true  },
+    JV:    BOOT_CAPEX_AND_SNOW_VISIBILITY,
+    KB:    BOOT_CAPEX_AND_SNOW_VISIBILITY,
+    JY:    BOOT_CAPEX_AND_SNOW_VISIBILITY,
+    RD:    BOOT_CAPEX_AND_SNOW_VISIBILITY,
+    JS:    BOOT_CAPEX_AND_SNOW_VISIBILITY,
+    JD:    BOOT_CAPEX_AND_SNOW_VISIBILITY,
+    DL:    BOOT_CAPEX_VISIBILITY,
+    EW:    BOOT_CAPEX_VISIBILITY,
+    RAD:   { showDiscordButton: false, showCalendarButton: true,  showCapExButton: false, showSnowButton: false },
+    SED:   { showDiscordButton: false, showCalendarButton: true,  showCapExButton: false, showSnowButton: false }
   };
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
@@ -108,7 +105,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const DISCORD_INVITE_REDIRECT_PENDING_KEY = 'naimean-discord-invite-redirect-pending';
   const PRANK_REDIRECT_DELAY_MS = 5000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
-  const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
   const CAP_EX_URL = 'https://app.smartsheet.com/b/form/70b07591b76a4289bc6f5d5e1aabac91?';
   const SNOW_URL = 'https://recoverycoa.service-now.com/now/nav/ui/classic/params/target/incident_list.do?sysparm_query=stateNOT%20IN6%2C7%2C8%5Eassigned_to%3D7fc866ea1b1d7110153886a7624bcbc0&sysparm_first_row=1&sysparm_view=';
 
@@ -486,11 +482,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const visibility = BOOT_ROLE_VISIBILITY_BY_USER[normalizedUser] || {
       showDiscordButton: true,
       showCalendarButton: false,
-      showWhiteboardButton: false,
       showCapExButton: false,
       showSnowButton: false
     };
-    const { showDiscordButton, showCalendarButton, showWhiteboardButton, showCapExButton, showSnowButton } = visibility;
+    const { showDiscordButton, showCalendarButton, showCapExButton, showSnowButton } = visibility;
 
     if (bootSubmit) {
       bootSubmit.style.visibility = showDiscordButton ? 'visible' : 'hidden';
@@ -499,10 +494,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (bootCalendarBtn) {
       bootCalendarBtn.style.display = showCalendarButton ? 'inline-flex' : 'none';
-    }
-
-    if (bootWhiteboardBtn) {
-      bootWhiteboardBtn.style.display = showWhiteboardButton ? 'inline-flex' : 'none';
     }
 
     if (bootCapExBtn) {
@@ -514,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (bootQuickLinks) {
-      bootQuickLinks.style.display = (showCalendarButton || showWhiteboardButton || showCapExButton || showSnowButton) ? 'inline-flex' : 'none';
+      bootQuickLinks.style.display = (showCalendarButton || showCapExButton || showSnowButton) ? 'inline-flex' : 'none';
     }
   }
 
@@ -957,12 +948,6 @@ document.addEventListener('DOMContentLoaded', function() {
   if (bootCalendarBtn) {
     bootCalendarBtn.addEventListener('click', function() {
       playWrongSound();
-    });
-  }
-
-  if (bootWhiteboardBtn) {
-    bootWhiteboardBtn.addEventListener('click', function() {
-      window.open(WHITEBOARD_URL, '_blank', 'noopener,noreferrer');
     });
   }
 
