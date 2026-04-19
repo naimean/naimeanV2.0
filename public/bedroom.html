@@ -97,6 +97,7 @@
     const SCROLL_RIGHT = 1;
     const SCROLL_LEFT = -1;
     let shouldScrollLeftOnMouseUp = false;
+    const bedroomScroller = document.getElementById('bedroom-scroller');
 
     function centerDoorway() {
       const scroller = document.getElementById('bedroom-scroller');
@@ -132,12 +133,11 @@
     }
 
     function nudgeHorizontal(direction) {
-      const scroller = document.getElementById('bedroom-scroller');
-      if (!scroller || direction === 0) {
+      if (!bedroomScroller || direction === 0) {
         return;
       }
 
-      scroller.scrollBy({
+      bedroomScroller.scrollBy({
         left: MOUSE_SCROLL_STEP * direction,
         behavior: 'smooth'
       });
@@ -162,7 +162,6 @@
     window.addEventListener('resize', scheduleCenterDoorway);
     document.getElementById('doorway-btn').addEventListener('click', navigateToAntechamber);
 
-    const bedroomScroller = document.getElementById('bedroom-scroller');
     bedroomScroller.addEventListener('mousedown', function (event) {
       if (event.button !== 0 || event.target.closest('#doorway-btn')) {
         shouldScrollLeftOnMouseUp = false;
@@ -172,13 +171,18 @@
       nudgeHorizontal(SCROLL_RIGHT);
     });
 
-    bedroomScroller.addEventListener('mouseup', function (event) {
-      if (event.button !== 0 || event.target.closest('#doorway-btn') || !shouldScrollLeftOnMouseUp) {
+    window.addEventListener('mouseup', function (event) {
+      const releasedOnDoorway = event.target instanceof Element && event.target.closest('#doorway-btn');
+      if (event.button !== 0 || releasedOnDoorway || !shouldScrollLeftOnMouseUp) {
         shouldScrollLeftOnMouseUp = false;
         return;
       }
       shouldScrollLeftOnMouseUp = false;
       nudgeHorizontal(SCROLL_LEFT);
+    });
+
+    window.addEventListener('blur', function () {
+      shouldScrollLeftOnMouseUp = false;
     });
   </script>
 </body>
