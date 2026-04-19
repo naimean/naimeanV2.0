@@ -17,12 +17,17 @@
     }
 
     :root {
-      --trapdoor-hotspot-height: 17%;
+      --top-blue-hotspot-height: 16%;
+      --doorway-hotspot-left: 36%;
+      --doorway-hotspot-top: 29%;
+      --doorway-hotspot-width: 28%;
+      --doorway-hotspot-height: 58%;
+      --nav-fade-duration: 0.9s;
     }
 
     body {
       opacity: 0;
-      transition: opacity 0.9s ease;
+      transition: opacity var(--nav-fade-duration) ease;
     }
 
     body.loaded {
@@ -49,7 +54,7 @@
       left: 0;
       top: 0;
       width: 100%;
-      height: var(--trapdoor-hotspot-height);
+      height: var(--top-blue-hotspot-height);
       background: transparent;
       opacity: 0;
       border: none;
@@ -61,10 +66,10 @@
 
     .bedroom-enter-btn {
       position: absolute;
-      left: 0;
-      top: calc(var(--trapdoor-hotspot-height) + 1px);
-      width: 100%;
-      height: calc(100% - var(--trapdoor-hotspot-height) - 1px);
+      left: var(--doorway-hotspot-left);
+      top: var(--doorway-hotspot-top);
+      width: var(--doorway-hotspot-width);
+      height: var(--doorway-hotspot-height);
       background: transparent;
       opacity: 0;
       border: none;
@@ -73,24 +78,71 @@
       z-index: 1;
       -webkit-tap-highlight-color: transparent;
     }
+
+    .fade-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--nav-fade-duration) ease;
+      z-index: 100;
+    }
+
+    .fade-overlay.fading {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body>
+  <div class="fade-overlay" id="fade-overlay"></div>
   <div class="bedroom-antechamber-outer">
-    <img src="assets/bedroom.PNG" alt="Bedroom" class="bedroom-antechamber-img" />
+    <img src="assets/bedroom.png" alt="Bedroom" class="bedroom-antechamber-img" />
     <button class="trapdoor-up-btn" id="trapdoor-up-btn" aria-label="Go back up through the trap door"></button>
     <button class="bedroom-enter-btn" id="bedroom-enter-btn" aria-label="Enter the bedroom"></button>
   </div>
   <script>
     let isNavigatingBackUp = false;
     let isNavigatingToBedroom = false;
+    const fadeOverlay = document.getElementById('fade-overlay');
+
+    function parseCssDurationToMs(durationValue) {
+      const firstDuration = String(durationValue || '').split(',')[0].trim();
+      if (firstDuration.endsWith('ms')) {
+        const milliseconds = parseFloat(firstDuration);
+        return Number.isFinite(milliseconds) && milliseconds > 0 ? milliseconds : 0;
+      }
+      if (firstDuration.endsWith('s')) {
+        const seconds = parseFloat(firstDuration);
+        return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0;
+      }
+      return 0;
+    }
+
+    function getNavFadeDurationMs() {
+      if (!fadeOverlay) {
+        return 0;
+      }
+      const transitionDuration = getComputedStyle(fadeOverlay).transitionDuration;
+      return parseCssDurationToMs(transitionDuration);
+    }
+
+    function fadeOutAndNavigate(pathname) {
+      if (fadeOverlay) {
+        fadeOverlay.classList.add('fading');
+      }
+      setTimeout(function () {
+        window.location.assign(pathname);
+      }, getNavFadeDurationMs());
+    }
 
     function navigateBackUp() {
-      if (isNavigatingBackUp) {
+      if (isNavigatingBackUp || isNavigatingToBedroom) {
         return;
       }
       isNavigatingBackUp = true;
-      window.location.assign('chapel.html');
+      fadeOutAndNavigate('chapel.html');
     }
 
     function navigateToBedroom() {

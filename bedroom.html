@@ -37,8 +37,9 @@
     }
 
     .bedroom-scroller {
-      width: 100vw;
+      width: 100%;
       height: 100vh;
+      height: 100dvh;
       overflow-x: auto;
       overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
@@ -91,11 +92,14 @@
   </div>
   <script>
     let isNavigatingToAntechamber = false;
+    let resizeFrame = 0;
 
     function centerDoorway() {
       const scroller = document.getElementById('bedroom-scroller');
       const scene = document.getElementById('bedroom-scene');
-      const doorwayCenterX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--doorway-center-x')) || 50;
+      const doorwayCenterX = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--doorway-center-x')
+      ) || 50;
 
       const sceneWidth = scene.offsetWidth;
       const viewportWidth = scroller.clientWidth;
@@ -103,6 +107,16 @@
       const targetScrollLeft = Math.max(0, Math.min(sceneWidth - viewportWidth, targetCenterX - (viewportWidth / 2)));
 
       scroller.scrollLeft = targetScrollLeft;
+    }
+
+    function scheduleCenterDoorway() {
+      if (resizeFrame) {
+        return;
+      }
+      resizeFrame = requestAnimationFrame(function () {
+        resizeFrame = 0;
+        centerDoorway();
+      });
     }
 
     function navigateToAntechamber() {
@@ -114,15 +128,22 @@
     }
 
     window.addEventListener('load', function () {
-      centerDoorway();
-      setTimeout(centerDoorway, 100);
-      setTimeout(centerDoorway, 300);
+      const bedroomImage = document.getElementById('bedroom-img');
+      if (typeof bedroomImage.decode === 'function') {
+        bedroomImage.decode().catch(function () {}).finally(scheduleCenterDoorway);
+      } else if (bedroomImage.complete) {
+        scheduleCenterDoorway();
+      } else {
+        bedroomImage.addEventListener('load', scheduleCenterDoorway, { once: true });
+      }
+
+      scheduleCenterDoorway();
       requestAnimationFrame(function () {
         document.body.classList.add('loaded');
       });
     });
 
-    window.addEventListener('resize', centerDoorway);
+    window.addEventListener('resize', scheduleCenterDoorway);
     document.getElementById('doorway-btn').addEventListener('click', navigateToAntechamber);
   </script>
 </body>
