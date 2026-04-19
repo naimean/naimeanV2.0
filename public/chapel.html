@@ -635,6 +635,7 @@
     renderRickrollCount();
     startRockRollContinuation(consumeRockRollContinuation());
 
+    // Fallback reveal in case full window load is delayed by media/network activity.
     const LOAD_REVEAL_FALLBACK_MS = 1200;
 
     function revealPage() {

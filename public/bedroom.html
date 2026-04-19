@@ -120,6 +120,7 @@
     let shouldScrollLeftOnMouseUp = false;
     let isMouseScrollInProgress = false;
     let mouseScrollLockTimer = 0;
+    // Fallback reveal in case full window load is delayed by media/network activity.
     const LOAD_REVEAL_FALLBACK_MS = 1200;
     const WHEEL_DAMPING = 0.82;
     const WHEEL_MIN_VELOCITY = 0.35;
