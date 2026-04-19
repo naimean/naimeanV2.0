@@ -94,6 +94,9 @@
     let isNavigatingToAntechamber = false;
     let resizeFrame = 0;
     const MOUSE_SCROLL_STEP = 180;
+    const SCROLL_RIGHT = 1;
+    const SCROLL_LEFT = -1;
+    let shouldScrollLeftOnMouseUp = false;
 
     function centerDoorway() {
       const scroller = document.getElementById('bedroom-scroller');
@@ -162,16 +165,20 @@
     const bedroomScroller = document.getElementById('bedroom-scroller');
     bedroomScroller.addEventListener('mousedown', function (event) {
       if (event.button !== 0 || event.target.closest('#doorway-btn')) {
+        shouldScrollLeftOnMouseUp = false;
         return;
       }
-      nudgeHorizontal(1);
+      shouldScrollLeftOnMouseUp = true;
+      nudgeHorizontal(SCROLL_RIGHT);
     });
 
     bedroomScroller.addEventListener('mouseup', function (event) {
-      if (event.button !== 0 || event.target.closest('#doorway-btn')) {
+      if (event.button !== 0 || event.target.closest('#doorway-btn') || !shouldScrollLeftOnMouseUp) {
+        shouldScrollLeftOnMouseUp = false;
         return;
       }
-      nudgeHorizontal(-1);
+      shouldScrollLeftOnMouseUp = false;
+      nudgeHorizontal(SCROLL_LEFT);
     });
   </script>
 </body>
