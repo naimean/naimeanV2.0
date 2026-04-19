@@ -75,11 +75,12 @@
     window.addEventListener('load', function () {
       var img = document.getElementById('bedroom-img');
       if (img && !img.complete) {
-        img.addEventListener('load', centerOnDoor, { once: true });
+        img.addEventListener('load', function () {
+          requestAnimationFrame(centerOnDoor);
+        }, { once: true });
       } else {
-        centerOnDoor();
+        requestAnimationFrame(centerOnDoor);
       }
-      requestAnimationFrame(centerOnDoor);
       requestAnimationFrame(function () {
         document.body.classList.add('loaded');
       });
