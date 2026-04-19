@@ -58,7 +58,7 @@
     </div>
   </div>
   <script>
-    var DOOR_FOCUS_RATIO = 0.5;
+    var DOOR_CENTER_RATIO = 0.5;
 
     function centerOnDoor() {
       var scroller = document.getElementById('bedroom-scroller');
@@ -68,14 +68,18 @@
       }
 
       var maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
-      var target = (img.clientWidth * DOOR_FOCUS_RATIO) - (scroller.clientWidth / 2);
+      var target = (img.clientWidth * DOOR_CENTER_RATIO) - (scroller.clientWidth / 2);
       scroller.scrollLeft = Math.min(maxScroll, Math.max(0, target));
     }
 
     window.addEventListener('load', function () {
-      centerOnDoor();
-      setTimeout(centerOnDoor, 120);
-      setTimeout(centerOnDoor, 320);
+      var img = document.getElementById('bedroom-img');
+      if (img && !img.complete) {
+        img.addEventListener('load', centerOnDoor, { once: true });
+      } else {
+        centerOnDoor();
+      }
+      requestAnimationFrame(centerOnDoor);
       requestAnimationFrame(function () {
         document.body.classList.add('loaded');
       });
