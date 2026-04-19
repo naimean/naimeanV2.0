@@ -635,6 +635,25 @@
     renderRickrollCount();
     startRockRollContinuation(consumeRockRollContinuation());
 
+    const LOAD_REVEAL_FALLBACK_MS = 1200;
+
+    function revealPage() {
+      if (document.body.classList.contains('loaded')) {
+        return;
+      }
+      requestAnimationFrame(function () {
+        document.body.classList.add('loaded');
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+      }, { once: true });
+    } else {
+      window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+    }
+
     function playDoorOpeningSound() {
       const audioContextCtor = window.AudioContext || window.webkitAudioContext;
       if (!audioContextCtor) {
@@ -780,7 +799,7 @@
         scrollToCurrentStartPoint();
         startCongregationAudio();
         bindCongregationFallback();
-        document.body.classList.add('loaded');
+        revealPage();
       }, 500);
     });
 

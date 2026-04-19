@@ -120,11 +120,29 @@
     let shouldScrollLeftOnMouseUp = false;
     let isMouseScrollInProgress = false;
     let mouseScrollLockTimer = 0;
+    const LOAD_REVEAL_FALLBACK_MS = 1200;
     const WHEEL_DAMPING = 0.82;
     const WHEEL_MIN_VELOCITY = 0.35;
     let wheelVelocity = 0;
     let wheelAnimationFrame = 0;
     const bedroomScroller = document.getElementById('bedroom-scroller');
+
+    function revealPage() {
+      if (document.body.classList.contains('loaded')) {
+        return;
+      }
+      requestAnimationFrame(function () {
+        document.body.classList.add('loaded');
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+      }, { once: true });
+    } else {
+      window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+    }
 
     function centerDoorway() {
       const scroller = document.getElementById('bedroom-scroller');
@@ -205,9 +223,7 @@
       }
 
       scheduleCenterDoorway();
-      requestAnimationFrame(function () {
-        document.body.classList.add('loaded');
-      });
+      revealPage();
     });
 
     window.addEventListener('resize', scheduleCenterDoorway);
