@@ -315,7 +315,7 @@
     function appendNoCacheParam(url) {
       try {
         const requestUrl = new URL(url);
-        requestUrl.searchParams.set('_cache_bust', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+        requestUrl.searchParams.set('t', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
         return requestUrl.toString();
       } catch (_) {
         return url;
@@ -368,8 +368,14 @@
             throw new Error('Failed to fetch rickroll count');
           }
 
-          const payload = await response.json();
-          const remoteCount = normalizeRickrollCount(payload && payload.value);
+          const responseText = await response.text();
+          let remoteCount = normalizeRickrollCount(responseText);
+          if (remoteCount === null) {
+            try {
+              const payload = JSON.parse(responseText);
+              remoteCount = normalizeRickrollCount(payload && payload.value);
+            } catch (_) {}
+          }
           if (remoteCount === null) {
             if (window.NaimeanDiag) { window.NaimeanDiag.log('invalid payload: ' + requestUrl); }
             throw new Error('Received invalid rickroll count');
