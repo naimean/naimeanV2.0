@@ -93,6 +93,14 @@
   <script>
     let isNavigatingToAntechamber = false;
     let resizeFrame = 0;
+    const MOUSE_SCROLL_STEP = 180;
+    const SCROLL_RIGHT = 1;
+    const SCROLL_LEFT = -1;
+    const SCROLL_LOCK_MS = 260;
+    let shouldScrollLeftOnMouseUp = false;
+    let isMouseScrollInProgress = false;
+    let mouseScrollLockTimer = 0;
+    const bedroomScroller = document.getElementById('bedroom-scroller');
 
     function centerDoorway() {
       const scroller = document.getElementById('bedroom-scroller');
@@ -127,6 +135,25 @@
       window.location.assign('bedroom-antechamber.html');
     }
 
+    function nudgeHorizontal(direction) {
+      if (!bedroomScroller || direction === 0 || isMouseScrollInProgress) {
+        return false;
+      }
+
+      isMouseScrollInProgress = true;
+      clearTimeout(mouseScrollLockTimer);
+      mouseScrollLockTimer = window.setTimeout(function () {
+        isMouseScrollInProgress = false;
+        mouseScrollLockTimer = 0;
+      }, SCROLL_LOCK_MS);
+
+      bedroomScroller.scrollBy({
+        left: MOUSE_SCROLL_STEP * direction,
+        behavior: 'smooth'
+      });
+      return true;
+    }
+
     window.addEventListener('load', function () {
       const bedroomImage = document.getElementById('bedroom-img');
       if (typeof bedroomImage.decode === 'function') {
@@ -145,6 +172,34 @@
 
     window.addEventListener('resize', scheduleCenterDoorway);
     document.getElementById('doorway-btn').addEventListener('click', navigateToAntechamber);
+
+    window.addEventListener('mousedown', function (event) {
+      const eventTarget = event.target;
+      const startedOnDoorway = eventTarget instanceof Element && eventTarget.closest('#doorway-btn');
+      const startedInScroller = eventTarget instanceof Element && eventTarget.closest('#bedroom-scroller');
+      if (event.button !== 0 || startedOnDoorway || !startedInScroller) {
+        shouldScrollLeftOnMouseUp = false;
+        return;
+      }
+      shouldScrollLeftOnMouseUp = nudgeHorizontal(SCROLL_RIGHT);
+    });
+
+    window.addEventListener('mouseup', function (event) {
+      const releasedOnDoorway = event.target instanceof Element && event.target.closest('#doorway-btn');
+      if (event.button !== 0 || releasedOnDoorway || !shouldScrollLeftOnMouseUp) {
+        shouldScrollLeftOnMouseUp = false;
+        return;
+      }
+      shouldScrollLeftOnMouseUp = false;
+      nudgeHorizontal(SCROLL_LEFT);
+    });
+
+    window.addEventListener('blur', function () {
+      shouldScrollLeftOnMouseUp = false;
+      isMouseScrollInProgress = false;
+      clearTimeout(mouseScrollLockTimer);
+      mouseScrollLockTimer = 0;
+    });
   </script>
 </body>
 </html>
