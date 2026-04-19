@@ -105,6 +105,7 @@
   <script>
     let isNavigatingBackUp = false;
     let isNavigatingToBedroom = false;
+    const fadeOverlay = document.getElementById('fade-overlay');
 
     function parseCssDurationToMs(durationValue) {
       const firstDuration = String(durationValue || '').split(',')[0].trim();
@@ -120,14 +121,17 @@
     }
 
     function getNavFadeDurationMs() {
-      const overlay = document.getElementById('fade-overlay');
-      const transitionDuration = getComputedStyle(overlay).transitionDuration;
+      if (!fadeOverlay) {
+        return 0;
+      }
+      const transitionDuration = getComputedStyle(fadeOverlay).transitionDuration;
       return parseCssDurationToMs(transitionDuration);
     }
 
     function fadeOutAndNavigate(pathname) {
-      const overlay = document.getElementById('fade-overlay');
-      overlay.classList.add('fading');
+      if (fadeOverlay) {
+        fadeOverlay.classList.add('fading');
+      }
       setTimeout(function () {
         window.location.assign(pathname);
       }, getNavFadeDurationMs());
