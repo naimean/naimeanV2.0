@@ -587,6 +587,23 @@ body {
   text-shadow: 0 0 2px rgba(214, 255, 224, 0.22), 0 0 7px rgba(120, 255, 156, 0.1);
 }
 
+.shoutbox-message {
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.shoutbox-message--system {
+  color: #8ef0b2;
+}
+
+.shoutbox-message--warn {
+  color: #ffe38a;
+}
+
+.shoutbox-message--good {
+  color: #c8ffd9;
+}
+
 .shoutbox-bottom {
   display: flex;
   align-items: flex-end;

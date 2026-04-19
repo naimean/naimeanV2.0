@@ -24,22 +24,22 @@
 - Animated shadow layer
 - Data (flicker) light next to power button
 - Static video/audio overlay (merged with FFmpeg)
+- Shoutbox mini-game command loop (guessing game)
 
 ## In Progress
 - Debug overlay alignment and button clickability
 - Shrink and center shadow box, align overlays
 
 ## Next Steps
-1. Add entertaining mini-games or interactive experiences
-2. Integrate Discord OAuth for registration/authentication
-3. Implement message board (shoutbox) for registered users
-4. Discord widget overlay and join prompt
-5. Video/sound/static overlay sequencing (beyond current static/audio)
-6. Final UI/UX polish based on user feedback
-7. Accessibility review (keyboard, ARIA, color contrast)
-8. Add more C64-style effects (optional)
-9. Prepare for deployment (static hosting)
-10. Update documentation
+1. Integrate Discord OAuth for registration/authentication
+2. Implement message board (shoutbox) for registered users
+3. Discord widget overlay and join prompt
+4. Video/sound/static overlay sequencing (beyond current static/audio)
+5. Final UI/UX polish based on user feedback
+6. Accessibility review (keyboard, ARIA, color contrast)
+7. Add more C64-style effects (optional)
+8. Prepare for deployment (static hosting)
+9. Update documentation
 
 # Deployment Plan
 - Ensure all assets are present and optimized
@@ -48,4 +48,4 @@
 - Push all changes to GitHub main branch
 
 ---
-_Last updated: 2026-04-16_
+_Last updated: 2026-04-19_

@@ -10,12 +10,14 @@ A Commodore 64-themed interactive landing page with retro effects, puzzles, and 
 - Discord widget overlay
 - Video/sound/static overlay sequencing
 - Shoutbox with hint system and Discord join prompt
+- Shoutbox mini-game commands (`help`, `play`, `guess`, `quit`)
 - Mobile responsive and accessible
 
 ## Usage
 - Click the power button to boot up the system
 - Enter the correct command in the boot prompt to unlock secrets
 - Use the shoutbox for hints and Discord invite
+- In the shoutbox, run `C:\Naimean\help` to start the mini-game loop
 
 ## Development
 - All code and assets are in this repo

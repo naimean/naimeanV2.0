@@ -92,6 +92,12 @@ document.addEventListener('DOMContentLoaded', function() {
   let powerButtonCooldownUntil = 0;
   let hintRevealProgress = 0;
   let lastPointerPosition = null;
+  let miniGameState = {
+    isActive: false,
+    targetNumber: 0,
+    attemptsUsed: 0,
+    maxAttempts: 4
+  };
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
@@ -536,6 +542,119 @@ document.addEventListener('DOMContentLoaded', function() {
     placeFinalCursorAtEnd();
   }
 
+  function appendShoutboxMessage(text, tone = 'system') {
+    const messages = document.getElementById('messages');
+    if (!messages || typeof text !== 'string') {
+      return;
+    }
+
+    const line = document.createElement('div');
+    line.className = `shoutbox-message shoutbox-message--${tone}`;
+    line.textContent = text;
+    messages.appendChild(line);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function resetMiniGameState() {
+    miniGameState = {
+      isActive: false,
+      targetNumber: 0,
+      attemptsUsed: 0,
+      maxAttempts: 4
+    };
+  }
+
+  function startMiniGame() {
+    miniGameState.isActive = true;
+    miniGameState.attemptsUsed = 0;
+    miniGameState.targetNumber = Math.floor(Math.random() * 9) + 1;
+    appendShoutboxMessage('SYSTEM> Guessing game started. Pick a number between 1 and 9.', 'good');
+    appendShoutboxMessage('SYSTEM> Use "C:\\Naimean\\guess <number>" (4 tries).', 'system');
+  }
+
+  function ensureShoutboxIntroMessage() {
+    const messages = document.getElementById('messages');
+    if (!messages || messages.childElementCount > 0) {
+      return;
+    }
+    appendShoutboxMessage('SYSTEM> Entertainment module online.', 'good');
+    appendShoutboxMessage('SYSTEM> Type "C:\\Naimean\\help" for mini-game commands.', 'system');
+  }
+
+  function handleMiniGameCommand(text) {
+    if (!text.startsWith(FINAL_PREFIX)) {
+      return false;
+    }
+
+    const commandText = text.slice(FINAL_PREFIX.length).trim();
+    if (!commandText) {
+      appendShoutboxMessage('SYSTEM> Empty command. Type "C:\\Naimean\\help".', 'warn');
+      return true;
+    }
+
+    const [rawCommand, rawArg] = commandText.split(/\s+/, 2);
+    const command = (rawCommand || '').toLowerCase();
+
+    if (command === 'help') {
+      appendShoutboxMessage('SYSTEM> Commands: help, play, guess <1-9>, quit', 'system');
+      return true;
+    }
+
+    if (command === 'play') {
+      if (miniGameState.isActive) {
+        appendShoutboxMessage('SYSTEM> Game already running. Submit a guess.', 'warn');
+        return true;
+      }
+      startMiniGame();
+      return true;
+    }
+
+    if (command === 'quit') {
+      if (!miniGameState.isActive) {
+        appendShoutboxMessage('SYSTEM> No active game to quit.', 'warn');
+        return true;
+      }
+      resetMiniGameState();
+      appendShoutboxMessage('SYSTEM> Game ended. Type "C:\\Naimean\\play" to start again.', 'system');
+      return true;
+    }
+
+    if (command === 'guess') {
+      if (!miniGameState.isActive) {
+        appendShoutboxMessage('SYSTEM> Start a game first with "C:\\Naimean\\play".', 'warn');
+        return true;
+      }
+
+      const guessedNumber = Number(rawArg);
+      if (!Number.isInteger(guessedNumber) || guessedNumber < 1 || guessedNumber > 9) {
+        appendShoutboxMessage('SYSTEM> Guess must be an integer from 1 to 9.', 'warn');
+        return true;
+      }
+
+      miniGameState.attemptsUsed += 1;
+      if (guessedNumber === miniGameState.targetNumber) {
+        appendShoutboxMessage(`SYSTEM> Correct (${guessedNumber}). You win.`, 'good');
+        resetMiniGameState();
+        appendShoutboxMessage('SYSTEM> Type "C:\\Naimean\\play" for another round.', 'system');
+        return true;
+      }
+
+      const attemptsLeft = miniGameState.maxAttempts - miniGameState.attemptsUsed;
+      if (attemptsLeft <= 0) {
+        appendShoutboxMessage(`SYSTEM> Out of tries. Number was ${miniGameState.targetNumber}.`, 'warn');
+        resetMiniGameState();
+        appendShoutboxMessage('SYSTEM> Type "C:\\Naimean\\play" to retry.', 'system');
+        return true;
+      }
+
+      const hint = guessedNumber < miniGameState.targetNumber ? 'higher' : 'lower';
+      appendShoutboxMessage(`SYSTEM> Wrong. Try ${hint}. ${attemptsLeft} tries left.`, 'warn');
+      return true;
+    }
+
+    return false;
+  }
+
   function setHintReveal(progress) {
     if (!shoutboxHintShell) {
       return;
@@ -626,6 +745,7 @@ document.addEventListener('DOMContentLoaded', function() {
       shoutboxContainer.classList.add('visible');
     }
     await playStaticTransition();
+    ensureShoutboxIntroMessage();
     if (shoutboxInput) {
       resetFinalInput();
       shoutboxInput.focus();
@@ -1096,11 +1216,18 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
 
+        if (handleMiniGameCommand(text)) {
+          resetFinalInput();
+          return;
+        }
+
         playWrongSound();
         resetFinalInput();
       });
     }
   }
+
+  resetMiniGameState();
 });
 const zeldaSecretAudio = new Audio('assets/zelda-secret.mp3');
 zeldaSecretAudio.preload = 'auto';
