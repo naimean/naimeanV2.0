@@ -28,6 +28,7 @@
 
     .bedroom-scroller {
       width: 100%;
+      height: 100vh;
       height: 100dvh;
       overflow-x: auto;
       overflow-y: hidden;
@@ -59,7 +60,7 @@
   </div>
   <script>
     // Horizontal door focal point within the image width (0.5 = 50%).
-    var DOOR_CENTER_RATIO = Number(document.body.dataset.doorCenterRatio || '0.5');
+    var doorCenterRatio = Number(document.body.dataset.doorCenterRatio || '0.5');
 
     function centerOnDoor() {
       var scroller = document.getElementById('bedroom-scroller');
@@ -70,21 +71,20 @@
 
       var maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
       // Scroll so the door focal point lands at the center of the viewport.
-      var target = (img.clientWidth * DOOR_CENTER_RATIO) - (scroller.clientWidth / 2);
+      var target = (img.clientWidth * doorCenterRatio) - (scroller.clientWidth / 2);
       scroller.scrollLeft = Math.min(maxScroll, Math.max(0, target));
     }
 
     window.addEventListener('load', function () {
       var img = document.getElementById('bedroom-img');
-      var shouldCenterImmediately = true;
-      if (img && !img.complete) {
-        img.addEventListener('load', function () {
-          requestAnimationFrame(centerOnDoor);
-        }, { once: true });
-        shouldCenterImmediately = false;
-      }
-      if (shouldCenterImmediately) {
+      function queueCenterOnDoor() {
         requestAnimationFrame(centerOnDoor);
+      }
+
+      if (img && !img.complete) {
+        img.addEventListener('load', queueCenterOnDoor, { once: true });
+      } else {
+        queueCenterOnDoor();
       }
       requestAnimationFrame(function () {
         document.body.classList.add('loaded');
