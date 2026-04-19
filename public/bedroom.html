@@ -96,7 +96,10 @@
     const MOUSE_SCROLL_STEP = 180;
     const SCROLL_RIGHT = 1;
     const SCROLL_LEFT = -1;
+    const SCROLL_LOCK_MS = 260;
     let shouldScrollLeftOnMouseUp = false;
+    let isMouseScrollInProgress = false;
+    let mouseScrollLockTimer = 0;
     const bedroomScroller = document.getElementById('bedroom-scroller');
 
     function centerDoorway() {
@@ -133,14 +136,21 @@
     }
 
     function nudgeHorizontal(direction) {
-      if (!bedroomScroller || direction === 0) {
-        return;
+      if (!bedroomScroller || direction === 0 || isMouseScrollInProgress) {
+        return false;
       }
+
+      isMouseScrollInProgress = true;
+      clearTimeout(mouseScrollLockTimer);
+      mouseScrollLockTimer = window.setTimeout(function () {
+        isMouseScrollInProgress = false;
+      }, SCROLL_LOCK_MS);
 
       bedroomScroller.scrollBy({
         left: MOUSE_SCROLL_STEP * direction,
         behavior: 'smooth'
       });
+      return true;
     }
 
     window.addEventListener('load', function () {
@@ -162,13 +172,15 @@
     window.addEventListener('resize', scheduleCenterDoorway);
     document.getElementById('doorway-btn').addEventListener('click', navigateToAntechamber);
 
-    bedroomScroller.addEventListener('mousedown', function (event) {
-      if (event.button !== 0 || event.target.closest('#doorway-btn')) {
+    window.addEventListener('mousedown', function (event) {
+      const eventTarget = event.target;
+      const startedOnDoorway = eventTarget instanceof Element && eventTarget.closest('#doorway-btn');
+      const startedInScroller = eventTarget instanceof Element && eventTarget.closest('#bedroom-scroller');
+      if (event.button !== 0 || startedOnDoorway || !startedInScroller) {
         shouldScrollLeftOnMouseUp = false;
         return;
       }
-      shouldScrollLeftOnMouseUp = true;
-      nudgeHorizontal(SCROLL_RIGHT);
+      shouldScrollLeftOnMouseUp = nudgeHorizontal(SCROLL_RIGHT);
     });
 
     window.addEventListener('mouseup', function (event) {
@@ -183,6 +195,8 @@
 
     window.addEventListener('blur', function () {
       shouldScrollLeftOnMouseUp = false;
+      isMouseScrollInProgress = false;
+      clearTimeout(mouseScrollLockTimer);
     });
   </script>
 </body>
