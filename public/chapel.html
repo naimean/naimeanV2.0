@@ -286,6 +286,7 @@
     const DISCORD_WIDGET_ID = '1487898909224341534';
     const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
     const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
+    const DISCORD_INVITE_LAUNCH_DELAY_MS = 1000;
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
@@ -494,7 +495,7 @@
         if (inviteUrl) {
           window.open(inviteUrl, '_blank', 'noopener,noreferrer');
         }
-      }, 1000);
+      }, DISCORD_INVITE_LAUNCH_DELAY_MS);
     }
 
     function consumeRockRollContinuation() {
