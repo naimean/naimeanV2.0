@@ -59,9 +59,6 @@
     </div>
   </div>
   <script>
-    // Horizontal door focal point within the image width (0.5 = 50%).
-    var doorCenterRatio = Number(document.body.dataset.doorCenterRatio || '0.5');
-
     function centerOnDoor() {
       var scroller = document.getElementById('bedroom-scroller');
       var img = document.getElementById('bedroom-img');
@@ -69,6 +66,8 @@
         return;
       }
 
+      // Horizontal door focal point within the image width (0.5 = 50%).
+      var doorCenterRatio = Number(document.body.dataset.doorCenterRatio || '0.5');
       var maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
       // Scroll so the door focal point lands at the center of the viewport.
       var target = (img.clientWidth * doorCenterRatio) - (scroller.clientWidth / 2);
@@ -77,15 +76,12 @@
 
     window.addEventListener('load', function () {
       var img = document.getElementById('bedroom-img');
-      function queueCenterOnDoor() {
-        requestAnimationFrame(centerOnDoor);
-      }
-
       if (img && !img.complete) {
-        img.addEventListener('load', queueCenterOnDoor, { once: true });
-      } else {
-        queueCenterOnDoor();
+        img.addEventListener('load', function () {
+          requestAnimationFrame(centerOnDoor);
+        }, { once: true });
       }
+      requestAnimationFrame(centerOnDoor);
       requestAnimationFrame(function () {
         document.body.classList.add('loaded');
       });
