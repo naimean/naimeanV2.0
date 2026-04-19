@@ -1,4 +1,4 @@
-const PROXY_PATHS = ["/get", "/increment", "/board", "/board-upload", "/board-delete", "/uploads/"];
+const PROXY_PATHS = ["/get", "/hit", "/increment"];
 
 export default {
   async fetch(request, env, ctx) {
