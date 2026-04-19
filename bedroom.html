@@ -13,7 +13,8 @@
 
     html, body {
       background: #000;
-      min-height: 100%;
+      height: 100%;
+      overflow: hidden;
     }
 
     body {
@@ -25,31 +26,81 @@
       opacity: 1;
     }
 
-    .bedroom-outer {
+    .bedroom-scroller {
       width: 100%;
-      max-width: 820px;
-      margin: 0 auto;
+      height: 100vh;
+      height: 100dvh;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .bedroom-track {
+      display: flex;
+      align-items: stretch;
+      height: 100%;
+      min-width: max-content;
     }
 
     .bedroom-img {
-      width: 100%;
-      height: auto;
+      width: auto;
+      height: 100%;
+      flex: 0 0 auto;
       display: block;
       user-select: none;
       -webkit-user-drag: none;
     }
   </style>
 </head>
-<body>
-  <div class="bedroom-outer">
-    <img src="assets/bedroom1.PNG" alt="Bedroom" class="bedroom-img" />
+<body data-door-center-ratio="0.5">
+  <div class="bedroom-scroller" id="bedroom-scroller">
+    <div class="bedroom-track">
+      <img src="assets/bedroom1.png" alt="Bedroom" class="bedroom-img" id="bedroom-img" />
+    </div>
   </div>
   <script>
+    let resizeFrame = 0;
+
+    function centerOnDoor() {
+      const scroller = document.getElementById('bedroom-scroller');
+      const img = document.getElementById('bedroom-img');
+      if (!scroller || !img) {
+        return;
+      }
+
+      // Horizontal door focal point within the image width (0.5 = 50%).
+      const ratioValue = Number(document.body.dataset.doorCenterRatio || '0.5');
+      const doorCenterRatio = Number.isFinite(ratioValue) ? Math.min(1, Math.max(0, ratioValue)) : 0.5;
+      const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+      // Scroll so the door focal point lands at the center of the viewport.
+      const target = (img.clientWidth * doorCenterRatio) - (scroller.clientWidth / 2);
+      scroller.scrollLeft = Math.min(maxScroll, Math.max(0, target));
+    }
+
+    function scheduleCenterOnDoor() {
+      if (resizeFrame) {
+        return;
+      }
+      resizeFrame = requestAnimationFrame(function () {
+        resizeFrame = 0;
+        centerOnDoor();
+      });
+    }
+
     window.addEventListener('load', function () {
+      const img = document.getElementById('bedroom-img');
+      if (img && !img.complete) {
+        img.addEventListener('load', function () {
+          scheduleCenterOnDoor();
+        }, { once: true });
+      }
+      scheduleCenterOnDoor();
       requestAnimationFrame(function () {
         document.body.classList.add('loaded');
       });
     });
+
+    window.addEventListener('resize', scheduleCenterOnDoor);
   </script>
 </body>
 </html>
