@@ -17,6 +17,10 @@
       --doorway-hitbox-top: 29%;
       --doorway-hitbox-width: 14%;
       --doorway-hitbox-height: 46%;
+      --calendar-hitbox-left: 75%;
+      --calendar-hitbox-top: 50%;
+      --calendar-hitbox-width: 8%;
+      --calendar-hitbox-height: 16%;
     }
 
     html, body {
@@ -81,6 +85,21 @@
       z-index: 2;
       -webkit-tap-highlight-color: transparent;
     }
+
+    .calendar-btn {
+      position: absolute;
+      left: var(--calendar-hitbox-left);
+      top: var(--calendar-hitbox-top);
+      width: var(--calendar-hitbox-width);
+      height: var(--calendar-hitbox-height);
+      background: transparent;
+      opacity: 0;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      z-index: 2;
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
 <body>
@@ -88,6 +107,7 @@
     <div class="bedroom-scene" id="bedroom-scene">
       <img src="assets/bedroom.png?v=20260419-1839" alt="Bedroom" class="bedroom-img" id="bedroom-img" />
       <button class="doorway-btn" id="doorway-btn" aria-label="Enter the antechamber"></button>
+      <button class="calendar-btn" id="desk-calendar-btn" aria-label="Open shared calendar"></button>
     </div>
   </div>
   <script>
@@ -100,6 +120,10 @@
     let shouldScrollLeftOnMouseUp = false;
     let isMouseScrollInProgress = false;
     let mouseScrollLockTimer = 0;
+    const WHEEL_DAMPING = 0.82;
+    const WHEEL_MIN_VELOCITY = 0.35;
+    let wheelVelocity = 0;
+    let wheelAnimationFrame = 0;
     const bedroomScroller = document.getElementById('bedroom-scroller');
 
     function centerDoorway() {
@@ -133,6 +157,22 @@
       }
       isNavigatingToAntechamber = true;
       window.location.assign('bedroom-antechamber.html');
+    }
+
+    function openSharedCalendar() {
+      window.open('assets/naimean-shared-calendar.ics', '_blank', 'noopener,noreferrer');
+    }
+
+    function runWheelMomentum() {
+      if (!bedroomScroller || Math.abs(wheelVelocity) < WHEEL_MIN_VELOCITY) {
+        wheelVelocity = 0;
+        wheelAnimationFrame = 0;
+        return;
+      }
+
+      bedroomScroller.scrollLeft += wheelVelocity;
+      wheelVelocity *= WHEEL_DAMPING;
+      wheelAnimationFrame = requestAnimationFrame(runWheelMomentum);
     }
 
     function nudgeHorizontal(direction) {
@@ -172,12 +212,27 @@
 
     window.addEventListener('resize', scheduleCenterDoorway);
     document.getElementById('doorway-btn').addEventListener('click', navigateToAntechamber);
+    document.getElementById('desk-calendar-btn').addEventListener('click', openSharedCalendar);
+
+    bedroomScroller.addEventListener('wheel', function (event) {
+      const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (dominantDelta === 0) {
+        return;
+      }
+
+      event.preventDefault();
+      wheelVelocity += dominantDelta;
+      if (!wheelAnimationFrame) {
+        wheelAnimationFrame = requestAnimationFrame(runWheelMomentum);
+      }
+    }, { passive: false });
 
     window.addEventListener('mousedown', function (event) {
       const eventTarget = event.target;
       const startedOnDoorway = eventTarget instanceof Element && eventTarget.closest('#doorway-btn');
+      const startedOnCalendar = eventTarget instanceof Element && eventTarget.closest('#desk-calendar-btn');
       const startedInScroller = eventTarget instanceof Element && eventTarget.closest('#bedroom-scroller');
-      if (event.button !== 0 || startedOnDoorway || !startedInScroller) {
+      if (event.button !== 0 || startedOnDoorway || startedOnCalendar || !startedInScroller) {
         shouldScrollLeftOnMouseUp = false;
         return;
       }
@@ -186,7 +241,8 @@
 
     window.addEventListener('mouseup', function (event) {
       const releasedOnDoorway = event.target instanceof Element && event.target.closest('#doorway-btn');
-      if (event.button !== 0 || releasedOnDoorway || !shouldScrollLeftOnMouseUp) {
+      const releasedOnCalendar = event.target instanceof Element && event.target.closest('#desk-calendar-btn');
+      if (event.button !== 0 || releasedOnDoorway || releasedOnCalendar || !shouldScrollLeftOnMouseUp) {
         shouldScrollLeftOnMouseUp = false;
         return;
       }
@@ -199,6 +255,11 @@
       isMouseScrollInProgress = false;
       clearTimeout(mouseScrollLockTimer);
       mouseScrollLockTimer = 0;
+      wheelVelocity = 0;
+      if (wheelAnimationFrame) {
+        cancelAnimationFrame(wheelAnimationFrame);
+        wheelAnimationFrame = 0;
+      }
     });
   </script>
 </body>
