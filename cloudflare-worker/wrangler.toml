@@ -17,4 +17,4 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "barrelroll-counter-db"
-database_id = "<DATABASE_ID>"
+database_id = "22277fbe-031d-4cad-8937-245309e981cd"
