@@ -23,6 +23,7 @@ A Commodore 64-themed interactive landing page with retro effects, puzzles, and 
 - Main C64 boot experience: `script.js` + `styles.css` (linked to the boot page)
 - Assets live in the `assets/` directory
 - See PLAN.md and UPDATE.md for roadmap and changelog
+- See `CLOUDFLARE_README.md` for Cloudflare architecture and deployment details
 
 ## Deployment
 - Static hosting (GitHub Pages, Vercel, Netlify, etc.)
