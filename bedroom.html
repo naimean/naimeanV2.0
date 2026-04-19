@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bedroom</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      background: #000;
+      min-height: 100%;
+    }
+
+    body {
+      opacity: 0;
+      transition: opacity 0.9s ease;
+    }
+
+    body.loaded {
+      opacity: 1;
+    }
+
+    .bedroom-outer {
+      width: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .bedroom-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="bedroom-outer">
+    <img src="assets/bedroom.PNG" alt="Bedroom" class="bedroom-img" />
+  </div>
+  <script>
+    window.addEventListener('load', function () {
+      requestAnimationFrame(function () {
+        document.body.classList.add('loaded');
+      });
+    });
+  </script>
+</body>
+</html>
