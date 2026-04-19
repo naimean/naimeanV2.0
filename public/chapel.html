@@ -282,6 +282,10 @@
     congregationAudio.volume = 0.04;
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
     const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
+    const DISCORD_INVITE_REDIRECT_PENDING_KEY = 'naimean-discord-invite-redirect-pending';
+    const DISCORD_WIDGET_ID = '1487898909224341534';
+    const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
+    const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
@@ -426,6 +430,71 @@
         window.sessionStorage.removeItem(ROCK_ROLL_CONTINUATION_KEY);
         window.sessionStorage.removeItem(ROCK_ROLL_CONTINUATION_PENDING_KEY);
       } catch (_) {}
+    }
+
+    function consumeDiscordInviteRedirectPending() {
+      try {
+        const isPending = window.sessionStorage.getItem(DISCORD_INVITE_REDIRECT_PENDING_KEY) === '1';
+        window.sessionStorage.removeItem(DISCORD_INVITE_REDIRECT_PENDING_KEY);
+        return isPending;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    async function resolveDiscordInviteUrl() {
+      let controller = null;
+      if (typeof AbortController === 'function') {
+        try {
+          controller = new AbortController();
+        } catch (_) {
+          controller = null;
+        }
+      }
+
+      let timeoutId = null;
+      if (controller) {
+        timeoutId = setTimeout(() => {
+          controller.abort();
+        }, DISCORD_INVITE_RESOLVE_TIMEOUT_MS);
+      }
+
+      try {
+        const response = await fetch(DISCORD_WIDGET_API_URL, {
+          method: 'GET',
+          cache: 'no-store',
+          signal: controller ? controller.signal : undefined
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const payload = await response.json();
+        const instantInvite = typeof payload?.instant_invite === 'string'
+          ? payload.instant_invite.trim()
+          : '';
+        return instantInvite || null;
+      } catch (_) {
+        return null;
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      }
+    }
+
+    async function launchDiscordInviteFromRedirectIfNeeded() {
+      if (!consumeDiscordInviteRedirectPending()) {
+        return;
+      }
+
+      setTimeout(async function () {
+        const inviteUrl = await resolveDiscordInviteUrl();
+        if (inviteUrl) {
+          window.open(inviteUrl, '_blank', 'noopener,noreferrer');
+        }
+      }, 1000);
     }
 
     function consumeRockRollContinuation() {
@@ -705,6 +774,7 @@
       // Retry a few times in case layout shifts as images decode on mobile
       setTimeout(scrollToCurrentStartPoint, 100);
       setTimeout(scrollToCurrentStartPoint, 300);
+      launchDiscordInviteFromRedirectIfNeeded();
       setTimeout(function () {
         scrollToCurrentStartPoint();
         startCongregationAudio();
