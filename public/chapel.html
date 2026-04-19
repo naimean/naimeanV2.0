@@ -45,62 +45,6 @@
       width: 100%;
     }
 
-    /* Subtle relight pass over the marked arch areas. */
-    .chapel-relight {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 4;
-      background:
-        radial-gradient(ellipse 12% 11% at 8% 58%, rgba(255, 186, 92, 0.14), transparent 72%),
-        radial-gradient(ellipse 14% 13% at 10% 69%, rgba(255, 184, 88, 0.16), transparent 74%),
-        radial-gradient(ellipse 9% 9% at 24% 66%, rgba(255, 190, 96, 0.13), transparent 72%),
-        radial-gradient(ellipse 14% 12% at 34% 46%, rgba(255, 196, 104, 0.18), transparent 72%),
-        radial-gradient(ellipse 26% 15% at 50% 45%, rgba(255, 190, 96, 0.15), transparent 74%),
-        radial-gradient(ellipse 10% 9% at 68% 49%, rgba(255, 196, 104, 0.17), transparent 72%),
-        radial-gradient(ellipse 9% 10% at 79% 62%, rgba(255, 190, 96, 0.14), transparent 72%),
-        radial-gradient(ellipse 11% 12% at 92% 67%, rgba(255, 184, 88, 0.16), transparent 74%);
-      mix-blend-mode: screen;
-      opacity: 1;
-      filter: blur(12px);
-    }
-
-    /* Directional stained-glass sunlight with a warm bloom and tapered shafts. */
-    .stained-glass-light {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 5;
-      mix-blend-mode: screen;
-      opacity: 0.92;
-    }
-
-    .stained-glass-light::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 15% 7% at 50% 83.6%, rgba(255, 205, 132, 0.34), transparent 64%),
-        radial-gradient(ellipse 9% 4.5% at 50% 82.7%, rgba(255, 247, 221, 0.18), transparent 70%),
-        radial-gradient(ellipse 30% 16% at 50% 73%, rgba(255, 190, 104, 0.10), transparent 76%),
-        radial-gradient(ellipse 18% 22% at 50% 60%, rgba(255, 214, 146, 0.05), transparent 82%);
-      filter: blur(12px);
-    }
-
-    .stained-glass-light::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(346deg, transparent 39%, rgba(255, 200, 116, 0.11) 48%, rgba(255, 228, 170, 0.09) 52%, transparent 61%),
-        linear-gradient(0deg, transparent 37%, rgba(255, 222, 164, 0.10) 48%, rgba(255, 239, 198, 0.07) 52%, transparent 63%),
-        linear-gradient(14deg, transparent 40%, rgba(255, 188, 102, 0.10) 49%, rgba(255, 214, 146, 0.08) 53%, transparent 62%),
-        radial-gradient(ellipse 42% 30% at 50% 56%, rgba(255, 193, 114, 0.04), transparent 76%);
-      filter: blur(28px);
-      mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.98) 16%, rgba(0, 0, 0, 0.88) 28%, rgba(0, 0, 0, 0.62) 44%, transparent 74%);
-      -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.98) 16%, rgba(0, 0, 0, 0.88) 28%, rgba(0, 0, 0, 0.62) 44%, transparent 74%);
-    }
-
     /* Narrow seam softener just above center. */
     .chapel-wrapper::after {
       content: '';
@@ -254,8 +198,6 @@
   <div class="chapel-outer">
     <div class="chapel-wrapper">
       <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
-      <div class="chapel-relight" aria-hidden="true"></div>
-      <div class="stained-glass-light" aria-hidden="true"></div>
       <div class="chapel-power-btn" aria-hidden="true">
         <span class="chapel-power-light"></span>
       </div>
