@@ -47,5 +47,31 @@
 - Deploy to static hosting (e.g., GitHub Pages, Vercel, Netlify)
 - Push all changes to GitHub main branch
 
+# Cloudflare Interaction Improvement Plan
+
+1. Align proxy routes in `/src/index.js` with `run_worker_first` in `/wrangler.toml`
+   - Today, wrangler lists `/board`, `/board-upload`, `/board-delete`, and `/uploads/*`, but router code only proxies `/get`, `/hit`, and `/increment`.
+   - Action: keep route lists in sync to prevent behavior mismatches between config and runtime.
+
+2. Consolidate API endpoint resolution logic used in `public/script.js` and `public/chapel.html`
+   - Both files implement near-identical endpoint candidate + fetch fallback logic.
+   - Action: centralize shared logic into one reusable frontend module to reduce drift and bugs.
+
+3. Standardize backend worker binding expectations
+   - `/cloudflare-worker/worker.js` serves non-counter paths via `env.ASSETS.fetch(request)`, but `cloudflare-worker/wrangler.toml` only declares D1 binding.
+   - Action: either add `ASSETS` binding to backend config or remove backend static serving path for clarity.
+
+4. Add explicit API contract documentation for all worker routes
+   - `/get`, `/hit`, `/increment` are implemented and used, while board/upload routes are configured upstream but not represented in router code.
+   - Action: document implemented vs planned routes to avoid integration confusion.
+
+5. Introduce Cloudflare-focused CI checks
+   - Current CI validates static assets for GitHub Pages deployment only.
+   - Action: add a Cloudflare deploy-check workflow (wrangler config validation, route consistency checks, optional `wrangler deploy --dry-run` where available).
+
+6. Improve secrets/config parity checks
+   - Cloudflare and GitHub deploy guidance exists, but enforcement is manual.
+   - Action: add pre-deploy checklist/automation for required secrets and bindings (`COUNTER`, `DB`, and any future upload bindings).
+
 ---
 _Last updated: 2026-04-16_

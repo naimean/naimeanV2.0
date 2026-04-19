@@ -24,6 +24,7 @@ A Commodore 64-themed interactive landing page with retro effects, puzzles, and 
 - Assets live in the `assets/` directory
 - See PLAN.md and UPDATE.md for roadmap and changelog
 - See `CLOUDFLARE_README.md` for Cloudflare architecture and deployment details
+- See `REPO_SETUP_README.md` for repo setup and function-level Cloudflare interaction mapping
 
 ## Deployment
 - Static hosting (GitHub Pages, Vercel, Netlify, etc.)
