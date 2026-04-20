@@ -51,7 +51,12 @@
 
 # Update Log
 
-## 2026-04-20 (hardening + CI + accessibility)
+## 2026-04-20 (P1: Cloudflare CI checks)
+- Added endpoint contract tests to `cloudflare-worker/worker.test.js`: imported the real worker handler with a minimal mock D1 binding and exercised `GET /get`, `POST /hit`, `POST /increment`, `GET /auth/session`, `POST /auth/logout`, `OPTIONS` preflight, method-not-allowed (405), `GET /go/:tool` unauthenticated (401), and required security-header presence. Test suite grows from 17 → 26 passing tests.
+- Strengthened wrangler config validation in `.github/workflows/github-pages.yml`: added `compatibility_date` format check (YYYY-MM-DD), `run_worker_first` key presence, `[[d1_databases]]` binding in the counter worker config, and `schema.sql` file existence.
+- Replaced the single `/auth` route spot-check with a full bidirectional route-alignment step: verifies every entry in `PROXY_PATHS` appears in `run_worker_first` and vice versa, so config drift between the edge router and the wrangler proxy list is caught in CI.
+
+
 - Added CSRF same-origin guard on POST `/auth/logout` — blocks cross-origin cookie-clearing attacks while preserving same-site browser behaviour
 - Fixed `wrangler.toml` `run_worker_first` list: added `/auth` so auth routes are guaranteed worker-handled; removed unimplemented `/board*` and `/uploads/*` entries to eliminate route/config drift
 - Updated `cloudflare-worker/wrangler.toml` compatibility date from `2024-01-01` to `2026-04-18` to match the frontend worker

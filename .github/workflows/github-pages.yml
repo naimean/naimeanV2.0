@@ -42,13 +42,18 @@ jobs:
           grep -q 'name' cloudflare-worker/wrangler.toml
           grep -q 'main' cloudflare-worker/wrangler.toml
           grep -q 'compatibility_date' cloudflare-worker/wrangler.toml
+          # Validate compatibility_date format is YYYY-MM-DD in both configs
+          grep -qE 'compatibility_date = "[0-9]{4}-[0-9]{2}-[0-9]{2}"' wrangler.toml
+          grep -qE 'compatibility_date = "[0-9]{4}-[0-9]{2}-[0-9]{2}"' cloudflare-worker/wrangler.toml
+          # Confirm run_worker_first is present so proxy routes are worker-handled
+          grep -q 'run_worker_first' wrangler.toml
+          # Confirm D1 database binding is declared in the counter worker config
+          grep -q '\[\[d1_databases\]\]' cloudflare-worker/wrangler.toml
+          # Confirm the D1 schema migration file exists
+          test -f cloudflare-worker/schema.sql
 
-      - name: Check that run_worker_first routes match PROXY_PATHS in src/index.js
-        run: |
-          # Verify /auth is present in run_worker_first so auth routes are always worker-handled
-          grep -q '"/auth"' wrangler.toml
-          # Verify /auth is present in PROXY_PATHS
-          grep -q '"/auth"' src/index.js
+      - name: Check bidirectional route alignment (PROXY_PATHS ↔ run_worker_first)
+        run: node scripts/check-route-alignment.js
 
       - name: Verify site assets
         run: |
