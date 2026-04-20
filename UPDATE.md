@@ -71,6 +71,7 @@
 - Started next P0 security item by enforcing edge security headers (CSP/HSTS + baseline browser hardening headers) across frontend and API worker responses
 - Started the next priority hardening item by moving counter write flow to POST-first (`/increment`, `/hit`) with legacy GET fallback compatibility
 - Started the next priority hardening item by tightening CORS allowlisting with environment-aware origin controls and no default wildcard suffix matching
+- Started the next recommendation project by enforcing POST-only counter writes for `/hit` and `/increment` (legacy GET write path removed)
 
 ## 2026-04-15
 - Data light moved down 3px and right 5px for precise placement
