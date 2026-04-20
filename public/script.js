@@ -122,7 +122,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
   const CAP_EX_URL = 'https://app.smartsheet.com/b/form/70b07591b76a4289bc6f5d5e1aabac91?';
   const SNOW_URL = 'https://recoverycoa.service-now.com/now/nav/ui/classic/params/target/incident_list.do?sysparm_query=stateNOT%20IN6%2C7%2C8%5Eassigned_to%3D7fc866ea1b1d7110153886a7624bcbc0&sysparm_first_row=1&sysparm_view=';
-  let authSession = { authenticated: false, user: null };
+  const createUnauthenticatedSession = () => ({ authenticated: false, user: null });
+  let authSession = createUnauthenticatedSession();
 
   function buildRickrollApiUrls(pathname) {
     const candidates = [];
@@ -640,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
         credentials: 'same-origin',
       });
       if (!response.ok) {
-        authSession = { authenticated: false, user: null };
+        authSession = createUnauthenticatedSession();
         return authSession;
       }
       const payload = await response.json();
@@ -650,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       return authSession;
     } catch (_) {
-      authSession = { authenticated: false, user: null };
+      authSession = createUnauthenticatedSession();
       return authSession;
     }
   }
@@ -695,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function() {
           credentials: 'same-origin',
         });
       } catch (_) {}
-      authSession = { authenticated: false, user: null };
+      authSession = createUnauthenticatedSession();
       appendShoutboxMessage('AUTH> Signed out.');
       appendShoutboxMessage('AUTH> Type C:\\Naimean\\login to sign back in.');
       return true;

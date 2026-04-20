@@ -256,7 +256,14 @@ function sanitizeReturnPath(rawValue) {
   if (!trimmed.startsWith('/')) {
     return '/';
   }
-  if (trimmed.startsWith('//') || trimmed.includes('\r') || trimmed.includes('\n')) {
+  const lowered = trimmed.toLowerCase();
+  if (
+    trimmed.startsWith('//')
+    || trimmed.includes('\r')
+    || trimmed.includes('\n')
+    || lowered.includes('%0d')
+    || lowered.includes('%0a')
+  ) {
     return '/';
   }
   return trimmed;
@@ -309,7 +316,7 @@ async function getSessionFromRequest(request, env) {
     return null;
   }
 
-  if (!Number.isFinite(payload.exp) || payload.exp <= Date.now()) {
+  if (!Number.isFinite(payload.exp) || payload.exp < Date.now()) {
     return null;
   }
 
@@ -474,7 +481,7 @@ async function handleDiscordCallback(request, env, url) {
     return createRedirectResponse(buildRelativeUrlWithParam(returnTo, 'auth', 'missing'), [clearOauthCookie]);
   }
 
-  if (!Number.isFinite(oauthState.exp) || oauthState.exp <= Date.now()) {
+  if (!Number.isFinite(oauthState.exp) || oauthState.exp < Date.now()) {
     return createRedirectResponse(buildRelativeUrlWithParam(returnTo, 'auth', 'expired'), [clearOauthCookie]);
   }
 
