@@ -666,7 +666,18 @@ async function handleGoRedirect(pathname, request, env, origin) {
     return jsonResponse({ error: 'Tool URL not configured' }, 503, origin, env);
   }
 
-  return createRedirectResponse(destinationUrl.toString());
+  // Use 303 (See Other) for cross-origin redirects so that:
+  //  - the method is always changed to GET on follow,
+  //  - the referrer is suppressed by the Referrer-Policy: no-referrer header
+  //    applied by applyApiSecurityHeaders, preventing the destination from
+  //    seeing the originating URL.
+  return new Response(null, {
+    status: 303,
+    headers: {
+      Location: destinationUrl.toString(),
+      'Cache-Control': 'no-store',
+    },
+  });
 }
 
 export default {
