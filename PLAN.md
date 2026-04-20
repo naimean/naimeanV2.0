@@ -32,15 +32,15 @@
 
 ## Next Steps
 1. Add entertaining mini-games or interactive experiences
-2. Integrate Discord OAuth for registration/authentication
-3. Implement message board (shoutbox) for registered users
+2. Integrate Discord OAuth for registration/authentication ✅ (PKCE/state/session/logout hardening complete)
+3. Implement message board (shoutbox) for registered users (server-side backend TBD)
 4. Discord widget overlay and join prompt
 5. Video/sound/static overlay sequencing (beyond current static/audio)
-6. Final UI/UX polish based on user feedback
-7. Accessibility review (keyboard, ARIA, color contrast)
+6. Final UI/UX polish based on user feedback ✅ (focus-visible, aria-labels, main landmark added)
+7. Accessibility review (keyboard, ARIA, color contrast) ✅ (role=log, aria-live, focus-visible styles)
 8. Add more C64-style effects (optional)
-9. Prepare for deployment (static hosting)
-10. Update documentation
+9. Prepare for deployment (static hosting) ✅ (CI guardrails, route alignment, cache headers)
+10. Update documentation ✅
 
 ## Planned Feature Spec — Bedroom Selector (Dark Fantasy Scene)
 

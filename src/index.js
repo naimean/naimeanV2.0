@@ -18,16 +18,35 @@ const DOCUMENT_CSP = [
 
 const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
-function applyEdgeSecurityHeaders(response, isSecureTransport) {
+// Static asset paths that benefit from long-lived caching (content-addressed or versioned).
+const IMMUTABLE_ASSET_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff'];
+
+function isImmutableAsset(pathname) {
+  const lower = pathname.toLowerCase();
+  return IMMUTABLE_ASSET_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+function applyEdgeSecurityHeaders(response, isSecureTransport, pathname) {
   const headers = new Headers(response.headers);
   const contentType = (headers.get('content-type') || '').toLowerCase();
 
   if (contentType.includes('text/html')) {
     headers.set('Content-Security-Policy', DOCUMENT_CSP);
-  } else if (contentType.includes('application/json') || contentType.includes('text/plain')) {
+    // HTML documents must never be cached at the edge to ensure security
+    // headers and content are always fresh.
+    if (!headers.has('Cache-Control')) {
+      headers.set('Cache-Control', 'no-cache, must-revalidate');
+    }
+  } else {
+    // API and all other response types get the strict API CSP.
     headers.set('Content-Security-Policy', API_CSP);
+    // Long-lived cache for static media/font assets that do not change.
+    if (!headers.has('Cache-Control') && response.status === 200 && isImmutableAsset(pathname)) {
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    }
   }
 
+  // Apply baseline security headers to every response regardless of content type.
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -56,6 +75,6 @@ export default {
       upstreamResponse = await env.ASSETS.fetch(request);
     }
 
-    return applyEdgeSecurityHeaders(upstreamResponse, isSecureTransport);
+    return applyEdgeSecurityHeaders(upstreamResponse, isSecureTransport, url.pathname);
   },
 };

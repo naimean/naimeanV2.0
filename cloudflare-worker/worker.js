@@ -454,6 +454,14 @@ async function handleAuthSession(request, env, origin) {
 }
 
 async function handleAuthLogout(request, env, origin, url) {
+  // CSRF guard: require the request to originate from an allowed origin.
+  // SameSite=Lax cookies prevent cross-site POST in modern browsers, but an
+  // explicit origin check provides defence-in-depth for older clients and
+  // non-browser environments.
+  if (origin && !isAllowedOrigin(origin, env)) {
+    return jsonResponse({ error: 'Forbidden' }, 403, origin, env);
+  }
+
   const clearSessionCookie = serializeCookie(SESSION_COOKIE_NAME, '', {
     maxAge: 0,
     secure: shouldUseSecureCookie(url),

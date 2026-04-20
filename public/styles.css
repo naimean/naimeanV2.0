@@ -414,9 +414,12 @@ body {
   transform: translate(var(--discord-widget-crop-offset-x), var(--discord-widget-crop-offset-y)) scale(var(--discord-widget-scale));
 }
 
-.boot-submit:hover {
+.boot-submit:hover,
+.boot-submit:focus-visible {
   background: rgba(160, 200, 255, 0.28);
   filter: blur(0.3px) brightness(1.15);
+  outline: 2px dashed rgba(200, 222, 255, 0.6);
+  outline-offset: 2px;
 }
 
 #boot-video {
@@ -449,6 +452,11 @@ body {
   box-shadow: 0 0 8px #000a;
   outline: none;
   transition: background 0.3s;
+}
+
+.power-btn:focus-visible {
+  outline: 2px dashed rgba(30, 215, 96, 0.7);
+  outline-offset: 3px;
 }
 
 .power-btn.on {
