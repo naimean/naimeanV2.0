@@ -1026,7 +1026,9 @@
       audioElement.currentTime = 0;
       const playPromise = audioElement.play();
       if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(function () {});
+        playPromise.catch(function (error) {
+          console.warn('Failed to play congregation clip:', audioElementId, error);
+        });
       }
     }
 
