@@ -131,10 +131,10 @@
     /* Invisible hotspot over the chapel computer screen to return to index. */
     .chapel-return-btn {
       position: absolute;
-      left: 44.6%;
-      top: calc(52.0% + 40px);
-      width: calc(12% - 10px);
-      height: calc(7% - 60px);
+      left: calc(44.6% - 15px);
+      top: calc(52.0% + 52px);
+      width: calc(12% - 5px);
+      height: calc(7% - 102px);
       background: transparent;
       opacity: 1;
       pointer-events: auto;
@@ -170,8 +170,8 @@
     @media (min-width: 900px) {
       /* Desktop-only requested offset: hitbox moved 10px left and 30px down. */
       .chapel-return-btn {
-        left: calc(46.4% - 10px);
-        top: calc(53.2% + 70px);
+        left: calc(46.4% - 25px);
+        top: calc(53.2% + 82px);
       }
 
       /* Desktop tweak: shift counter further left and down from base placement. */
@@ -202,10 +202,10 @@
 
     /* Invisible hotspot over the trap door square area. */
     .trapdoor-btn {
-      left: 33%;
-      top: 77%;
-      width: 34%;
-      height: 16%;
+      left: calc(33% - 20px);
+      top: calc(77% + 15px);
+      width: calc(34% + 40px);
+      height: max(calc(16% - 115px), 24px);
     }
 
     .congregation-btn:focus-visible {
@@ -241,6 +241,32 @@
       top: calc(77.5% - 200px);
       width: 8%;
       height: 16%;
+    .congregation-btn-crusty {
+      left: calc(16% - 115px);
+      top: calc(76.5% - 415px);
+      width: calc(8% + 65px);
+      height: max(calc(17% - 300px), 24px);
+    }
+
+    .congregation-btn-goose {
+      left: calc(31% - 40px);
+      top: calc(77.5% - 450px);
+      width: calc(8% + 30px);
+      height: max(calc(16% - 330px), 24px);
+    }
+
+    .congregation-btn-rick {
+      left: calc(54.5% + 57px);
+      top: calc(76.5% - 500px);
+      width: calc(8% + 28px);
+      height: max(calc(17% - 350px), 24px);
+    }
+
+    .congregation-btn-morty {
+      left: calc(69.5% + 95px);
+      top: calc(77.5% - 420px);
+      width: calc(8% + 25px);
+      height: max(calc(16% - 350px), 24px);
     }
 
     /* Page transition fade overlay */
@@ -288,6 +314,10 @@
 <body>
   <div class="fade-overlay" id="fade-overlay"></div>
   <audio id="congregation-audio" src="assets/congregation.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-crusty" src="assets/krusty_laugh.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-goose" src="assets/goose_honk.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-rick" src="assets/rick_nope.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-morty" src="assets/morty_aw_jeez.mp3" preload="auto"></audio>
   <video id="rock-roll-continuation-media" src="assets/notarickroll.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
 
     <div class="chapel-outer">
@@ -1017,6 +1047,32 @@
       ['rick-button', 'assets/goose_honk.mp3']
     ].forEach(function ([buttonId, assetPath]) {
       document.getElementById(buttonId).addEventListener('click', function () { openAudioAsset(assetPath); });
+    const congregationButtonAudioMap = {
+      'congregation-btn-crusty': 'congregation-audio-crusty',
+      'congregation-btn-goose': 'congregation-audio-goose',
+      'congregation-btn-rick': 'congregation-audio-rick',
+      'congregation-btn-morty': 'congregation-audio-morty'
+    };
+
+    function playCongregationClip(audioElementId) {
+      const audioElement = document.getElementById(audioElementId);
+      if (!audioElement) {
+        return;
+      }
+
+      audioElement.currentTime = 0;
+      const playPromise = audioElement.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function (error) {
+          console.warn('Failed to play congregation clip:', audioElementId, error);
+        });
+      }
+    }
+
+    Object.keys(congregationButtonAudioMap).forEach(function (buttonId) {
+      document.getElementById(buttonId).addEventListener('click', function () {
+        playCongregationClip(congregationButtonAudioMap[buttonId]);
+      });
     });
 
     // Enter key → same behavior
