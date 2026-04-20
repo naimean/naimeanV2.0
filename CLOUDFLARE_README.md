@@ -10,15 +10,15 @@ This document maps out the Cloudflare infrastructure for **naimean.com** and **m
 GitHub (main branch)
 ├─ naimeanv2 repo ─────────► wrangler deploy ──► naimeanv2 Worker
 │                            ├─ serves static assets (ASSETS binding)
-│                            └─ proxies /get, /hit, /increment, /board, /board-upload, /board-delete, /uploads/*
+│                            └─ proxies /get, /hit, /increment, /auth, /go
 │                                                   │
 │                                                   ▼
 │                                   barrelrollcounter-worker
 │                                   (Service binding: COUNTER)
 │                                   ├─ D1: barrelroll-counter-db
-│                                   ├─ R2: board-uploads
-│                                   ├─ Secret: BACKDOOR_ADMIN_KEY
-│                                   └─ Secret: DISCORD_WEBHOOK_URL
+│                                   └─ Secrets: ROUTER_SECRET, SESSION_SECRET,
+│                                               DISCORD_CLIENT_ID/SECRET/REDIRECT_URI,
+│                                               TOOL_URL_WHITEBOARD/CAPEX/SNOW
 └─ barrelrollcounter-worker repo ──► wrangler deploy ──► barrelrollcounter-worker
 ```
 
@@ -53,7 +53,7 @@ Bindings:
 | `COUNTER` | Service | `barrelrollcounter-worker` |
 
 Routing logic:
-- `/get`, `/hit`, `/increment`, `/board`, `/board-upload`, `/board-delete`, `/uploads/*` → Worker runtime first, then backend service route handling
+- `/get`, `/hit`, `/increment`, `/auth`, `/go` → Worker runtime first, proxied to `barrelrollcounter-worker`
 - Other paths → static assets
 
 ### `barrelrollcounter-worker` — API Backend
@@ -62,47 +62,57 @@ Routing logic:
 |---|---|
 | Config in this repo | `/cloudflare-worker/wrangler.toml` |
 | Script in this repo | `/cloudflare-worker/worker.js` |
-| Compatibility date (repo config) | `2024-01-01` |
+| Compatibility date (repo config) | `2026-04-18` |
 
 Bindings (expected):
 
 | Name | Type | Details |
 |---|---|---|
 | `DB` | D1 Database | `barrelroll-counter-db` (`22277fbe-031d-4cad-8937-245309e981cd`) |
-| `BOARD_UPLOADS` | R2 Bucket | `board-uploads` |
-| `BACKDOOR_ADMIN_KEY` | Secret Text | Admin deletion key |
-| `DISCORD_WEBHOOK_URL` | Secret Text | Discord webhook URL |
+| `ROUTER_SECRET` | Secret Text | Shared secret for internal route authentication |
+| `SESSION_SECRET` | Secret Text | HMAC key for signed session tokens |
+| `DISCORD_CLIENT_ID` | Secret Text | Discord OAuth app client ID |
+| `DISCORD_CLIENT_SECRET` | Secret Text | Discord OAuth app client secret |
+| `DISCORD_REDIRECT_URI` | Secret Text | Discord OAuth callback URL |
+| `TOOL_URL_WHITEBOARD` | Secret Text | Internal redirect target for `/go/whiteboard` |
+| `TOOL_URL_CAPEX` | Secret Text | Internal redirect target for `/go/capex` |
+| `TOOL_URL_SNOW` | Secret Text | Internal redirect target for `/go/snow` |
+
+Optional environment variables:
+
+| Name | Purpose |
+|---|---|
+| `CORS_ALLOWED_ORIGINS` | Comma-separated explicit origins to add to the CORS allowlist |
+| `CORS_ALLOWED_ORIGIN_SUFFIXES` | Comma-separated hostname suffixes for scoped wildcard-like CORS behavior |
+| `APP_ENV` / `ENVIRONMENT` | Set to a non-`production` value to also allow localhost development origins |
 
 Known API paths:
-- `GET /get`
-- `POST /hit` (preferred)
-- `POST /increment` (preferred alias)
-- `GET /hit` (legacy compatibility)
-- `GET /increment` (legacy compatibility)
-- `OPTIONS` for CORS preflight
-
-> Note: This repository’s current `worker.js` implements counter endpoints and CORS allowlisting; message-board and upload routes may exist in a separately deployed version.
->
-> CORS allowlist configuration:
-> - `CORS_ALLOWED_ORIGINS`: optional comma-separated explicit origins (e.g., `https://naimean.com,https://www.naimean.com`)
-> - `CORS_ALLOWED_ORIGIN_SUFFIXES`: optional comma-separated hostname suffixes for scoped wildcard-like behavior (empty by default)
-> - `APP_ENV` / `ENVIRONMENT`: set non-production values to allow localhost development origins
+- `GET  /get` — return current counter value
+- `POST /hit` — increment counter, return new value (preferred)
+- `POST /increment` — alias of `/hit` (preferred)
+- `GET  /hit` — legacy compatibility alias (deprecated)
+- `GET  /increment` — legacy compatibility alias (deprecated)
+- `GET  /auth/session` — return current session info
+- `GET  /auth/discord/login` — initiate Discord OAuth PKCE flow
+- `GET  /auth/discord/callback` — complete Discord OAuth flow
+- `POST /auth/logout` — clear session cookie
+- `GET  /go/whiteboard` — authenticated redirect to whiteboard tool
+- `GET  /go/capex` — authenticated redirect to CapEx tool
+- `GET  /go/snow` — authenticated redirect to ServiceNow tool
+- `OPTIONS` — CORS preflight for any of the above
 
 ---
 
 ## Storage
 
 ### D1 — `barrelroll-counter-db`
-Stores barrel-roll counter data (and may also store message-board data depending on deployed backend version).
-
-### R2 — `board-uploads`
-Stores user-uploaded board images (if enabled in deployed backend).
+Stores barrel-roll counter data and Discord OAuth session records.
 
 ### R2 — `radley-gallery`
-Existing bucket not currently bound in this repository’s worker configs.
+Existing bucket not currently bound in this repository's worker configs.
 
 ### KV — `naimean-sessions`
-Existing namespace not currently bound in this repository’s worker configs.
+Existing namespace not currently bound in this repository's worker configs.
 
 ---
 
@@ -193,8 +203,14 @@ wrangler deploy
 Secrets:
 
 ```bash
-wrangler secret put BACKDOOR_ADMIN_KEY
-wrangler secret put DISCORD_WEBHOOK_URL
+wrangler secret put ROUTER_SECRET
+wrangler secret put SESSION_SECRET
+wrangler secret put DISCORD_CLIENT_ID
+wrangler secret put DISCORD_CLIENT_SECRET
+wrangler secret put DISCORD_REDIRECT_URI
+wrangler secret put TOOL_URL_WHITEBOARD
+wrangler secret put TOOL_URL_CAPEX
+wrangler secret put TOOL_URL_SNOW
 ```
 
 ---
@@ -245,7 +261,7 @@ wrangler secret put DISCORD_WEBHOOK_URL
 - Apply Zero Trust access for admin/backdoor workflows and any internal-only dashboards/endpoints.
 
 #### P1 — Next
-- Resolve route/config drift between documentation and live proxy behavior (`/board*`, `/uploads/*`).
+- ✅ Route/config drift resolved: documentation now matches live proxy behavior (no `/board*` or `/uploads/*` routes).
 - Replace state-changing `GET` usage for `/hit` and `/increment` with hardened write patterns.
 - Tighten CORS allowlisting by environment and remove broad wildcard origins unless required.
 - Add Cloudflare CI checks (wrangler config validation, route smoke tests, endpoint contract checks).
