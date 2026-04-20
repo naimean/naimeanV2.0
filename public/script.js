@@ -706,8 +706,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const fallback = 'AUTH> Discord sign-in did not complete. Type C:\\Naimean\\login to try again.';
     const authErrors = {
       expired: 'AUTH> Discord sign-in expired. Type C:\\Naimean\\login to try again.',
-      state: 'AUTH> Discord sign-in security check failed. Type C:\\Naimean\\login to retry.',
-      token: 'AUTH> Discord token exchange failed. Type C:\\Naimean\\login to retry.',
+      state: 'AUTH> Discord sign-in verification failed. Type C:\\Naimean\\login to retry.',
+      token: 'AUTH> Could not complete Discord sign-in. Type C:\\Naimean\\login to retry.',
       profile: 'AUTH> Could not read your Discord profile. Type C:\\Naimean\\login to retry.',
       not_configured: 'AUTH> Discord sign-in is not configured yet.',
     };
