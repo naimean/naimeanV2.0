@@ -1122,8 +1122,11 @@ function playZeldaSecretSound() {
       if (fallbackTimer) {
         clearTimeout(fallbackTimer);
       }
-      if (synthAudioContext && typeof synthAudioContext.close === 'function' && synthAudioContext.state !== 'closed') {
-        synthAudioContext.close().catch(() => {});
+      if (synthAudioContext && typeof synthAudioContext.close === 'function') {
+        const isClosed = typeof synthAudioContext.state === 'string' && synthAudioContext.state === 'closed';
+        if (!isClosed) {
+          synthAudioContext.close().catch(() => {});
+        }
       }
       synthAudioContext = null;
       zeldaSecretAudio.removeEventListener('ended', finish);
