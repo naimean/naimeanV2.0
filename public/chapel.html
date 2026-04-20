@@ -405,7 +405,7 @@
       <button class="invisible-hotspot-btn congregation-btn" id="morty-button" aria-label="Play Morty aw jeez"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="rick-button" aria-label="Play Rick nope"></button>
       <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move invisible hotspot tool">
-        <div class="hotspot-tool-title">Move Tool</div>
+        <h2 class="hotspot-tool-title">Move Tool</h2>
         <select id="move-tool-target" data-hotspot-target>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
@@ -427,7 +427,7 @@
         <div class="hotspot-tool-meta" id="move-tool-meta">left -- | top -- | w -- | h --</div>
       </section>
       <section class="hotspot-tool" id="hotspot-size-tool" aria-label="Resize invisible hotspot tool">
-        <div class="hotspot-tool-title">Size Tool</div>
+        <h2 class="hotspot-tool-title">Size Tool</h2>
         <select id="size-tool-target" data-hotspot-target>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
@@ -511,7 +511,7 @@
     let torchBloomSampleContext = null;
     let torchBloomIntensityBound = false;
 
-    function parsePx(value) {
+    function parseNumericValue(value) {
       const numericValue = Number.parseFloat(value);
       return Number.isFinite(numericValue) ? numericValue : 0;
     }
@@ -552,7 +552,7 @@
         return;
       }
 
-      const currentPx = parsePx(window.getComputedStyle(target)[property]);
+      const currentPx = parseNumericValue(window.getComputedStyle(target)[property]);
       const nextPx = property === 'width' || property === 'height'
         ? Math.max(1, currentPx + deltaPx)
         : currentPx + deltaPx;
@@ -568,7 +568,7 @@
       }
 
       const computed = window.getComputedStyle(target);
-      const metaText = `left ${Math.round(parsePx(computed.left))} | top ${Math.round(parsePx(computed.top))} | w ${Math.round(parsePx(computed.width))} | h ${Math.round(parsePx(computed.height))}`;
+      const metaText = `left ${Math.round(parseNumericValue(computed.left))} | top ${Math.round(parseNumericValue(computed.top))} | w ${Math.round(parseNumericValue(computed.width))} | h ${Math.round(parseNumericValue(computed.height))}`;
       moveMeta.textContent = metaText;
       sizeMeta.textContent = metaText;
     }
