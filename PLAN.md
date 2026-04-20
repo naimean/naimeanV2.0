@@ -77,5 +77,17 @@
 - Provide keyboard-accessible interaction paths and visible focus indicators.
 - Add lightweight in-context hints for puzzles/interactions to reduce drop-off.
 
+## Additional Recommendations from Documentation + Cloudflare Review
+- Align Cloudflare route documentation/config with actual proxy behavior (`/board*` and `/uploads/*` are documented/configured but not currently proxied in `src/index.js`).
+- Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources.
+- Replace state-changing `GET` counter endpoints (`/hit`, `/increment`) with `POST` (or require signed requests) to reduce abuse and accidental triggering.
+- Tighten CORS allowlisting by environment and remove broad wildcard origins (e.g., unrestricted `*.pages.dev`) unless strictly required.
+- Add Cloudflare WAF + bot protections (managed rules, rate limits, and Turnstile where user input/upload endpoints exist).
+- Add Cloudflare One / Zero Trust Access policies for admin/backdoor operations and any non-public dashboards/endpoints.
+- Standardize Worker compatibility dates and deployment controls across frontend/backend workers to reduce drift.
+- Add Cloudflare-focused CI checks (wrangler config validation, route smoke tests, and endpoint contract checks) on pull requests.
+- Define D1/R2 operational safeguards: migration strategy, scheduled backups/exports, and restore runbooks.
+- Add edge observability baselines (Worker logs, latency/error SLOs, and alerting for counter/API failures).
+
 ---
 _Last updated: 2026-04-20_
