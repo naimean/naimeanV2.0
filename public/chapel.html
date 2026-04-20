@@ -210,6 +210,13 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .congregation-btn:focus-visible {
+      opacity: 1;
+      outline: 2px solid rgba(255, 255, 255, 0.9);
+      outline-offset: 2px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
     .congregation-btn-crusty {
       left: 16%;
       top: 76.5%;
@@ -295,10 +302,10 @@
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
-      <button class="congregation-btn congregation-btn-crusty" id="congregation-btn-crusty" aria-label="Crusty"></button>
-      <button class="congregation-btn congregation-btn-goose" id="congregation-btn-goose" aria-label="Goose"></button>
-      <button class="congregation-btn congregation-btn-rick" id="congregation-btn-rick" aria-label="Rick"></button>
-      <button class="congregation-btn congregation-btn-morty" id="congregation-btn-morty" aria-label="Morty"></button>
+      <button class="congregation-btn congregation-btn-crusty" id="congregation-btn-crusty" aria-label="Enter the descent through crusty"></button>
+      <button class="congregation-btn congregation-btn-goose" id="congregation-btn-goose" aria-label="Enter the descent through goose"></button>
+      <button class="congregation-btn congregation-btn-rick" id="congregation-btn-rick" aria-label="Enter the descent through rick"></button>
+      <button class="congregation-btn congregation-btn-morty" id="congregation-btn-morty" aria-label="Enter the descent through morty"></button>
       <!-- Seam bloom glows around the darkest stitched regions -->
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
