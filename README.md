@@ -322,12 +322,13 @@ Triggers: push to `main`/`master`, PRs against them, manual dispatch.
 | `deployment-check` | PR only | Verifies assets, configures GitHub Pages (dry-run) |
 | `dependency-review` | PR only | `actions/dependency-review-action` — catches vulnerable dependency additions |
 | `deploy` | Push to main only (after `lint-and-check`) | Uploads `public/` as a GitHub Pages artifact and deploys it — no build step, no node_modules |
+| `deploy-workers` | Push to main only (after `lint-and-check`) | Deploys both Cloudflare Workers via `cloudflare/wrangler-action@v3.15.0` |
 
 ### `copilot-setup-steps.yml`
 
 Sets up Node.js 22 for the Copilot coding agent environment. Only runs when the workflow file itself changes or on manual dispatch.
 
-### Required GitHub Secrets (for automated Wrangler deploy — not yet wired up)
+### Required GitHub Secrets (for automated Wrangler deploy)
 
 | Secret | Purpose |
 |---|---|
@@ -339,6 +340,9 @@ Sets up Node.js 22 for the Copilot coding agent environment. Only runs when the 
 ## Local Development
 
 ```bash
+# This repo has no package.json and no npm dependencies.
+# Only Wrangler CLI is needed for local Worker/dev/deploy commands.
+
 # Install Wrangler globally
 npm install -g wrangler
 
@@ -381,8 +385,8 @@ node --check public/diagnostics.js
 | Component | Method | Trigger |
 |---|---|---|
 | Static files (`public/`) | GitHub Pages via `actions/deploy-pages` | Push to `main` |
-| `naimeanv2` edge worker | Manual `wrangler deploy` | Not yet automated in CI |
-| `barrelrollcounter-worker` | Manual `wrangler deploy` from `cloudflare-worker/` | Not yet automated in CI |
+| `naimeanv2` edge worker | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` | Push to `main` |
+| `barrelrollcounter-worker` | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` | Push to `main` |
 
 ---
 
