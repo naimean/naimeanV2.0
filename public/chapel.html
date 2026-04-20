@@ -80,6 +80,19 @@
       -webkit-user-drag: none;
     }
 
+    .chapel-trans-rick {
+      position: absolute;
+      left: 46.1%;
+      top: 54.8%;
+      width: clamp(42px, 9.2%, 80px);
+      height: auto;
+      transform: translate(-50%, -100%);
+      z-index: 5;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
     /* Pulsing power button — positioned over the C64's power button on the altar */
     .chapel-power-btn {
       position: absolute;
@@ -232,12 +245,13 @@
   <audio id="congregation-audio" src="assets/congregation.mp3" preload="auto"></audio>
   <video id="rock-roll-continuation-media" src="assets/notarickroll.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
 
-  <div class="chapel-outer">
-    <div class="chapel-wrapper">
-      <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
-      <div class="chapel-power-btn" aria-hidden="true">
-        <span class="chapel-power-light"></span>
-      </div>
+    <div class="chapel-outer">
+      <div class="chapel-wrapper">
+        <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
+        <img src="assets/trans_rick.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" hidden aria-hidden="true" />
+        <div class="chapel-power-btn" aria-hidden="true">
+          <span class="chapel-power-light"></span>
+        </div>
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
@@ -267,6 +281,7 @@
     const congregationAudio = document.getElementById('congregation-audio');
     const rockRollContinuationMedia = document.getElementById('rock-roll-continuation-media');
     const chapelTvCounter = document.getElementById('chapel-tv-counter');
+    const chapelTransRick = document.getElementById('chapel-trans-rick');
     const chapelWrapper = document.querySelector('.chapel-wrapper');
     const chapelImage = document.querySelector('.chapel-img');
     const torchBlooms = Array.from(document.querySelectorAll('.torch-bloom'));
@@ -301,6 +316,14 @@
     let torchBloomSampleCanvas = null;
     let torchBloomSampleContext = null;
     let torchBloomIntensityBound = false;
+
+    function setTransRickVisibility(isVisible) {
+      if (!chapelTransRick) {
+        return;
+      }
+
+      chapelTransRick.hidden = !isVisible;
+    }
 
     function clampValue(value, min, max) {
       return Math.min(max, Math.max(min, value));
@@ -652,6 +675,8 @@
     }
 
     function startRockRollContinuation(playbackState) {
+      setTransRickVisibility(Boolean(playbackState));
+
       if (!playbackState || !rockRollContinuationMedia) {
         clearRockRollContinuationState();
         return;
