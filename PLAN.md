@@ -50,43 +50,39 @@
 
 # Recommendations for Naimean.com
 
-## Security
+## P0 — Immediate Priority (Security + Abuse Prevention)
 - Enforce strict Content Security Policy (CSP), HSTS, and secure headers at the edge (Cloudflare).
 - Use Discord OAuth with PKCE/state validation and short-lived session tokens.
+- Add Cloudflare WAF + bot protections (managed rules, rate limits, and Turnstile where user input/upload endpoints exist).
 - Add rate limiting and bot protection for shoutbox/auth endpoints.
 - Sanitize and escape all user-generated shoutbox content to prevent XSS.
 - Add secret management and dependency vulnerability scanning in CI.
+- Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources.
+- Add Cloudflare One / Zero Trust Access policies for admin/backdoor operations and any non-public dashboards/endpoints.
 
-## Quality
+## P1 — Near-Term Priority (Stability + Delivery Confidence)
+- Align Cloudflare route documentation/config with actual proxy behavior (`/board*` and `/uploads/*` are documented/configured but not currently proxied in `src/index.js`).
+- Replace state-changing `GET` counter endpoints (`/hit`, `/increment`) with `POST` (or require signed requests) to reduce abuse and accidental triggering.
+- Tighten CORS allowlisting by environment and remove broad wildcard origins (e.g., unrestricted `*.pages.dev`) unless strictly required.
+- Add Cloudflare-focused CI checks (wrangler config validation, route smoke tests, and endpoint contract checks) on pull requests.
 - Add automated test coverage for core flows (boot, overlays, auth, shoutbox posting).
 - Set up linting/formatting checks for HTML/CSS/JS in pull requests.
 - Add error logging and performance monitoring (client + edge) with alerting.
 - Use a defined release checklist (cross-browser, mobile, accessibility, regression checks).
 - Add clear ownership and issue templates for bug reporting/triage.
 
-## Speed Optimizations
+## P2 — Planned Priority (Performance + Product Quality)
 - Convert heavy images/video to modern formats (WebP/AVIF, optimized MP4/WebM).
 - Enable CDN caching with versioned assets and long cache-control headers.
 - Minify/compress CSS/JS and defer non-critical scripts.
 - Lazy-load non-critical media and overlays after first meaningful render.
 - Preload critical assets (hero image, key CSS, essential audio) to improve startup time.
-
-## User Experience
 - Improve onboarding with a short “how to interact” prompt on first visit.
 - Add clearer loading/boot feedback states so users know what is happening.
 - Optimize mobile touch targets and spacing around interactive controls.
 - Provide keyboard-accessible interaction paths and visible focus indicators.
 - Add lightweight in-context hints for puzzles/interactions to reduce drop-off.
-
-## Additional Recommendations from Documentation + Cloudflare Review
-- Align Cloudflare route documentation/config with actual proxy behavior (`/board*` and `/uploads/*` are documented/configured but not currently proxied in `src/index.js`).
-- Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources.
-- Replace state-changing `GET` counter endpoints (`/hit`, `/increment`) with `POST` (or require signed requests) to reduce abuse and accidental triggering.
-- Tighten CORS allowlisting by environment and remove broad wildcard origins (e.g., unrestricted `*.pages.dev`) unless strictly required.
-- Add Cloudflare WAF + bot protections (managed rules, rate limits, and Turnstile where user input/upload endpoints exist).
-- Add Cloudflare One / Zero Trust Access policies for admin/backdoor operations and any non-public dashboards/endpoints.
 - Standardize Worker compatibility dates and deployment controls across frontend/backend workers to reduce drift.
-- Add Cloudflare-focused CI checks (wrangler config validation, route smoke tests, and endpoint contract checks) on pull requests.
 - Define D1/R2 operational safeguards: migration strategy, scheduled backups/exports, and restore runbooks.
 - Add edge observability baselines (Worker logs, latency/error SLOs, and alerting for counter/API failures).
 
