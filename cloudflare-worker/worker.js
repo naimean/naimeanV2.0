@@ -39,6 +39,10 @@ const DEFAULT_DEV_ALLOWED_ORIGINS = [
   'http://127.0.0.1',
 ];
 
+function normalizeOriginUrl(url) {
+  return `${url.protocol}//${url.host}`.toLowerCase();
+}
+
 function isNonProductionEnvironment(env) {
   const rawValue = typeof env.APP_ENV === 'string'
     ? env.APP_ENV
@@ -67,7 +71,7 @@ function parseAllowedOriginList(value) {
       if (url.protocol !== 'https:' && url.protocol !== 'http:') {
         continue;
       }
-      normalizedOrigins.push(`${url.protocol}//${url.host}`.toLowerCase());
+      normalizedOrigins.push(normalizeOriginUrl(url));
     } catch (_) {
       // Ignore invalid origin values.
     }
@@ -81,7 +85,8 @@ function parseAllowedHostnameSuffixes(value) {
   }
   return value
     .split(',')
-    .map((entry) => entry.trim().toLowerCase().replace(/^\.+/, ''))
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => /^[a-z0-9.-]+$/.test(entry) && !entry.startsWith('.') && !entry.endsWith('.'))
     .filter(Boolean);
 }
 
@@ -121,7 +126,7 @@ function isAllowedOrigin(origin, env) {
       return false;
     }
 
-    const normalizedOrigin = `${url.protocol}//${url.host}`.toLowerCase();
+    const normalizedOrigin = normalizeOriginUrl(url);
     const allowedOrigins = getAllowedOrigins(env);
     if (allowedOrigins.has(normalizedOrigin)) {
       return true;
@@ -129,7 +134,7 @@ function isAllowedOrigin(origin, env) {
 
     const hostname = url.hostname.toLowerCase();
     const allowedSuffixes = parseAllowedHostnameSuffixes(env.CORS_ALLOWED_ORIGIN_SUFFIXES);
-    return allowedSuffixes.some((suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`));
+    return allowedSuffixes.some((suffix) => suffix && (hostname === suffix || hostname.endsWith(`.${suffix}`)));
   } catch (_) {
     return false;
   }
