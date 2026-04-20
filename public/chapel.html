@@ -206,7 +206,7 @@
       mix-blend-mode: lighten;
       filter: blur(9px);
       z-index: 4;
-      opacity: var(--torch-bloom-intensity, 1);
+      opacity: calc(var(--torch-bloom-intensity, 1) * var(--torch-bloom-boost, 1));
       transition: opacity 180ms linear;
       background: radial-gradient(
         circle,
@@ -233,8 +233,8 @@
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
       <!-- Seam bloom glows around the darkest stitched regions -->
-      <div class="torch-bloom" aria-hidden="true" style="left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
-      <div class="torch-bloom" aria-hidden="true" style="left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
+      <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
+      <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~54.5% to cover the middle stretch of the stitch line -->
       <div class="torch-bloom" aria-hidden="true" style="left:calc(50% - var(--chapel-medial-bloom-center-offset));top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
       <!-- Secondary seam bloom glows at lower stitched dark spots -->
