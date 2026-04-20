@@ -138,8 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const nextPath = pageUrl.pathname + pageUrl.search + pageUrl.hash;
       window.history.replaceState({}, document.title, nextPath);
       return authOutcome.trim().toLowerCase();
-    } catch (error) {
-      void error;
+    } catch (_error) {
       return '';
     }
   }
