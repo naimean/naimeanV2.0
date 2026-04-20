@@ -82,6 +82,11 @@ Known API paths:
 - `OPTIONS` for CORS preflight
 
 > Note: This repository’s current `worker.js` implements counter endpoints and CORS allowlisting; message-board and upload routes may exist in a separately deployed version.
+>
+> CORS allowlist configuration:
+> - `CORS_ALLOWED_ORIGINS`: optional comma-separated explicit origins (e.g., `https://naimean.com,https://www.naimean.com`)
+> - `CORS_ALLOWED_ORIGIN_SUFFIXES`: optional comma-separated hostname suffixes for scoped wildcard-like behavior (empty by default)
+> - `APP_ENV` / `ENVIRONMENT`: set non-production values to allow localhost development origins
 
 ---
 
