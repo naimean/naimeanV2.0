@@ -616,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function startMiniGame() {
     miniGameActive = true;
     miniGameAttempts = 0;
-    miniGameTarget = Math.floor(Math.random() * (MINI_GAME_MAX_GUESS - MINI_GAME_MIN_GUESS + 1)) + MINI_GAME_MIN_GUESS;
+    miniGameTarget = getRandomNumber(MINI_GAME_MIN_GUESS, MINI_GAME_MAX_GUESS);
 
     appendShoutboxMessage('GAME> Guess the hidden number (1-9).');
     appendShoutboxMessage(`GAME> You have ${MINI_GAME_MAX_ATTEMPTS} attempts.`);
@@ -650,7 +650,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const guess = Number(command);
     if (guess < MINI_GAME_MIN_GUESS || guess > MINI_GAME_MAX_GUESS) {
-      appendShoutboxMessage(`GAME> Enter a number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`);
+      appendShoutboxMessage(`GAME> Enter a whole number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`);
       return true;
     }
 
@@ -672,6 +672,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     appendShoutboxMessage(`GAME> ${guess} is too ${guess < miniGameTarget ? 'low' : 'high'}. ${attemptsRemaining} attempts left.`);
     return true;
+  }
+
+  function getRandomNumber(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
   async function runNedryGateSequence() {
