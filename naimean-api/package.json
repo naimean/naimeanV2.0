@@ -1,0 +1,7 @@
+{
+  "name": "naimean-api",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker REST API for naimean.com/api/* backed by D1 and KV",
+  "type": "module",
+  "private": true
+}
