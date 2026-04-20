@@ -26,6 +26,45 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const OAUTH_FLOW_TTL_SECONDS = 60 * 10; // 10 minutes
 const DISCORD_API_BASE_URL = 'https://discord.com/api/v10';
 const textEncoder = new TextEncoder();
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: https:",
+  "media-src 'self' blob: data:",
+  "connect-src 'self' https://discord.com https://discordapp.com",
+  "frame-src https://discord.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
+
+function applySecurityHeaders(request, response) {
+  const headers = new Headers(response.headers);
+  const contentType = headers.get('Content-Type') || '';
+  const isHtmlResponse = contentType.toLowerCase().includes('text/html');
+  const protocol = new URL(request.url).protocol;
+
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  if (protocol === 'https:') {
+    headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
+  if (isHtmlResponse) {
+    headers.set('Content-Security-Policy', CONTENT_SECURITY_POLICY);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 
 function corsHeaders(origin) {
   if (!isAllowedOrigin(origin)) {
@@ -517,6 +556,7 @@ async function handleDiscordCallback(request, env, url) {
 
 export default {
   async fetch(request, env) {
+    const secureResponse = (response) => applySecurityHeaders(request, response);
     const origin = request.headers.get('Origin') || '';
     const url = new URL(request.url);
     const { pathname } = url;
@@ -527,47 +567,47 @@ export default {
 
     // Serve static assets for all non-counter/non-auth paths.
     if (!isCounterRoute && !isAuthRoute) {
-      return env.ASSETS.fetch(request);
+      return secureResponse(await env.ASSETS.fetch(request));
     }
 
     // Handle CORS pre-flight for API routes.
     if ((isCounterRoute || isAuthRoute) && request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders(origin) });
+      return secureResponse(new Response(null, { status: 204, headers: corsHeaders(origin) }));
     }
 
     try {
       // ── Counter routes (GET only) ─────────────────────────────────────────
       if (request.method === 'GET' && isGetRoute) {
         const value = await getCount(env.DB);
-        return jsonResponse({ value }, 200, origin);
+        return secureResponse(jsonResponse({ value }, 200, origin));
       }
 
       if (request.method === 'GET' && isHitRoute) {
         const value = await incrementCount(env.DB);
-        return jsonResponse({ value }, 200, origin);
+        return secureResponse(jsonResponse({ value }, 200, origin));
       }
 
       // ── Auth routes ────────────────────────────────────────────────────────
       if (request.method === 'GET' && pathname === '/auth/session') {
-        return handleAuthSession(request, env, origin);
+        return secureResponse(await handleAuthSession(request, env, origin));
       }
 
       if (request.method === 'POST' && pathname === '/auth/logout') {
-        return handleAuthLogout(request, env, origin, url);
+        return secureResponse(await handleAuthLogout(request, env, origin, url));
       }
 
       if (request.method === 'GET' && pathname === '/auth/discord/login') {
-        return handleDiscordLogin(request, env, url);
+        return secureResponse(await handleDiscordLogin(request, env, url));
       }
 
       if (request.method === 'GET' && pathname === '/auth/discord/callback') {
-        return handleDiscordCallback(request, env, url);
+        return secureResponse(await handleDiscordCallback(request, env, url));
       }
 
-      return jsonResponse({ error: 'Method not allowed' }, 405, origin);
+      return secureResponse(jsonResponse({ error: 'Method not allowed' }, 405, origin));
     } catch (err) {
       console.error('Worker error:', err);
-      return jsonResponse({ error: 'Internal server error' }, 500, origin);
+      return secureResponse(jsonResponse({ error: 'Internal server error' }, 500, origin));
     }
   },
 };
