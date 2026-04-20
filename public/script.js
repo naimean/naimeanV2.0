@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const MINI_GAME_MIN_GUESS = 1;
   const MINI_GAME_MAX_GUESS = 9;
   const MINI_GAME_MAX_ATTEMPTS = 5;
+  const MINI_GAME_RANGE_ERROR_MSG = `GAME> Enter a whole number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   function waitForVideoToEnd(video, maxWaitMs) {
@@ -644,13 +645,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (!/^\d+$/.test(command)) {
-      appendShoutboxMessage(`GAME> Enter a whole number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`);
+      appendShoutboxMessage(MINI_GAME_RANGE_ERROR_MSG);
       return true;
     }
 
     const guess = Number(command);
     if (guess < MINI_GAME_MIN_GUESS || guess > MINI_GAME_MAX_GUESS) {
-      appendShoutboxMessage(`GAME> Enter a whole number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`);
+      appendShoutboxMessage(MINI_GAME_RANGE_ERROR_MSG);
       return true;
     }
 
