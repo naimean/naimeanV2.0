@@ -320,7 +320,7 @@
       <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-center-offset));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift) - var(--chapel-light-elements-upshift));width:52%;height:6%"></div>
     </div>
   </div>
-  <div class="lighting-adjust-status" id="lighting-adjust-status" aria-live="polite">light x:-- y:--</div>
+  <div class="lighting-adjust-status" id="lighting-adjust-status" aria-live="polite">light x:0 y:0</div>
   <div class="lighting-adjust-panel" id="lighting-adjust-panel" role="group" aria-label="Move lighting effects">
     <button type="button" id="lighting-nudge-up" aria-label="Move lights up">▲</button>
     <button type="button" id="lighting-reset" aria-label="Reset light offset">↺</button>
@@ -471,6 +471,9 @@
     function readStoredLightingOffset(key) {
       try {
         const rawValue = window.localStorage.getItem(key);
+        if (rawValue === null || rawValue === undefined) {
+          return 0;
+        }
         const parsedValue = Number(rawValue);
         if (!Number.isFinite(parsedValue)) {
           return 0;
