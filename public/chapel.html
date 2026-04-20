@@ -1011,10 +1011,10 @@
     // Invisible congregation button clicks → audio files
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
     [
-      ['crusty-button', 'assets/krusty_laugh.mp3'],
+      ['crusty-button', 'assets/goose_honk.mp3'],
       ['goose-button', 'assets/goose_honk.mp3'],
-      ['morty-button', 'assets/morty_aw_jeez.mp3'],
-      ['rick-button', 'assets/rick_nope.mp3']
+      ['morty-button', 'assets/goose_honk.mp3'],
+      ['rick-button', 'assets/goose_honk.mp3']
     ].forEach(function ([buttonId, assetPath]) {
       document.getElementById(buttonId).addEventListener('click', function () { openAudioAsset(assetPath); });
     });
