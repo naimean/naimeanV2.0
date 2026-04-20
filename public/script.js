@@ -643,7 +643,12 @@ document.addEventListener('DOMContentLoaded', function() {
       return false;
     }
 
-    const guess = Number.parseInt(command, 10);
+    if (!/^\d+$/.test(command)) {
+      appendShoutboxMessage(`GAME> Enter a whole number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`);
+      return true;
+    }
+
+    const guess = Number(command);
     if (!Number.isInteger(guess) || guess < MINI_GAME_MIN_GUESS || guess > MINI_GAME_MAX_GUESS) {
       appendShoutboxMessage(`GAME> Enter a number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`);
       return true;
