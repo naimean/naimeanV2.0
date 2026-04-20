@@ -47,5 +47,35 @@
 - Deploy to static hosting (e.g., GitHub Pages, Vercel, Netlify)
 - Push all changes to GitHub main branch
 
+# Recommendations for Naimean.com
+
+## Security
+- Enforce strict Content Security Policy (CSP), HSTS, and secure headers at the edge (Cloudflare).
+- Use Discord OAuth with PKCE/state validation and short-lived session tokens.
+- Add rate limiting and bot protection for shoutbox/auth endpoints.
+- Sanitize and escape all user-generated shoutbox content to prevent XSS.
+- Add secret management and dependency vulnerability scanning in CI.
+
+## Quality
+- Add automated test coverage for core flows (boot, overlays, auth, shoutbox posting).
+- Set up linting/formatting checks for HTML/CSS/JS in pull requests.
+- Add error logging and performance monitoring (client + edge) with alerting.
+- Use a defined release checklist (cross-browser, mobile, accessibility, regression checks).
+- Add clear ownership and issue templates for bug reporting/triage.
+
+## Speed Optimizations
+- Convert heavy images/video to modern formats (WebP/AVIF, optimized MP4/WebM).
+- Enable CDN caching with versioned assets and long cache-control headers.
+- Minify/compress CSS/JS and defer non-critical scripts.
+- Lazy-load non-critical media and overlays after first meaningful render.
+- Preload critical assets (hero image, key CSS, essential audio) to improve startup time.
+
+## User Experience
+- Improve onboarding with a short “how to interact” prompt on first visit.
+- Add clearer loading/boot feedback states so users know what is happening.
+- Optimize mobile touch targets and spacing around interactive controls.
+- Provide keyboard-accessible interaction paths and visible focus indicators.
+- Add lightweight in-context hints for puzzles/interactions to reduce drop-off.
+
 ---
-_Last updated: 2026-04-16_
+_Last updated: 2026-04-20_
