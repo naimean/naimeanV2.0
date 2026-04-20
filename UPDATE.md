@@ -55,6 +55,8 @@
 - Started highest-priority roadmap item by adding a shoutbox mini-game command flow
 - Added in-screen system/game status messages and number-guess gameplay (`C:\Naimean\play`)
 - Preserved existing `C:\Naimean\please` unlock behavior while allowing mini-game replay
+- Started Discord OAuth integration foundation with new `/auth/discord/*`, `/auth/session`, and `/auth/logout` worker routes
+- Added shoutbox auth command wiring (`C:\Naimean\login`, `C:\Naimean\logout`) and in-screen auth status messaging
 
 ## 2026-04-15
 - Data light moved down 3px and right 5px for precise placement
