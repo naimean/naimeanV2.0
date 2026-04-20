@@ -75,8 +75,10 @@ Bindings (expected):
 
 Known API paths:
 - `GET /get`
-- `GET /hit`
-- `GET /increment`
+- `POST /hit` (preferred)
+- `POST /increment` (preferred alias)
+- `GET /hit` (legacy compatibility)
+- `GET /increment` (legacy compatibility)
 - `OPTIONS` for CORS preflight
 
 > Note: This repository’s current `worker.js` implements counter endpoints and CORS allowlisting; message-board and upload routes may exist in a separately deployed version.
@@ -223,6 +225,7 @@ wrangler secret put DISCORD_WEBHOOK_URL
 | 2026-04-20 | Added Cloudflare-focused hardening baseline and controls checklist | Security posture standardized after critical-vulnerability remediation |
 | 2026-04-20 | Added route/config drift check for `/board*` and `/uploads/*` paths | Reduced risk of undocumented behavior across Worker layers |
 | 2026-04-20 | Added recommendation to migrate state-changing counter actions away from unauthenticated `GET` | Reduced accidental/abusive triggering risk |
+| 2026-04-20 | Started POST-first migration for `/hit` and `/increment` with legacy `GET` fallback | Reduced accidental triggering risk while preserving compatibility during rollout |
 | 2026-04-20 | Added stricter CORS allowlisting guidance per environment | Reduced cross-origin exposure |
 | 2026-04-20 | Added Zero Trust policy requirement for privileged/admin operations | Reduced administrative attack surface |
 | 2026-04-20 | Added D1/R2 backup, restore, and migration safeguards | Improved recoverability and operations resilience |

@@ -59,6 +59,7 @@
 - Added shoutbox auth command wiring (`C:\Naimean\login`, `C:\Naimean\logout`) and in-screen auth status messaging
 - Added Discord OAuth callback result handling in the boot/shoutbox flow with one-time URL cleanup and status feedback
 - Started next P0 security item by enforcing edge security headers (CSP/HSTS + baseline browser hardening headers) across frontend and API worker responses
+- Started the next priority hardening item by moving counter write flow to POST-first (`/increment`, `/hit`) with legacy GET fallback compatibility
 
 ## 2026-04-15
 - Data light moved down 3px and right 5px for precise placement
