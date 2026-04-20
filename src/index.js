@@ -5,14 +5,21 @@ const PROXY_PATHS = [
   "/board",
   "/board-upload",
   "/board-delete",
-  "/uploads/",
 ];
+
+function isProxyPath(pathname) {
+  if (PROXY_PATHS.some((path) => pathname.startsWith(path))) {
+    return true;
+  }
+
+  return pathname === "/uploads" || pathname.startsWith("/uploads/");
+}
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (PROXY_PATHS.some((path) => url.pathname.startsWith(path))) {
+    if (isProxyPath(url.pathname)) {
       return env.COUNTER.fetch(request);
     }
 
