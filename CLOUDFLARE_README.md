@@ -174,14 +174,14 @@ deploy-workers:
     - uses: cloudflare/wrangler-action@v3.15.0
       with:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || '85d52ed1ca1933df067bf0c167d65a84' }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
         wranglerVersion: "4.84.0"
         command: deploy
         workingDirectory: .
     - uses: cloudflare/wrangler-action@v3.15.0
       with:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || '85d52ed1ca1933df067bf0c167d65a84' }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
         wranglerVersion: "4.84.0"
         command: deploy
         workingDirectory: cloudflare-worker
@@ -192,7 +192,7 @@ deploy-workers:
 If logs show `The process '/usr/local/bin/npx' failed with exit code 1`, check the first Cloudflare API error in the same log block:
 - `Authentication error [code: 10000]` means token/account configuration is wrong (not a missing `package.json` dependency issue in this repo).
 - Ensure `CLOUDFLARE_API_TOKEN` has Worker deploy permissions for the target account.
-- Ensure account ID is provided via `CLOUDFLARE_ACCOUNT_ID` secret/variable (or use the workflow fallback account ID).
+- Ensure account ID is provided via `CLOUDFLARE_ACCOUNT_ID` secret/variable.
 
 Branch behavior:
 - `main` → auto-deploy
