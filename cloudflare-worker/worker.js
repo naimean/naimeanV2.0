@@ -43,6 +43,13 @@ function normalizeOriginUrl(url) {
   return `${url.protocol}//${url.host}`.toLowerCase();
 }
 
+function isValidHostnameSuffix(value) {
+  return Boolean(value)
+    && /^[a-z0-9.-]+$/.test(value)
+    && !value.startsWith('.')
+    && !value.endsWith('.');
+}
+
 function isNonProductionEnvironment(env) {
   const rawValue = typeof env.APP_ENV === 'string'
     ? env.APP_ENV
@@ -54,7 +61,7 @@ function isNonProductionEnvironment(env) {
   return normalized !== 'production' && normalized !== 'prod';
 }
 
-function parseAllowedOriginList(value) {
+function parseAllowedOriginList(value, env) {
   if (!value || typeof value !== 'string') {
     return [];
   }
@@ -72,8 +79,10 @@ function parseAllowedOriginList(value) {
         continue;
       }
       normalizedOrigins.push(normalizeOriginUrl(url));
-    } catch (_) {
-      // Ignore invalid origin values.
+    } catch (error) {
+      if (isNonProductionEnvironment(env)) {
+        console.warn('Ignoring invalid CORS_ALLOWED_ORIGINS entry:', item, error);
+      }
     }
   }
   return normalizedOrigins;
@@ -86,12 +95,12 @@ function parseAllowedHostnameSuffixes(value) {
   return value
     .split(',')
     .map((entry) => entry.trim().toLowerCase())
-    .filter((entry) => /^[a-z0-9.-]+$/.test(entry) && !entry.startsWith('.') && !entry.endsWith('.'))
+    .filter((entry) => isValidHostnameSuffix(entry))
     .filter(Boolean);
 }
 
 function getAllowedOrigins(env) {
-  const configured = parseAllowedOriginList(env.CORS_ALLOWED_ORIGINS);
+  const configured = parseAllowedOriginList(env.CORS_ALLOWED_ORIGINS, env);
   const baseOrigins = configured.length > 0 ? configured : DEFAULT_ALLOWED_ORIGINS;
 
   if (isNonProductionEnvironment(env)) {
@@ -134,8 +143,11 @@ function isAllowedOrigin(origin, env) {
 
     const hostname = url.hostname.toLowerCase();
     const allowedSuffixes = parseAllowedHostnameSuffixes(env.CORS_ALLOWED_ORIGIN_SUFFIXES);
-    return allowedSuffixes.some((suffix) => suffix && (hostname === suffix || hostname.endsWith(`.${suffix}`)));
-  } catch (_) {
+    return allowedSuffixes.some((suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`));
+  } catch (error) {
+    if (isNonProductionEnvironment(env)) {
+      console.warn('Invalid Origin header for CORS evaluation:', origin, error);
+    }
     return false;
   }
 }
