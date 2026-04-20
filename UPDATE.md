@@ -55,6 +55,7 @@
 - Added endpoint contract tests to `cloudflare-worker/worker.test.js`: imported the real worker handler with a minimal mock D1 binding and exercised `GET /get`, `POST /hit`, `POST /increment`, `GET /auth/session`, `POST /auth/logout`, `OPTIONS` preflight, method-not-allowed (405), `GET /go/:tool` unauthenticated (401), and required security-header presence. Test suite grows from 17 → 26 passing tests.
 - Strengthened wrangler config validation in `.github/workflows/github-pages.yml`: added `compatibility_date` format check (YYYY-MM-DD), `run_worker_first` key presence, `[[d1_databases]]` binding in the counter worker config, and `schema.sql` file existence.
 - Replaced the single `/auth` route spot-check with a full bidirectional route-alignment step: verifies every entry in `PROXY_PATHS` appears in `run_worker_first` and vice versa, so config drift between the edge router and the wrangler proxy list is caught in CI.
+- Added `deploy-workers` CI job using `cloudflare/wrangler-action@v3.15.0` to automate `wrangler deploy` for both workers (`naimeanv2` edge router and `barrelrollcounter-worker`) on every push to main/master; requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repo secrets to be configured.
 
 
 - Added CSRF same-origin guard on POST `/auth/logout` — blocks cross-origin cookie-clearing attacks while preserving same-site browser behaviour

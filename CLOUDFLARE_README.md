@@ -262,6 +262,7 @@ wrangler secret put TOOL_URL_SNOW
 | 2026-04-20 | Added stricter CORS allowlisting guidance per environment | Reduced cross-origin exposure |
 | 2026-04-20 | Added Zero Trust policy requirement for privileged/admin operations | Reduced administrative attack surface |
 | 2026-04-20 | Added D1/R2 backup, restore, and migration safeguards | Improved recoverability and operations resilience |
+| 2026-04-20 | Added `deploy-workers` CI job using `cloudflare/wrangler-action@v3.15.0` to automate `wrangler deploy` for both workers on push to main | Workers now deploy automatically; requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets |
 
 ### Prioritized Cloudflare Recommendation Backlog
 
@@ -269,6 +270,7 @@ wrangler secret put TOOL_URL_SNOW
 - Enforce strict edge security controls (CSP/HSTS/secure headers, rate limiting, bot protection). *(In progress: CSP/HSTS/secure headers now enforced on edge/API responses)*
 - Lock down OAuth/session security (PKCE/state validation and short-lived sessions).
 - Sanitize and escape all user-generated board content.
+- ✅ Wire up automated `wrangler deploy` for both workers in GitHub Actions CI. *(deploy-workers job added using cloudflare/wrangler-action@v3.15.0; requires CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID repo secrets)*
 - Apply Zero Trust access for admin/backdoor workflows and any internal-only dashboards/endpoints.
 
 #### P1 — Next

@@ -345,7 +345,7 @@ Public API: `NaimeanDiag.log(msg)`, `NaimeanDiag.set(key, value)`, `NaimeanDiag.
 - [ ] Add Cloudflare WAF managed rules + rate limiting on `/hit`, `/increment`, `/auth/*` endpoints
 - [ ] Add Cloudflare Turnstile (bot protection) on any user-input or upload endpoints
 - [ ] Add Cloudflare Zero Trust / One Access policies for admin/backdoor operations and any non-public dashboards
-- [ ] Wire up automated `wrangler deploy` for both workers in GitHub Actions CI (requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets in repo)
+- [x] Wire up automated `wrangler deploy` for both workers in GitHub Actions CI (requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets in repo)
 
 ### P1 — Near-Term
 
@@ -380,6 +380,7 @@ Public API: `NaimeanDiag.log(msg)`, `NaimeanDiag.set(key, value)`, `NaimeanDiag.
 - [x] Accessibility: `role="log"`, `aria-live="polite"`, `aria-label`s, `<main>` landmark, `fetchpriority="high"` on hero image, visible keyboard focus rings
 - [x] `hardcoded tool URLs removed from client JS; `/go/*` routes with session-auth gate handle redirects server-side
 - [x] Immutable cache headers on versioned media/font assets; `no-cache` on HTML
+- [x] Automated `wrangler deploy` for both workers in GitHub Actions CI (`deploy-workers` job using `cloudflare/wrangler-action@v3.15.0`; requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets)
 
 ---
 

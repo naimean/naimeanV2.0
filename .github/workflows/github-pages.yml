@@ -121,3 +121,30 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-workers:
+    if: github.event_name != 'pull_request'
+    needs: lint-and-check
+    runs-on: ubuntu-latest
+    concurrency:
+      group: "cloudflare-workers-deploy"
+      cancel-in-progress: false
+    environment:
+      name: cloudflare-workers
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy edge router worker (naimeanv2)
+        uses: cloudflare/wrangler-action@v3.15.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: .
+
+      - name: Deploy counter worker (barrelrollcounter-worker)
+        uses: cloudflare/wrangler-action@v3.15.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-worker
