@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       pageUrl.searchParams.delete(AUTH_RESULT_QUERY_PARAM);
-      const nextPath = `${pageUrl.pathname}${pageUrl.search}${pageUrl.hash}` || '/';
+      const nextPath = pageUrl.pathname + pageUrl.search + pageUrl.hash;
       window.history.replaceState({}, document.title, nextPath);
       return authOutcome.trim().toLowerCase();
     } catch (_) {
@@ -694,7 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (pendingAuthOutcome === 'success') {
-      if (authSession && authSession.authenticated) {
+      if (authSession.authenticated) {
         appendShoutboxMessage('AUTH> Discord sign-in succeeded.');
       } else {
         appendShoutboxMessage('AUTH> Discord sign-in returned, but no active session was detected.');
