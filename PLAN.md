@@ -29,6 +29,7 @@
 - Debug overlay alignment and button clickability
 - Shrink and center shadow box, align overlays
 - Integrate Discord OAuth foundation routes and shoutbox auth command flow
+- Enforce edge security headers baseline (CSP/HSTS and strict browser headers)
 
 ## Next Steps
 1. Add entertaining mini-games or interactive experiences
