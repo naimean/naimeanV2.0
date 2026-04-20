@@ -40,7 +40,7 @@
       position: relative;
       width: 100%;
       --chapel-seam-bloom-upshift: 50px;
-      --chapel-medial-bloom-separation: 20px;
+      --chapel-medial-bloom-center-offset: 10px;
       --chapel-medial-bloom-upshift: 50px;
     }
 
@@ -236,12 +236,12 @@
       <div class="torch-bloom" aria-hidden="true" style="left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~54.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% - var(--chapel-medial-bloom-separation));top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
+      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% - var(--chapel-medial-bloom-center-offset));top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
       <!-- Secondary seam bloom glows at lower stitched dark spots -->
       <div class="torch-bloom" aria-hidden="true" style="left:15.8%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:76.5%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~58.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-separation));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
+      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-center-offset));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
     </div>
   </div>
 
@@ -291,6 +291,7 @@
     let rockRollContinuationPending = false;
     let torchBloomSampleCanvas = null;
     let torchBloomSampleContext = null;
+    let torchBloomIntensityBound = false;
 
     function clampValue(value, min, max) {
       return Math.min(max, Math.max(min, value));
@@ -354,10 +355,11 @@
     }
 
     function bindTorchBloomIntensityUpdates() {
-      if (!chapelImage || !torchBlooms.length) {
+      if (!chapelImage || !torchBlooms.length || torchBloomIntensityBound) {
         return;
       }
 
+      torchBloomIntensityBound = true;
       let resizeTimer = null;
       function scheduleUpdate() {
         window.requestAnimationFrame(updateTorchBloomIntensityFromImage);
