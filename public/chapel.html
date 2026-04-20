@@ -40,6 +40,8 @@
       position: relative;
       width: 100%;
       --chapel-seam-bloom-upshift: 50px;
+      --chapel-medial-bloom-center-offset: 10px;
+      --chapel-medial-bloom-upshift: 50px;
     }
 
     .chapel-stitch {
@@ -204,6 +206,8 @@
       mix-blend-mode: lighten;
       filter: blur(9px);
       z-index: 4;
+      opacity: var(--torch-bloom-intensity, 1);
+      transition: opacity 180ms linear;
       background: radial-gradient(
         circle,
         rgba(255, 190, 80, 0.11) 0%,
@@ -232,12 +236,12 @@
       <div class="torch-bloom" aria-hidden="true" style="left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~54.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:50%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:52%;height:6%"></div>
+      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% - var(--chapel-medial-bloom-center-offset));top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
       <!-- Secondary seam bloom glows at lower stitched dark spots -->
       <div class="torch-bloom" aria-hidden="true" style="left:15.8%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:76.5%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~58.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:50%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:52%;height:6%"></div>
+      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-center-offset));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
     </div>
   </div>
 
@@ -255,6 +259,8 @@
     const congregationAudio = document.getElementById('congregation-audio');
     const rockRollContinuationMedia = document.getElementById('rock-roll-continuation-media');
     const chapelTvCounter = document.getElementById('chapel-tv-counter');
+    const chapelImage = document.querySelector('.chapel-img');
+    const torchBlooms = Array.from(document.querySelectorAll('.torch-bloom'));
     congregationAudio.volume = 0.04;
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
     const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
@@ -269,12 +275,106 @@
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.5;
     const ROCK_ROLL_START_DELAY_MS = 2000;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
+    const LUMINANCE_RED_WEIGHT = 0.2126;
+    const LUMINANCE_GREEN_WEIGHT = 0.7152;
+    const LUMINANCE_BLUE_WEIGHT = 0.0722;
+    const BLOOM_BASE_INTENSITY = 0.24;
+    const BLOOM_LUMINANCE_MULTIPLIER = 0.66;
+    const BLOOM_MIN_INTENSITY = 0.16;
+    const BLOOM_MAX_INTENSITY = 0.9;
+    const BLOOM_RESIZE_DEBOUNCE_MS = 120;
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
     let rockRollContinuationPending = false;
+    let torchBloomSampleCanvas = null;
+    let torchBloomSampleContext = null;
+    let torchBloomIntensityBound = false;
+
+    function clampValue(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function ensureTorchBloomSampleContext() {
+      if (!chapelImage || !chapelImage.naturalWidth || !chapelImage.naturalHeight) {
+        return null;
+      }
+
+      if (!torchBloomSampleCanvas) {
+        torchBloomSampleCanvas = document.createElement('canvas');
+        torchBloomSampleContext = torchBloomSampleCanvas.getContext('2d', { willReadFrequently: true });
+      }
+
+      if (!torchBloomSampleContext) {
+        return null;
+      }
+
+      if (torchBloomSampleCanvas.width !== chapelImage.naturalWidth || torchBloomSampleCanvas.height !== chapelImage.naturalHeight) {
+        torchBloomSampleCanvas.width = chapelImage.naturalWidth;
+        torchBloomSampleCanvas.height = chapelImage.naturalHeight;
+      }
+
+      torchBloomSampleContext.clearRect(0, 0, torchBloomSampleCanvas.width, torchBloomSampleCanvas.height);
+      torchBloomSampleContext.drawImage(chapelImage, 0, 0, torchBloomSampleCanvas.width, torchBloomSampleCanvas.height);
+      return torchBloomSampleContext;
+    }
+
+    function updateTorchBloomIntensityFromImage() {
+      if (!chapelImage || !torchBlooms.length || !chapelImage.complete) {
+        return;
+      }
+
+      const context = ensureTorchBloomSampleContext();
+      if (!context) {
+        return;
+      }
+
+      const imageRect = chapelImage.getBoundingClientRect();
+      if (!imageRect.width || !imageRect.height) {
+        return;
+      }
+
+      const maxX = chapelImage.naturalWidth - 1;
+      const maxY = chapelImage.naturalHeight - 1;
+
+      torchBlooms.forEach(function (bloom) {
+        const bloomRect = bloom.getBoundingClientRect();
+        const centerX = bloomRect.left + (bloomRect.width / 2);
+        const centerY = bloomRect.top + (bloomRect.height / 2);
+        const normalizedX = clampValue((centerX - imageRect.left) / imageRect.width, 0, 1);
+        const normalizedY = clampValue((centerY - imageRect.top) / imageRect.height, 0, 1);
+        const sampleX = Math.round(normalizedX * maxX);
+        const sampleY = Math.round(normalizedY * maxY);
+        const sample = context.getImageData(sampleX, sampleY, 1, 1).data;
+        const luminance = ((LUMINANCE_RED_WEIGHT * sample[0]) + (LUMINANCE_GREEN_WEIGHT * sample[1]) + (LUMINANCE_BLUE_WEIGHT * sample[2])) / 255;
+        const intensity = clampValue(BLOOM_BASE_INTENSITY + (luminance * BLOOM_LUMINANCE_MULTIPLIER), BLOOM_MIN_INTENSITY, BLOOM_MAX_INTENSITY);
+        bloom.style.setProperty('--torch-bloom-intensity', intensity.toFixed(3));
+      });
+    }
+
+    function bindTorchBloomIntensityUpdates() {
+      if (!chapelImage || !torchBlooms.length || torchBloomIntensityBound) {
+        return;
+      }
+
+      torchBloomIntensityBound = true;
+      let resizeTimer = null;
+      function scheduleUpdate() {
+        window.requestAnimationFrame(updateTorchBloomIntensityFromImage);
+      }
+
+      chapelImage.addEventListener('load', scheduleUpdate);
+      window.addEventListener('resize', function () {
+        if (resizeTimer !== null) {
+          clearTimeout(resizeTimer);
+        }
+        resizeTimer = setTimeout(scheduleUpdate, BLOOM_RESIZE_DEBOUNCE_MS);
+      });
+      window.addEventListener('orientationchange', scheduleUpdate);
+      scheduleUpdate();
+    }
 
     function buildRickrollApiUrls(pathname) {
       const candidates = [];
@@ -610,6 +710,7 @@
 
     renderRickrollCount();
     startRockRollContinuation(consumeRockRollContinuation());
+    bindTorchBloomIntensityUpdates();
 
     // Fallback reveal in case full window load is delayed by media/network activity.
     const LOAD_REVEAL_FALLBACK_MS = 1200;
