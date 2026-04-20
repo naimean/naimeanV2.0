@@ -42,6 +42,73 @@
 9. Prepare for deployment (static hosting)
 10. Update documentation
 
+## Planned Feature Spec — Bedroom Selector (Dark Fantasy Scene)
+
+### Goal
+- Build an interactive **Bedroom Selector** directly inside the `bedroom_antechamber` scene at the foot of the stairs (between the stair landing and bedroom doorway) so it feels diegetic and in-world.
+
+### Tech Stack / Scope
+- Plain HTML, CSS, and JavaScript only
+- No frameworks
+- No backend logic yet
+- Submit action placeholder: play `assets/wrong.mp3`
+
+### Files / Context
+- Background image: `assets/bedroom_antechamber.png`
+- Placeholder sound: `assets/wrong.mp3`
+
+### Build Requirements
+1. Scene container using the `bedroom_antechamber` image
+2. Interactive Bedroom Selector hotspot near the bedroom door area
+3. Hidden/collapsible selector panel that opens from hotspot/door click
+4. Panel content:
+   - Dropdown label: **Bedroom Style**
+   - Textarea label: **Bedroom Creator**
+   - Submit button
+5. Submit behavior:
+   - Play `assets/wrong.mp3`
+   - `console.log` dropdown + textarea values
+6. Support desktop and mobile
+
+### Visual/Interaction Direction
+- Dark cave/fantasy tone
+- Warm gold/amber near bedroom, deep blue/purple elsewhere
+- Door should feel interactive with subtle glow/shimmer/pulse
+- Optional lightweight floating particles near doorway on active state
+- Clicking door opens panel
+- Panel can emerge from doorway/floor/unfold like magical plaque/rune slab
+- Smooth, atmospheric transitions (not tacky)
+- Avoid generic floating modern-form look
+
+### Form Content
+- Bedroom Style options:
+  - Cozy Modern
+  - Gothic Stone
+  - Royal Chamber
+  - Ruined Cell
+  - Fungal Sanctuary
+  - Torchlit Monk Cell
+- Textarea placeholder:
+  - `Describe the bedroom you want... colors, mood, furniture, candles, windows, drapery, creepy details, whatever.`
+- Button text: **Submit**
+
+### UX Requirements
+- Door hotspot is easy to tap on mobile
+- Panel remains readable on small screens
+- Animations degrade gracefully on mobile
+- Click outside panel closes it
+- Escape key closes it on desktop
+- Panel should not cover full artwork unless screen size requires
+
+### Deliverables
+1. Full HTML
+2. Full CSS
+3. Full JavaScript
+4. No placeholder snippets
+5. Intuitive class/id names
+6. Copy/paste ready output
+7. Brief comments only where needed
+
 # Deployment Plan
 - Ensure all assets are present and optimized
 - Test on major browsers and mobile
