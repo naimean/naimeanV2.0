@@ -2,6 +2,7 @@
 
 ## Identity
 - **Name:** `naimeanV2.0`
+- **GitHub repository slug:** `naimean/naimeanV2.0`
 - **Type:** Personal website + interactive experience + edge API integration
 - **Primary runtime:** Cloudflare Workers (edge)
 - **Primary frontend:** Static vanilla HTML/CSS/JavaScript
@@ -354,7 +355,7 @@ For end users, the main function is: **visit the site, experience an interactive
 - D1 binding: `DB` -> `barrelroll-counter-db`
 
 ### Backend Secret/Env Inputs (expected by code/runtime setup)
-- `ROUTER_SECRET` (documented deployment secret; reserved for trusted internal routing controls)
+- `ROUTER_SECRET` (documented deployment secret in Wrangler setup comments; currently not consumed by committed runtime code)
 - `SESSION_SECRET`
 - `DISCORD_CLIENT_ID`
 - `DISCORD_CLIENT_SECRET`
