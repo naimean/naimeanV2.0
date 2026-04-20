@@ -40,9 +40,10 @@
       position: relative;
       width: 100%;
       --chapel-light-elements-upshift: 50px;
-      --chapel-seam-bloom-upshift: 50px;
+      --chapel-seam-bloom-upshift: 0px;
       --chapel-medial-bloom-center-offset: 10px;
-      --chapel-medial-bloom-upshift: 50px;
+      --chapel-medial-bloom-upshift: 0px;
+      --chapel-light-intensity-scale: 1.07;
     }
 
     .chapel-stitch {
@@ -106,9 +107,9 @@
     }
 
     @keyframes chapel-power-pulse {
-      0%   { box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff; filter: brightness(1); }
-      50%  { box-shadow: 0 0 14px 6px #ff6600, 0 0 2px 1px #fff; filter: brightness(1.18); }
-      100% { box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff; filter: brightness(1); }
+      0%   { box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff; filter: brightness(calc(1 * var(--chapel-light-intensity-scale))); }
+      50%  { box-shadow: 0 0 14px 6px #ff6600, 0 0 2px 1px #fff; filter: brightness(calc(1.18 * var(--chapel-light-intensity-scale))); }
+      100% { box-shadow: 0 0 8px 3px #ff6600, 0 0 2px 1px #fff; filter: brightness(calc(1 * var(--chapel-light-intensity-scale))); }
     }
 
     /* Invisible hotspot over the chapel computer screen to return to index. */
@@ -207,7 +208,7 @@
       mix-blend-mode: lighten;
       filter: blur(9px);
       z-index: 4;
-      opacity: calc(var(--torch-bloom-intensity, 1) * var(--torch-bloom-boost, 1));
+      opacity: calc(var(--torch-bloom-intensity, 1) * var(--torch-bloom-boost, 1) * var(--chapel-light-intensity-scale, 1));
       transition: opacity 180ms linear;
       background: radial-gradient(
         circle,
