@@ -136,7 +136,7 @@
       width: 12%;
       height: 7%;
       background: transparent;
-      opacity: 0;
+      opacity: 1;
       pointer-events: auto;
       border: none;
       cursor: pointer;
@@ -184,13 +184,19 @@
     .invisible-hotspot-btn {
       position: absolute;
       background: transparent;
-      opacity: 0;
+      opacity: 1;
       pointer-events: auto;
       border: none;
       cursor: pointer;
       z-index: 10;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    .chapel-return-btn,
+    .invisible-hotspot-btn {
+      outline: 2px dashed rgba(255, 255, 255, 0.7);
+      outline-offset: -1px;
     }
 
     /* Invisible hotspot over the trap door square area. */
