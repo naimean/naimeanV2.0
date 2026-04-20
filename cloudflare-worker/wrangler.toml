@@ -1,6 +1,6 @@
 name = "barrelrollcounter-worker"
 main = "worker.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-04-18"
 
 # ⚠️  Before deploying, replace <DATABASE_ID> below with the actual ID shown in
 #     the Cloudflare dashboard under Workers & Pages → D1 → barrelroll-counter-db → Database ID.
@@ -10,6 +10,11 @@ compatibility_date = "2024-01-01"
 #
 # Set the router secret (never commit the value — it is stored by Cloudflare):
 #   wrangler secret put ROUTER_SECRET
+#
+# Set the authenticated redirect URLs for internal tools (never commit values):
+#   wrangler secret put TOOL_URL_WHITEBOARD
+#   wrangler secret put TOOL_URL_CAPEX
+#   wrangler secret put TOOL_URL_SNOW
 #
 # And deploy with:
 #   wrangler deploy

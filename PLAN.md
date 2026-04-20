@@ -32,15 +32,82 @@
 
 ## Next Steps
 1. Add entertaining mini-games or interactive experiences
-2. Integrate Discord OAuth for registration/authentication
-3. Implement message board (shoutbox) for registered users
+2. Integrate Discord OAuth for registration/authentication ✅ (PKCE/state/session/logout hardening complete)
+3. Implement message board (shoutbox) for registered users (server-side backend TBD)
 4. Discord widget overlay and join prompt
 5. Video/sound/static overlay sequencing (beyond current static/audio)
-6. Final UI/UX polish based on user feedback
-7. Accessibility review (keyboard, ARIA, color contrast)
+6. Final UI/UX polish based on user feedback ✅ (focus-visible, aria-labels, main landmark added)
+7. Accessibility review (keyboard, ARIA, color contrast) ✅ (role=log, aria-live, focus-visible styles)
 8. Add more C64-style effects (optional)
-9. Prepare for deployment (static hosting)
-10. Update documentation
+9. Prepare for deployment (static hosting) ✅ (CI guardrails, route alignment, cache headers)
+10. Update documentation ✅
+
+## Planned Feature Spec — Bedroom Selector (Dark Fantasy Scene)
+
+### Goal
+- Build an interactive **Bedroom Selector** directly inside the `bedroom_antechamber` scene at the foot of the stairs (between the stair landing and bedroom doorway) so it feels diegetic and in-world.
+
+### Tech Stack / Scope
+- Plain HTML, CSS, and JavaScript only
+- No frameworks
+- No backend logic yet
+- Submit action placeholder: play `assets/wrong.mp3`
+
+### Files / Context
+- Background image: `assets/bedroom_antechamber.png`
+- Placeholder sound: `assets/wrong.mp3`
+
+### Build Requirements
+1. Scene container using the `bedroom_antechamber` image
+2. Interactive Bedroom Selector hotspot near the bedroom door area
+3. Hidden/collapsible selector panel that opens from hotspot/door click
+4. Panel content:
+   - Dropdown label: **Bedroom Style**
+   - Textarea label: **Bedroom Creator**
+   - Submit button
+5. Submit behavior:
+   - Play `assets/wrong.mp3`
+   - `console.log` dropdown + textarea values
+6. Support desktop and mobile
+
+### Visual/Interaction Direction
+- Dark cave/fantasy tone
+- Warm gold/amber near bedroom, deep blue/purple elsewhere
+- Door should feel interactive with subtle glow/shimmer/pulse
+- Optional lightweight floating particles near doorway on active state
+- Clicking door opens panel
+- Panel can emerge from doorway/floor/unfold like magical plaque/rune slab
+- Smooth, atmospheric transitions (not tacky)
+- Avoid generic floating modern-form look
+
+### Form Content
+- Bedroom Style options:
+  - Cozy Modern
+  - Gothic Stone
+  - Royal Chamber
+  - Ruined Cell
+  - Fungal Sanctuary
+  - Torchlit Monk Cell
+- Textarea placeholder:
+  - `Describe the bedroom you want... colors, mood, furniture, candles, windows, drapery, creepy details, whatever.`
+- Button text: **Submit**
+
+### UX Requirements
+- Door hotspot is easy to tap on mobile
+- Panel remains readable on small screens
+- Animations degrade gracefully on mobile
+- Click outside panel closes it
+- Escape key closes it on desktop
+- Panel should not cover full artwork unless screen size requires
+
+### Deliverables
+1. Full HTML
+2. Full CSS
+3. Full JavaScript
+4. No placeholder snippets
+5. Intuitive class/id names
+6. Copy/paste ready output
+7. Brief comments only where needed
 
 # Deployment Plan
 - Ensure all assets are present and optimized
@@ -51,13 +118,13 @@
 # Recommendations for Naimean.com
 
 ## P0 — Immediate Priority (Security + Abuse Prevention)
-- Enforce strict Content Security Policy (CSP), HSTS, and secure headers at the edge (Cloudflare).
-- Use Discord OAuth with PKCE/state validation and short-lived session tokens.
+- Enforce strict Content Security Policy (CSP), HSTS, and secure headers at the edge (Cloudflare). ✅
+- Use Discord OAuth with PKCE/state validation and short-lived session tokens. ✅
 - Add Cloudflare WAF + bot protections (managed rules, rate limits, and Turnstile where user input/upload endpoints exist).
 - Add rate limiting and bot protection for shoutbox/auth endpoints.
-- Sanitize and escape all user-generated shoutbox content to prevent XSS.
-- Add secret management and dependency vulnerability scanning in CI.
-- Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources.
+- Sanitize and escape all user-generated shoutbox content to prevent XSS. ✅
+- Add secret management and dependency vulnerability scanning in CI. ✅ (dependency-review-action added to PR workflow)
+- Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources. ✅ (hardcoded tool URLs removed from client; /go/* routes added with session auth gate)
 - Add Cloudflare One / Zero Trust Access policies for admin/backdoor operations and any non-public dashboards/endpoints.
 
 ## P1 — Near-Term Priority (Stability + Delivery Confidence)
