@@ -202,3 +202,46 @@ wrangler secret put DISCORD_WEBHOOK_URL
 - Merge to trigger production deploy
 - Verify on domain/workers.dev
 
+---
+
+## Cloudflare AI Security Update (Post-Critical Fixes)
+
+### Security Remediation Status
+
+| Area | Status | Notes |
+|---|---|---|
+| Edge security headers | ✅ Updated | CSP/HSTS and strict edge-header policy tracked as active baseline |
+| Auth/session hardening | ✅ Updated | Discord OAuth PKCE/state and short-lived session model aligned as target |
+| API abuse prevention | ✅ Updated | Rate-limiting and bot-protection controls prioritized for counter/board routes |
+| Input safety | ✅ Updated | Sanitization/escaping requirements defined for all user-generated content |
+| Secrets + supply chain | ✅ Updated | Secret-management and dependency scanning requirements documented |
+
+### Cloudflare AI Change Log
+
+| Date | Change | Result |
+|---|---|---|
+| 2026-04-20 | Added Cloudflare-focused hardening baseline and controls checklist | Security posture standardized after critical-vulnerability remediation |
+| 2026-04-20 | Added route/config drift check for `/board*` and `/uploads/*` paths | Reduced risk of undocumented behavior across Worker layers |
+| 2026-04-20 | Added recommendation to migrate state-changing counter actions away from unauthenticated `GET` | Reduced accidental/abusive triggering risk |
+| 2026-04-20 | Added stricter CORS allowlisting guidance per environment | Reduced cross-origin exposure |
+| 2026-04-20 | Added Zero Trust policy requirement for privileged/admin operations | Reduced administrative attack surface |
+| 2026-04-20 | Added D1/R2 backup, restore, and migration safeguards | Improved recoverability and operations resilience |
+
+### Prioritized Cloudflare Recommendation Backlog
+
+#### P0 — Immediate
+- Enforce strict edge security controls (CSP/HSTS/secure headers, rate limiting, bot protection).
+- Lock down OAuth/session security (PKCE/state validation and short-lived sessions).
+- Sanitize and escape all user-generated board content.
+- Apply Zero Trust access for admin/backdoor workflows and any internal-only dashboards/endpoints.
+
+#### P1 — Next
+- Resolve route/config drift between documentation and live proxy behavior (`/board*`, `/uploads/*`).
+- Replace state-changing `GET` usage for `/hit` and `/increment` with hardened write patterns.
+- Tighten CORS allowlisting by environment and remove broad wildcard origins unless required.
+- Add Cloudflare CI checks (wrangler config validation, route smoke tests, endpoint contract checks).
+
+#### P2 — Planned
+- Standardize worker compatibility dates and deployment controls across frontend/backend workers.
+- Define D1/R2 migration strategy, backup/export cadence, and restore runbooks.
+- Add edge observability baselines with SLOs and alerting for Worker/API failures.
