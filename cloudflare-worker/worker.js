@@ -22,6 +22,7 @@
 const COUNTER_ID = 'rickrolls';
 const SESSION_COOKIE_NAME = 'naimean_session';
 const OAUTH_COOKIE_NAME = 'naimean_discord_oauth';
+const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const OAUTH_FLOW_TTL_SECONDS = 60 * 10; // 10 minutes
 const DISCORD_API_BASE_URL = 'https://discord.com/api/v10';
@@ -77,6 +78,25 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
       ...corsHeaders(origin),
       ...extraHeaders,
     },
+  });
+}
+
+function applyApiSecurityHeaders(response, isSecureTransport) {
+  const headers = new Headers(response.headers);
+  headers.set('Content-Security-Policy', API_CSP);
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('Referrer-Policy', 'no-referrer');
+  headers.set('Permissions-Policy', 'accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()');
+
+  if (isSecureTransport) {
+    headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
   });
 }
 
@@ -519,11 +539,13 @@ export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
     const url = new URL(request.url);
+    const isSecureTransport = url.protocol === 'https:';
     const { pathname } = url;
     const isGetRoute = pathname === '/get';
     const isHitRoute = pathname === '/hit' || pathname === '/increment';
     const isCounterRoute = isGetRoute || isHitRoute;
     const isAuthRoute = pathname.startsWith('/auth/');
+    const withApiSecurityHeaders = (response) => applyApiSecurityHeaders(response, isSecureTransport);
 
     // Serve static assets for all non-counter/non-auth paths.
     if (!isCounterRoute && !isAuthRoute) {
@@ -532,42 +554,42 @@ export default {
 
     // Handle CORS pre-flight for API routes.
     if ((isCounterRoute || isAuthRoute) && request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders(origin) });
+      return withApiSecurityHeaders(new Response(null, { status: 204, headers: corsHeaders(origin) }));
     }
 
     try {
       // ── Counter routes (GET only) ─────────────────────────────────────────
       if (request.method === 'GET' && isGetRoute) {
         const value = await getCount(env.DB);
-        return jsonResponse({ value }, 200, origin);
+        return withApiSecurityHeaders(jsonResponse({ value }, 200, origin));
       }
 
       if (request.method === 'GET' && isHitRoute) {
         const value = await incrementCount(env.DB);
-        return jsonResponse({ value }, 200, origin);
+        return withApiSecurityHeaders(jsonResponse({ value }, 200, origin));
       }
 
       // ── Auth routes ────────────────────────────────────────────────────────
       if (request.method === 'GET' && pathname === '/auth/session') {
-        return handleAuthSession(request, env, origin);
+        return withApiSecurityHeaders(await handleAuthSession(request, env, origin));
       }
 
       if (request.method === 'POST' && pathname === '/auth/logout') {
-        return handleAuthLogout(request, env, origin, url);
+        return withApiSecurityHeaders(await handleAuthLogout(request, env, origin, url));
       }
 
       if (request.method === 'GET' && pathname === '/auth/discord/login') {
-        return handleDiscordLogin(request, env, url);
+        return withApiSecurityHeaders(await handleDiscordLogin(request, env, url));
       }
 
       if (request.method === 'GET' && pathname === '/auth/discord/callback') {
-        return handleDiscordCallback(request, env, url);
+        return withApiSecurityHeaders(await handleDiscordCallback(request, env, url));
       }
 
-      return jsonResponse({ error: 'Method not allowed' }, 405, origin);
+      return withApiSecurityHeaders(jsonResponse({ error: 'Method not allowed' }, 405, origin));
     } catch (err) {
       console.error('Worker error:', err);
-      return jsonResponse({ error: 'Internal server error' }, 500, origin);
+      return withApiSecurityHeaders(jsonResponse({ error: 'Internal server error' }, 500, origin));
     }
   },
 };
