@@ -40,6 +40,8 @@
       position: relative;
       width: 100%;
       --chapel-seam-bloom-upshift: 50px;
+      --chapel-medial-bloom-separation: 20px;
+      --chapel-medial-bloom-upshift: 50px;
     }
 
     .chapel-stitch {
@@ -234,12 +236,12 @@
       <div class="torch-bloom" aria-hidden="true" style="left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~54.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% - 20px);top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - 50px);width:52%;height:6%"></div>
+      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% - var(--chapel-medial-bloom-separation));top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
       <!-- Secondary seam bloom glows at lower stitched dark spots -->
       <div class="torch-bloom" aria-hidden="true" style="left:15.8%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:76.5%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~58.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + 20px);top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - 50px);width:52%;height:6%"></div>
+      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-separation));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift));width:52%;height:6%"></div>
     </div>
   </div>
 
@@ -273,6 +275,14 @@
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.5;
     const ROCK_ROLL_START_DELAY_MS = 2000;
     const ROCK_ROLL_FADE_DURATION_MS = 5000;
+    const LUMINANCE_RED_WEIGHT = 0.2126;
+    const LUMINANCE_GREEN_WEIGHT = 0.7152;
+    const LUMINANCE_BLUE_WEIGHT = 0.0722;
+    const BLOOM_BASE_INTENSITY = 0.24;
+    const BLOOM_LUMINANCE_MULTIPLIER = 0.66;
+    const BLOOM_MIN_INTENSITY = 0.16;
+    const BLOOM_MAX_INTENSITY = 0.9;
+    const BLOOM_RESIZE_DEBOUNCE_MS = 120;
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
@@ -337,8 +347,8 @@
         const sampleX = Math.round(normalizedX * maxX);
         const sampleY = Math.round(normalizedY * maxY);
         const sample = context.getImageData(sampleX, sampleY, 1, 1).data;
-        const luminance = ((0.2126 * sample[0]) + (0.7152 * sample[1]) + (0.0722 * sample[2])) / 255;
-        const intensity = clampValue(0.24 + (luminance * 0.66), 0.16, 0.9);
+        const luminance = ((LUMINANCE_RED_WEIGHT * sample[0]) + (LUMINANCE_GREEN_WEIGHT * sample[1]) + (LUMINANCE_BLUE_WEIGHT * sample[2])) / 255;
+        const intensity = clampValue(BLOOM_BASE_INTENSITY + (luminance * BLOOM_LUMINANCE_MULTIPLIER), BLOOM_MIN_INTENSITY, BLOOM_MAX_INTENSITY);
         bloom.style.setProperty('--torch-bloom-intensity', intensity.toFixed(3));
       });
     }
@@ -358,7 +368,7 @@
         if (resizeTimer !== null) {
           clearTimeout(resizeTimer);
         }
-        resizeTimer = setTimeout(scheduleUpdate, 120);
+        resizeTimer = setTimeout(scheduleUpdate, BLOOM_RESIZE_DEBOUNCE_MS);
       });
       window.addEventListener('orientationchange', scheduleUpdate);
       scheduleUpdate();
