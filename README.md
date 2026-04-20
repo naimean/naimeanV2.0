@@ -250,6 +250,66 @@ Nine level pages share a template: full-viewport image, 72px nav bar with Back/F
 
 ---
 
+## Worker 3 — naimean-api (`naimean.com/api/*`)
+
+A standalone Cloudflare Worker deployed separately from this repo. Route: `naimean.com/api/*` → `naimean-api`.
+
+### API Endpoints
+
+| Method | Path | Description | Body |
+|---|---|---|---|
+| `GET` | `/api/health` | Health check | — |
+| `GET` | `/api/data` | List all entries | — |
+| `POST` | `/api/data` | Create an entry | `{ "title": "...", "content": "..." }` |
+
+### Database
+
+| Resource | Name | ID |
+|---|---|---|
+| D1 Database | `naimean-db` | `0871f90d-f7e3-467a-a1f9-4e74ac8aef42` |
+
+Schema — table `entries`:
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | `INTEGER PRIMARY KEY AUTOINCREMENT` | Auto-generated ID |
+| `title` | `TEXT` | Entry title |
+| `content` | `TEXT` | Entry content |
+| `created_at` | `DATETIME DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
+
+### Cloudflare Resources
+
+| Resource | Name | ID |
+|---|---|---|
+| Worker | `naimean-api` | — |
+| D1 Database | `naimean-db` | `0871f90d-f7e3-467a-a1f9-4e74ac8aef42` |
+| Zone | `naimean.com` | `dc46eab0761d2ce7e372ea996e8735ea` |
+| Workers Route | `naimean.com/api/*` | `8be1b1b6388944e4910a6def585e4f15` |
+
+### Deployment (naimean-api)
+
+Deployed from its own repository via Cloudflare Wrangler. `wrangler.toml` key config:
+
+```toml
+name = "naimean-api"
+main = "src/worker.js"
+compatibility_date = "2026-04-14"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "naimean-db"
+database_id = "0871f90d-f7e3-467a-a1f9-4e74ac8aef42"
+```
+
+### API Token Permissions (naimean-api CI/CD)
+
+The `CLOUDFLARE_API_TOKEN` for that repo requires:
+- **Account-level:** Workers Scripts: Edit, D1: Edit, Account Settings: Read
+- **Zone-level (naimean.com):** Workers Routes: Edit
+
+---
+
 ## CI/CD Workflows (`.github/workflows/`)
 
 ### `github-pages.yml` — Main Pipeline
