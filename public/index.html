@@ -38,8 +38,9 @@
 </head>
 <body>
   <div class="page-fade-overlay" id="page-fade-overlay"></div>
+  <main>
   <div class="c64-wrapper">
-    <img src="assets/commodore64.jpg" alt="Commodore 64" class="c64-img" />
+    <img src="assets/commodore64.jpg" alt="Commodore 64" class="c64-img" fetchpriority="high" />
     <button class="return-bypass-btn" id="return-bypass-btn" aria-label="Open Discord"></button>
     <button class="power-btn" id="power-btn" aria-label="Power">
       <span class="power-light" id="power-light"></span>
@@ -77,7 +78,7 @@
           </div>
           <div class="boot-input-row">
             <input id="boot-input" class="boot-input" type="text" maxlength="24" value="C:\Naimean\User\Admin" aria-label="Boot command input" />
-            <button id="boot-inline-submit" class="boot-submit boot-inline-submit" type="submit">submit</button>
+            <button id="boot-inline-submit" class="boot-submit boot-inline-submit" type="submit" aria-label="Submit boot command">submit</button>
           </div>
         </form>
         <div class="discord-rickroll-counter" id="discord-rickroll-counter" aria-live="polite">01</div>
@@ -99,7 +100,7 @@
         <div class="prank-video-overlay" id="prank-video-overlay" aria-hidden="true">
           <video id="prank-video" src="assets/notarickroll.mp4" playsinline preload="auto"></video>
         </div>
-        <div class="shoutbox-messages" id="messages"></div>
+        <div class="shoutbox-messages" id="messages" role="log" aria-live="polite" aria-label="System messages"></div>
         <div class="shoutbox-bottom">
           <form id="shoutbox-form">
             <div class="shoutbox-hint-shell" id="shoutbox-hint-shell" tabindex="0" role="button" aria-label="Reveal hint">
@@ -108,13 +109,14 @@
             </div>
             <div class="shoutbox-entry">
               <input type="text" id="shoutbox-input" maxlength="120" value="C:\Naimean\" aria-label="Shoutbox command input" autocomplete="off" />
-              <button type="submit">submit</button>
+              <button type="submit" aria-label="Submit command">submit</button>
             </div>
           </form>
         </div>
       </div>
     </div>
   </div>
+  </main>
   <script src="diagnostics.js"></script>
   <script src="script.js"></script>
 </body>
