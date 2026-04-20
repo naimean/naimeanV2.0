@@ -51,6 +51,11 @@
 
 # Update Log
 
+## 2026-04-20
+- Started highest-priority roadmap item by adding a shoutbox mini-game command flow
+- Added in-screen system/game status messages and number-guess gameplay (`C:\Naimean\play`)
+- Preserved existing `C:\Naimean\please` unlock behavior while allowing mini-game replay
+
 ## 2026-04-15
 - Data light moved down 3px and right 5px for precise placement
 - Power button border removed, glow effect retained
