@@ -9,8 +9,10 @@
  *
  * Endpoints:
  *   GET  /get  – return the current counter value
- *   GET  /hit  – increment the counter by 1, return the new value
- *   GET  /increment  – alias of /hit for backward compatibility
+ *   POST /hit  – increment the counter by 1, return the new value
+ *   POST /increment  – alias of /hit for backward compatibility
+ *   GET  /hit  – legacy compatibility alias (deprecated)
+ *   GET  /increment  – legacy compatibility alias (deprecated)
  *   GET  /auth/session
  *   GET  /auth/discord/login
  *   GET  /auth/discord/callback
@@ -564,7 +566,7 @@ export default {
         return withApiSecurityHeaders(jsonResponse({ value }, 200, origin));
       }
 
-      if (request.method === 'GET' && isHitRoute) {
+      if ((request.method === 'POST' || request.method === 'GET') && isHitRoute) {
         const value = await incrementCount(env.DB);
         return withApiSecurityHeaders(jsonResponse({ value }, 200, origin));
       }

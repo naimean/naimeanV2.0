@@ -332,6 +332,18 @@ document.addEventListener('DOMContentLoaded', function() {
     throw new Error(`All rickroll count endpoints failed${lastError && lastError.message ? `: ${lastError.message}` : ''}`);
   }
 
+  async function fetchRickrollIncrementCount(urls, options = {}) {
+    try {
+      return await fetchRickrollCount(urls, { ...options, method: 'POST' });
+    } catch (postError) {
+      if (window.NaimeanDiag) {
+        const fallbackSuffix = postError && postError.message ? ` (${postError.message})` : '';
+        window.NaimeanDiag.log('increment: POST failed, retrying with legacy GET' + fallbackSuffix);
+      }
+      return fetchRickrollCount(urls, { ...options, method: 'GET' });
+    }
+  }
+
   function setDiscordRickrollCounterVisible(isVisible) {
     if (!discordRickrollCounter) {
       return;
@@ -395,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     try {
-      const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URLS, {
+      const remoteCount = await fetchRickrollIncrementCount(RICKROLL_COUNT_API_URLS, {
         keepalive: true,
         signal: controller ? controller.signal : undefined
       });
