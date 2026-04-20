@@ -230,14 +230,14 @@
     }
 
     .congregation-btn-rick {
-      left: 54.5%;
+      left: 69.5%;
       top: 76.5%;
       width: 8%;
       height: 17%;
     }
 
     .congregation-btn-morty {
-      left: 69.5%;
+      left: 54.5%;
       top: 77.5%;
       width: 8%;
       height: 16%;
@@ -300,10 +300,10 @@
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="invisible-hotspot-btn trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
-      <button class="invisible-hotspot-btn congregation-btn congregation-btn-crusty" id="congregation-btn-crusty" aria-label="Enter the descent through Crusty"></button>
-      <button class="invisible-hotspot-btn congregation-btn congregation-btn-goose" id="congregation-btn-goose" aria-label="Enter the descent through Goose"></button>
-      <button class="invisible-hotspot-btn congregation-btn congregation-btn-rick" id="congregation-btn-rick" aria-label="Enter the descent through Rick"></button>
-      <button class="invisible-hotspot-btn congregation-btn congregation-btn-morty" id="congregation-btn-morty" aria-label="Enter the descent through Morty"></button>
+      <button class="invisible-hotspot-btn congregation-btn congregation-btn-crusty" id="crusty_button" aria-label="Play Crusty laugh"></button>
+      <button class="invisible-hotspot-btn congregation-btn congregation-btn-goose" id="goose_button" aria-label="Play Goose honk"></button>
+      <button class="invisible-hotspot-btn congregation-btn congregation-btn-morty" id="morty_button" aria-label="Play Morty aw jeez"></button>
+      <button class="invisible-hotspot-btn congregation-btn congregation-btn-rick" id="rick_button" aria-label="Play Rick nope"></button>
       <!-- Seam bloom glows around the darkest stitched regions -->
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
@@ -1004,11 +1004,16 @@
 
     document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
 
-    // Invisible button click → bedroom_antechamber.html
+    function navigateToAsset(assetPath) {
+      window.location.assign(assetPath);
+    }
+
+    // Invisible congregation button clicks → audio files
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
-    ['congregation-btn-crusty', 'congregation-btn-goose', 'congregation-btn-rick', 'congregation-btn-morty'].forEach(function (buttonId) {
-      document.getElementById(buttonId).addEventListener('click', navigateToSite);
-    });
+    document.getElementById('crusty_button').addEventListener('click', function () { navigateToAsset('assets/crusty_laugh.mp3'); });
+    document.getElementById('goose_button').addEventListener('click', function () { navigateToAsset('assets/goose_honk.mp3'); });
+    document.getElementById('morty_button').addEventListener('click', function () { navigateToAsset('assets/morty_aw_jeez.mp3'); });
+    document.getElementById('rick_button').addEventListener('click', function () { navigateToAsset('assets/rick_nope.mp3'); });
 
     // Enter key → same behavior
     document.addEventListener('keydown', function (e) {
