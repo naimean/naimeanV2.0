@@ -322,7 +322,7 @@ Triggers: push to `main`/`master`, PRs against them, manual dispatch.
 | `deployment-check` | PR only | Verifies assets, configures GitHub Pages (dry-run) |
 | `dependency-review` | PR only | `actions/dependency-review-action` — catches vulnerable dependency additions |
 | `deploy` | Push to main only (after `lint-and-check`) | Uploads `public/` as a GitHub Pages artifact and deploys it — no build step, no node_modules |
-| `deploy-workers` | Push to main only (after `lint-and-check`) | Deploys both Cloudflare Workers via `cloudflare/wrangler-action@v3.15.0` |
+| `deploy-workers` | Push to main only (after `lint-and-check`) | Deploys both Cloudflare Workers via `cloudflare/wrangler-action@v3.15.0` using Wrangler v4 (`wranglerVersion: 4.84.0`) |
 
 ### `copilot-setup-steps.yml`
 
@@ -332,7 +332,7 @@ Sets up Node.js 22 for the Copilot coding agent environment. Only runs when the 
 
 | Secret | Purpose |
 |---|---|
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID (secret or Actions variable) |
 | `CLOUDFLARE_API_TOKEN` | Token with Workers deploy permissions |
 
 ---
@@ -385,8 +385,8 @@ node --check public/diagnostics.js
 | Component | Method | Trigger |
 |---|---|---|
 | Static files (`public/`) | GitHub Pages via `actions/deploy-pages` | Push to `main` |
-| `naimeanv2` edge worker | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` | Push to `main` |
-| `barrelrollcounter-worker` | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` | Push to `main` |
+| `naimeanv2` edge worker | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` + Wrangler v4 | Push to `main` |
+| `barrelrollcounter-worker` | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` + Wrangler v4 | Push to `main` |
 
 ---
 
@@ -409,7 +409,7 @@ Public API: `NaimeanDiag.log(msg)`, `NaimeanDiag.set(key, value)`, `NaimeanDiag.
 - [ ] Add Cloudflare WAF managed rules + rate limiting on `/hit`, `/increment`, `/auth/*` endpoints
 - [ ] Add Cloudflare Turnstile (bot protection) on any user-input or upload endpoints
 - [ ] Add Cloudflare Zero Trust / One Access policies for admin/backdoor operations and any non-public dashboards
-- [x] Wire up automated `wrangler deploy` for both workers in GitHub Actions CI (requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets in repo)
+- [x] Wire up automated `wrangler deploy` for both workers in GitHub Actions CI (requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secret/variable)
 
 ### P1 — Near-Term
 
@@ -444,7 +444,7 @@ Public API: `NaimeanDiag.log(msg)`, `NaimeanDiag.set(key, value)`, `NaimeanDiag.
 - [x] Accessibility: `role="log"`, `aria-live="polite"`, `aria-label`s, `<main>` landmark, `fetchpriority="high"` on hero image, visible keyboard focus rings
 - [x] `hardcoded tool URLs removed from client JS; `/go/*` routes with session-auth gate handle redirects server-side
 - [x] Immutable cache headers on versioned media/font assets; `no-cache` on HTML
-- [x] Automated `wrangler deploy` for both workers in GitHub Actions CI (`deploy-workers` job using `cloudflare/wrangler-action@v3.15.0`; requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets)
+- [x] Automated `wrangler deploy` for both workers in GitHub Actions CI (`deploy-workers` job using `cloudflare/wrangler-action@v3.15.0`; requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secret/variable)
 
 ---
 

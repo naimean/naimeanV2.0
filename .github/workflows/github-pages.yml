@@ -139,12 +139,16 @@ jobs:
         uses: cloudflare/wrangler-action@v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || '85d52ed1ca1933df067bf0c167d65a84' }}
+          wranglerVersion: "4.84.0"
+          command: deploy
           workingDirectory: .
 
       - name: Deploy counter worker (barrelrollcounter-worker)
         uses: cloudflare/wrangler-action@v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || '85d52ed1ca1933df067bf0c167d65a84' }}
+          wranglerVersion: "4.84.0"
+          command: deploy
           workingDirectory: cloudflare-worker
