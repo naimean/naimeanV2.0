@@ -56,9 +56,7 @@ function parseAllowedOriginList(value, env) {
       if (url.protocol !== 'https:' && url.protocol !== 'http:') continue;
       normalizedOrigins.push(normalizeOriginUrl(url));
     } catch (_error) {
-      if (isNonProductionEnvironment(env)) {
-        // Keep parity with worker behavior: invalid entries are ignored.
-      }
+      // Keep parity with worker behavior: invalid entries are ignored.
     }
   }
   return normalizedOrigins;
