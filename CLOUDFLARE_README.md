@@ -142,12 +142,12 @@ Workers routes:
 
 ## GitHub ↔ Cloudflare Workflow
 
-### Current state (target)
+### Current state
 
 | Worker | Deployment method | CI/CD |
 |---|---|---|
 | `naimeanv2` | Wrangler | GitHub Actions |
-| `barrelrollcounter-worker` | Wrangler (recommended) | GitHub Actions (recommended) |
+| `barrelrollcounter-worker` | Wrangler | GitHub Actions |
 
 ### Required GitHub secrets
 
@@ -160,31 +160,27 @@ Add in **Settings → Secrets and variables → Actions**:
 
 Never commit these values to the repository.
 
-### Example workflow
+### Existing workflow in this repo
 
-Create `.github/workflows/deploy.yml`:
+Worker deploy automation is already wired in `.github/workflows/github-pages.yml` via the `deploy-workers` job using `cloudflare/wrangler-action@v3.15.0`:
 
 ```yaml
-name: Deploy Worker
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build & Deploy Worker
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config wrangler.toml
+deploy-workers:
+  if: github.event_name != 'pull_request'
+  needs: lint-and-check
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: cloudflare/wrangler-action@v3.15.0
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        workingDirectory: .
+    - uses: cloudflare/wrangler-action@v3.15.0
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        workingDirectory: cloudflare-worker
 ```
 
 Branch behavior:
@@ -197,6 +193,9 @@ Branch behavior:
 ## Local Development
 
 ```bash
+# This repo has no package.json and no npm dependencies.
+# Only Wrangler CLI is required for local Worker/dev/deploy commands.
+
 # Install Wrangler
 npm install -g wrangler
 
@@ -228,7 +227,7 @@ wrangler secret put TOOL_URL_SNOW
 ## Contributor Checklist
 
 - Clone the repo
-- Install dependencies
+- Install Wrangler CLI
 - Run `wrangler dev`
 - Create `feature/*` branch
 - Open PR into `main`
