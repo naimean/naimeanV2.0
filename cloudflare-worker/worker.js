@@ -633,6 +633,42 @@ async function handleDiscordCallback(request, env, url) {
   return createRedirectResponse(buildRelativeUrlWithParam(returnTo, 'auth', 'success'), [clearOauthCookie, sessionCookie]);
 }
 
+const GO_ROUTE_TOOL_MAP = {
+  '/go/whiteboard': 'TOOL_URL_WHITEBOARD',
+  '/go/capex': 'TOOL_URL_CAPEX',
+  '/go/snow': 'TOOL_URL_SNOW',
+};
+
+async function handleGoRedirect(pathname, request, env, origin) {
+  const session = await getSessionFromRequest(request, env);
+  if (!session) {
+    return jsonResponse({ error: 'Unauthorized' }, 401, origin, env);
+  }
+
+  const envKey = GO_ROUTE_TOOL_MAP[pathname];
+  if (!envKey) {
+    return jsonResponse({ error: 'Not found' }, 404, origin, env);
+  }
+
+  const destination = typeof env[envKey] === 'string' ? env[envKey].trim() : '';
+  if (!destination) {
+    return jsonResponse({ error: 'Tool URL not configured' }, 503, origin, env);
+  }
+
+  let destinationUrl;
+  try {
+    destinationUrl = new URL(destination);
+  } catch (_) {
+    return jsonResponse({ error: 'Tool URL not configured' }, 503, origin, env);
+  }
+
+  if (destinationUrl.protocol !== 'https:') {
+    return jsonResponse({ error: 'Tool URL not configured' }, 503, origin, env);
+  }
+
+  return createRedirectResponse(destinationUrl.toString());
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -643,15 +679,16 @@ export default {
     const isHitRoute = pathname === '/hit' || pathname === '/increment';
     const isCounterRoute = isGetRoute || isHitRoute;
     const isAuthRoute = pathname.startsWith('/auth/');
+    const isGoRoute = pathname.startsWith('/go/');
     const withApiSecurityHeaders = (response) => applyApiSecurityHeaders(response, isSecureTransport);
 
-    // Serve static assets for all non-counter/non-auth paths.
-    if (!isCounterRoute && !isAuthRoute) {
+    // Serve static assets for all non-counter/non-auth/non-go paths.
+    if (!isCounterRoute && !isAuthRoute && !isGoRoute) {
       return env.ASSETS.fetch(request);
     }
 
     // Handle CORS pre-flight for API routes.
-    if ((isCounterRoute || isAuthRoute) && request.method === 'OPTIONS') {
+    if ((isCounterRoute || isAuthRoute || isGoRoute) && request.method === 'OPTIONS') {
       return withApiSecurityHeaders(new Response(null, { status: 204, headers: corsHeaders(origin, env) }));
     }
 
@@ -682,6 +719,11 @@ export default {
 
       if (request.method === 'GET' && pathname === '/auth/discord/callback') {
         return withApiSecurityHeaders(await handleDiscordCallback(request, env, url));
+      }
+
+      // ── Go routes (authenticated server-side redirects) ────────────────────
+      if (request.method === 'GET' && isGoRoute) {
+        return withApiSecurityHeaders(await handleGoRedirect(pathname, request, env, origin));
       }
 
       return withApiSecurityHeaders(jsonResponse({ error: 'Method not allowed' }, 405, origin, env));

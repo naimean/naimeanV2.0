@@ -11,6 +11,11 @@ compatibility_date = "2026-04-18"
 # Set the router secret (never commit the value — it is stored by Cloudflare):
 #   wrangler secret put ROUTER_SECRET
 #
+# Set the authenticated redirect URLs for internal tools (never commit values):
+#   wrangler secret put TOOL_URL_WHITEBOARD
+#   wrangler secret put TOOL_URL_CAPEX
+#   wrangler secret put TOOL_URL_SNOW
+#
 # And deploy with:
 #   wrangler deploy
 
