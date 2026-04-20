@@ -95,6 +95,7 @@ Optional environment variables:
 |---|---|
 | `CORS_ALLOWED_ORIGINS` | Comma-separated explicit origins to add to the CORS allowlist |
 | `CORS_ALLOWED_ORIGIN_SUFFIXES` | Comma-separated hostname suffixes for scoped wildcard-like CORS behavior |
+| `CORS_ALLOW_PROD_ORIGIN_SUFFIXES` | Set to `true` only when production suffix matching is strictly required; production now disables suffix matching by default |
 | `APP_ENV` / `ENVIRONMENT` | Set to a non-`production` value to also allow localhost development origins |
 
 Known API paths:
@@ -257,6 +258,7 @@ wrangler secret put TOOL_URL_SNOW
 | 2026-04-20 | Added route/config drift check for `/board*` and `/uploads/*` paths | Reduced risk of undocumented behavior across Worker layers |
 | 2026-04-20 | Added recommendation to migrate state-changing counter actions away from unauthenticated `GET` | Reduced accidental/abusive triggering risk |
 | 2026-04-20 | Retired legacy `GET` counter-write aliases and enforced `POST` for `/hit` and `/increment` | Reduced accidental/abusive triggering risk for state-changing routes |
+| 2026-04-20 | Tightened CORS allowlisting by environment: production suffix matching now requires explicit opt-in | Reduced wildcard-origin exposure in production |
 | 2026-04-20 | Added stricter CORS allowlisting guidance per environment | Reduced cross-origin exposure |
 | 2026-04-20 | Added Zero Trust policy requirement for privileged/admin operations | Reduced administrative attack surface |
 | 2026-04-20 | Added D1/R2 backup, restore, and migration safeguards | Improved recoverability and operations resilience |
@@ -272,7 +274,7 @@ wrangler secret put TOOL_URL_SNOW
 #### P1 — Next
 - ✅ Route/config drift resolved: documentation now matches live proxy behavior (no `/board*` or `/uploads/*` routes).
 - ✅ State-changing counter writes now require `POST` for `/hit` and `/increment`.
-- Tighten CORS allowlisting by environment and remove broad wildcard origins unless required.
+- ✅ Tighten CORS allowlisting by environment and remove broad wildcard origins unless required. *(Production suffix matching now disabled by default; explicit opt-in required via `CORS_ALLOW_PROD_ORIGIN_SUFFIXES=true`.)*
 - Add Cloudflare CI checks (wrangler config validation, route smoke tests, endpoint contract checks).
 
 #### P2 — Planned

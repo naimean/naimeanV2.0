@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 // needing a Workers-compatible bundler or Miniflare.
 
 const textEncoder = new TextEncoder();
+const TRUE_LIKE_ENV_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 function normalizeOriginUrl(url) {
   return `${url.protocol}//${url.host}`.toLowerCase();
@@ -25,6 +26,60 @@ function isValidHostnameSuffix(value) {
   if (!value || value.startsWith('.') || value.endsWith('.')) return false;
   const labels = value.split('.');
   return labels.every((label) => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label));
+}
+
+function isNonProductionEnvironment(env) {
+  const rawValue = typeof env.APP_ENV === 'string'
+    ? env.APP_ENV
+    : (typeof env.ENVIRONMENT === 'string' ? env.ENVIRONMENT : '');
+  const normalized = rawValue.trim().toLowerCase();
+  if (!normalized) return false;
+  return normalized !== 'production' && normalized !== 'prod';
+}
+
+function isEnabledEnvFlag(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return false;
+  return TRUE_LIKE_ENV_VALUES.has(value.trim().toLowerCase());
+}
+
+function parseAllowedOriginList(value) {
+  if (!value || typeof value !== 'string') return [];
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => new URL(entry))
+    .filter((url) => url.protocol === 'https:' || url.protocol === 'http:')
+    .map((url) => normalizeOriginUrl(url));
+}
+
+function parseAllowedHostnameSuffixes(value) {
+  if (!value || typeof value !== 'string') return [];
+  return value
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => isValidHostnameSuffix(entry));
+}
+
+function getAllowedHostnameSuffixes(env) {
+  const allowSuffixesInProd = isEnabledEnvFlag(env.CORS_ALLOW_PROD_ORIGIN_SUFFIXES);
+  if (!isNonProductionEnvironment(env) && !allowSuffixesInProd) {
+    return [];
+  }
+  return parseAllowedHostnameSuffixes(env.CORS_ALLOWED_ORIGIN_SUFFIXES);
+}
+
+function isAllowedOrigin(origin, env) {
+  if (!origin) return false;
+  const url = new URL(origin);
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
+  const normalizedOrigin = normalizeOriginUrl(url);
+  const allowedOrigins = new Set(parseAllowedOriginList(env.CORS_ALLOWED_ORIGINS || ''));
+  if (allowedOrigins.has(normalizedOrigin)) return true;
+  const hostname = url.hostname.toLowerCase();
+  const allowedSuffixes = getAllowedHostnameSuffixes(env);
+  return allowedSuffixes.some((suffix) => hostname.endsWith(`.${suffix}`));
 }
 
 function parseCookies(headerValue) {
@@ -174,4 +229,29 @@ test('base64url round-trip – string', () => {
 test('normalizeOriginUrl – lowercases host', () => {
   const url = new URL('https://NAIMEAN.COM');
   assert.strictEqual(normalizeOriginUrl(url), 'https://naimean.com');
+});
+
+test('isAllowedOrigin – suffix matching is disabled in production by default', () => {
+  const env = {
+    APP_ENV: 'production',
+    CORS_ALLOWED_ORIGIN_SUFFIXES: 'pages.dev',
+  };
+  assert.strictEqual(isAllowedOrigin('https://preview.pages.dev', env), false);
+});
+
+test('isAllowedOrigin – suffix matching works in non-production', () => {
+  const env = {
+    APP_ENV: 'development',
+    CORS_ALLOWED_ORIGIN_SUFFIXES: 'pages.dev',
+  };
+  assert.strictEqual(isAllowedOrigin('https://preview.pages.dev', env), true);
+});
+
+test('isAllowedOrigin – production suffix matching requires explicit opt-in', () => {
+  const env = {
+    APP_ENV: 'production',
+    CORS_ALLOWED_ORIGIN_SUFFIXES: 'pages.dev',
+    CORS_ALLOW_PROD_ORIGIN_SUFFIXES: 'true',
+  };
+  assert.strictEqual(isAllowedOrigin('https://preview.pages.dev', env), true);
 });

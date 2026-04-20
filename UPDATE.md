@@ -57,6 +57,7 @@
 - Updated `cloudflare-worker/wrangler.toml` compatibility date from `2024-01-01` to `2026-04-18` to match the frontend worker
 - Strengthened `src/index.js` edge security headers: all responses now receive `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and HSTS regardless of content-type; HTML gets the strict document CSP and a `no-cache` directive; versioned media/font assets get a `max-age=31536000, immutable` cache-control header
 - Added `cloudflare-worker/worker.test.js` — 14 unit tests for pure worker utility functions (cookie parsing, base64url, sanitizeReturnPath, CORS helpers) using Node.js built-in test runner
+- Tightened CORS allowlisting by environment in `cloudflare-worker/worker.js`: production no longer applies hostname-suffix wildcard matching unless `CORS_ALLOW_PROD_ORIGIN_SUFFIXES=true` is explicitly set
 - Upgraded `.github/workflows/github-pages.yml` CI: added `lint-and-check` job with JS syntax validation (`node --check`) for all four source files, wrangler config field checks, route-alignment assertion, worker unit test run, and asset existence checks; `deployment-check` and `deploy` jobs now depend on `lint-and-check`
 - Accessibility: added `role="log"` and `aria-live="polite"` to shoutbox messages container; added `aria-label` to shoutbox submit button and boot inline-submit button; wrapped page in `<main>` landmark; added `fetchpriority="high"` to hero C64 image
 - Focus-visible styles: added visible keyboard focus ring to power button and all boot-submit buttons

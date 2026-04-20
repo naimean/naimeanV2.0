@@ -36,6 +36,7 @@ const DEFAULT_DEV_ALLOWED_ORIGINS = [
   'http://localhost',
   'http://127.0.0.1',
 ];
+const TRUE_LIKE_ENV_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 function normalizeOriginUrl(url) {
   return `${url.protocol}//${url.host}`.toLowerCase();
@@ -59,6 +60,16 @@ function isNonProductionEnvironment(env) {
     return false;
   }
   return normalized !== 'production' && normalized !== 'prod';
+}
+
+function isEnabledEnvFlag(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return false;
+  }
+  return TRUE_LIKE_ENV_VALUES.has(value.trim().toLowerCase());
 }
 
 function parseAllowedOriginList(value, env) {
@@ -96,6 +107,14 @@ function parseAllowedHostnameSuffixes(value) {
     .split(',')
     .map((entry) => entry.trim().toLowerCase())
     .filter((entry) => isValidHostnameSuffix(entry));
+}
+
+function getAllowedHostnameSuffixes(env) {
+  const allowSuffixesInProd = isEnabledEnvFlag(env.CORS_ALLOW_PROD_ORIGIN_SUFFIXES);
+  if (!isNonProductionEnvironment(env) && !allowSuffixesInProd) {
+    return [];
+  }
+  return parseAllowedHostnameSuffixes(env.CORS_ALLOWED_ORIGIN_SUFFIXES);
 }
 
 function getAllowedOriginsSet(env) {
@@ -141,7 +160,7 @@ function isAllowedOrigin(origin, env) {
     }
 
     const hostname = url.hostname.toLowerCase();
-    const allowedSuffixes = parseAllowedHostnameSuffixes(env.CORS_ALLOWED_ORIGIN_SUFFIXES);
+    const allowedSuffixes = getAllowedHostnameSuffixes(env);
     if (allowedSuffixes.length === 0) {
       return false;
     }
