@@ -118,13 +118,13 @@
 # Recommendations for Naimean.com
 
 ## P0 — Immediate Priority (Security + Abuse Prevention)
-- Enforce strict Content Security Policy (CSP), HSTS, and secure headers at the edge (Cloudflare).
-- Use Discord OAuth with PKCE/state validation and short-lived session tokens.
+- Enforce strict Content Security Policy (CSP), HSTS, and secure headers at the edge (Cloudflare). ✅
+- Use Discord OAuth with PKCE/state validation and short-lived session tokens. ✅
 - Add Cloudflare WAF + bot protections (managed rules, rate limits, and Turnstile where user input/upload endpoints exist).
 - Add rate limiting and bot protection for shoutbox/auth endpoints.
-- Sanitize and escape all user-generated shoutbox content to prevent XSS.
-- Add secret management and dependency vulnerability scanning in CI.
-- Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources.
+- Sanitize and escape all user-generated shoutbox content to prevent XSS. ✅
+- Add secret management and dependency vulnerability scanning in CI. ✅ (dependency-review-action added to PR workflow)
+- Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources. ✅ (hardcoded tool URLs removed from client; /go/* routes added with session auth gate)
 - Add Cloudflare One / Zero Trust Access policies for admin/backdoor operations and any non-public dashboards/endpoints.
 
 ## P1 — Near-Term Priority (Stability + Delivery Confidence)

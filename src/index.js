@@ -1,4 +1,4 @@
-const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth"];
+const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go"];
 
 const DOCUMENT_CSP = [
   "default-src 'self'",
@@ -10,9 +10,9 @@ const DOCUMENT_CSP = [
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
   "media-src 'self' data: blob:",
-  "connect-src 'self' https://discord.com https://*.discord.com https://*.workers.dev https://whiteboard.cloud.microsoft.com https://app.smartsheet.com https://recoverycoa.service-now.com",
+  "connect-src 'self' https://discord.com https://*.discord.com https://*.workers.dev",
   "frame-src 'self' https://discord.com https://*.discord.com",
-  "form-action 'self' https://app.smartsheet.com",
+  "form-action 'self'",
   "upgrade-insecure-requests",
 ].join('; ');
 
