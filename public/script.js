@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const guess = Number(command);
-    if (!Number.isInteger(guess) || guess < MINI_GAME_MIN_GUESS || guess > MINI_GAME_MAX_GUESS) {
+    if (guess < MINI_GAME_MIN_GUESS || guess > MINI_GAME_MAX_GUESS) {
       appendShoutboxMessage(`GAME> Enter a number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`);
       return true;
     }
