@@ -241,6 +241,8 @@
       top: calc(77.5% - 200px);
       width: 8%;
       height: 16%;
+    }
+
     .congregation-btn-crusty {
       left: calc(16% - 115px);
       top: calc(76.5% - 415px);
@@ -1047,32 +1049,6 @@
       ['rick-button', 'assets/rick_nope.mp3']
     ].forEach(function ([buttonId, assetPath]) {
       document.getElementById(buttonId).addEventListener('click', function () { openAudioAsset(assetPath); });
-    const congregationButtonAudioMap = {
-      'congregation-btn-crusty': 'congregation-audio-crusty',
-      'congregation-btn-goose': 'congregation-audio-goose',
-      'congregation-btn-rick': 'congregation-audio-rick',
-      'congregation-btn-morty': 'congregation-audio-morty'
-    };
-
-    function playCongregationClip(audioElementId) {
-      const audioElement = document.getElementById(audioElementId);
-      if (!audioElement) {
-        return;
-      }
-
-      audioElement.currentTime = 0;
-      const playPromise = audioElement.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(function (error) {
-          console.warn('Failed to play congregation clip:', audioElementId, error);
-        });
-      }
-    }
-
-    Object.keys(congregationButtonAudioMap).forEach(function (buttonId) {
-      document.getElementById(buttonId).addEventListener('click', function () {
-        playCongregationClip(congregationButtonAudioMap[buttonId]);
-      });
     });
 
     // Enter key → same behavior
