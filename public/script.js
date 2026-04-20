@@ -119,11 +119,31 @@ document.addEventListener('DOMContentLoaded', function() {
   const AUTH_SESSION_API_URL = '/auth/session';
   const AUTH_DISCORD_LOGIN_PATH = '/auth/discord/login';
   const AUTH_LOGOUT_API_URL = '/auth/logout';
+  const AUTH_RESULT_QUERY_PARAM = 'auth';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
   const CAP_EX_URL = 'https://app.smartsheet.com/b/form/70b07591b76a4289bc6f5d5e1aabac91?';
   const SNOW_URL = 'https://recoverycoa.service-now.com/now/nav/ui/classic/params/target/incident_list.do?sysparm_query=stateNOT%20IN6%2C7%2C8%5Eassigned_to%3D7fc866ea1b1d7110153886a7624bcbc0&sysparm_first_row=1&sysparm_view=';
   const createUnauthenticatedSession = () => ({ authenticated: false, user: null });
   let authSession = createUnauthenticatedSession();
+
+  function consumeAuthOutcomeFromUrl() {
+    try {
+      const pageUrl = new URL(window.location.href);
+      const authOutcome = pageUrl.searchParams.get(AUTH_RESULT_QUERY_PARAM);
+      if (!authOutcome) {
+        return '';
+      }
+
+      pageUrl.searchParams.delete(AUTH_RESULT_QUERY_PARAM);
+      const nextPath = `${pageUrl.pathname}${pageUrl.search}${pageUrl.hash}` || '/';
+      window.history.replaceState({}, document.title, nextPath);
+      return authOutcome.trim().toLowerCase();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  const pendingAuthOutcome = consumeAuthOutcomeFromUrl();
 
   function buildRickrollApiUrls(pathname) {
     const candidates = [];
@@ -668,6 +688,32 @@ document.addEventListener('DOMContentLoaded', function() {
     appendShoutboxMessage('AUTH> Not signed in. Type C:\\Naimean\\login to sign in with Discord.');
   }
 
+  function appendAuthOutcomeMessage() {
+    if (!pendingAuthOutcome) {
+      return;
+    }
+
+    if (pendingAuthOutcome === 'success') {
+      if (authSession && authSession.authenticated) {
+        appendShoutboxMessage('AUTH> Discord sign-in succeeded.');
+      } else {
+        appendShoutboxMessage('AUTH> Discord sign-in returned, but no active session was detected.');
+      }
+      return;
+    }
+
+    const fallback = 'AUTH> Discord sign-in did not complete. Type C:\\Naimean\\login to try again.';
+    const authErrors = {
+      missing: fallback,
+      expired: 'AUTH> Discord sign-in expired. Type C:\\Naimean\\login to try again.',
+      state: 'AUTH> Discord sign-in security check failed. Type C:\\Naimean\\login to retry.',
+      token: 'AUTH> Discord token exchange failed. Type C:\\Naimean\\login to retry.',
+      profile: 'AUTH> Could not read your Discord profile. Type C:\\Naimean\\login to retry.',
+      not_configured: 'AUTH> Discord sign-in is not configured yet.',
+    };
+    appendShoutboxMessage(authErrors[pendingAuthOutcome] || fallback);
+  }
+
   async function showAuthStatusInShoutbox() {
     await refreshAuthSession();
     appendAuthStatusMessage();
@@ -814,6 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
       miniGameAttempts = 0;
       resetShoutboxMessages();
       await showAuthStatusInShoutbox();
+      appendAuthOutcomeMessage();
       resetFinalInput();
       shoutboxInput.focus();
     }

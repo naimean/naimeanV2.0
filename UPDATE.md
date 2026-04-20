@@ -57,6 +57,7 @@
 - Preserved existing `C:\Naimean\please` unlock behavior while allowing mini-game replay
 - Started Discord OAuth integration foundation with new `/auth/discord/*`, `/auth/session`, and `/auth/logout` worker routes
 - Added shoutbox auth command wiring (`C:\Naimean\login`, `C:\Naimean\logout`) and in-screen auth status messaging
+- Added Discord OAuth callback result handling in the boot/shoutbox flow with one-time URL cleanup and status feedback
 
 ## 2026-04-15
 - Data light moved down 3px and right 5px for precise placement
