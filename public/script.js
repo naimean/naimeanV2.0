@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', function() {
     'C:\\Naimean\\Please'
   ]);
   const POWER_BUTTON_COOLDOWN_MS = 5000;
+  const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
+  const MINI_GAME_MIN_GUESS = 1;
+  const MINI_GAME_MAX_GUESS = 9;
+  const MINI_GAME_MAX_ATTEMPTS = 5;
+  const MINI_GAME_RANGE_ERROR_MSG = `GAME> Enter a whole number from ${MINI_GAME_MIN_GUESS} to ${MINI_GAME_MAX_GUESS}.`;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   function waitForVideoToEnd(video, maxWaitMs) {
@@ -49,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const c64Image = document.querySelector('.c64-img');
   const shoutboxForm = document.getElementById('shoutbox-form');
   const shoutboxInput = document.getElementById('shoutbox-input');
+  const shoutboxMessages = document.getElementById('messages');
   const shoutboxHintShell = document.getElementById('shoutbox-hint-shell');
   const prankVideoOverlay = document.getElementById('prank-video-overlay');
   const prankVideo = document.getElementById('prank-video');
@@ -92,6 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let powerButtonCooldownUntil = 0;
   let hintRevealProgress = 0;
   let lastPointerPosition = null;
+  let miniGameActive = false;
+  let miniGameTarget = 0;
+  let miniGameAttempts = 0;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
@@ -583,6 +592,88 @@ document.addEventListener('DOMContentLoaded', function() {
     bootScreen.classList.toggle('is-powering-off', isPoweringOff);
   }
 
+  function appendShoutboxMessage(message) {
+    if (!shoutboxMessages) {
+      return;
+    }
+
+    const line = document.createElement('div');
+    line.textContent = message;
+    shoutboxMessages.appendChild(line);
+    shoutboxMessages.scrollTop = shoutboxMessages.scrollHeight;
+  }
+
+  function resetShoutboxMessages() {
+    if (!shoutboxMessages) {
+      return;
+    }
+
+    shoutboxMessages.textContent = '';
+    appendShoutboxMessage('SYSTEM> Access granted.');
+    appendShoutboxMessage('SYSTEM> Type C:\\Naimean\\play to launch mini-game mode.');
+    appendShoutboxMessage('SYSTEM> You can still type C:\\Naimean\\please at any time.');
+  }
+
+  function startMiniGame() {
+    miniGameActive = true;
+    miniGameAttempts = 0;
+    miniGameTarget = getRandomNumber(MINI_GAME_MIN_GUESS, MINI_GAME_MAX_GUESS);
+
+    appendShoutboxMessage('GAME> Guess the hidden number (1-9).');
+    appendShoutboxMessage(`GAME> You have ${MINI_GAME_MAX_ATTEMPTS} attempts.`);
+    appendShoutboxMessage('GAME> Submit your guess as C:\\Naimean\\<number>.');
+  }
+
+  function handleMiniGameCommand(text) {
+    if (!text.startsWith(FINAL_PREFIX)) {
+      return false;
+    }
+
+    const command = text.slice(FINAL_PREFIX.length).trim();
+    if (!command) {
+      return false;
+    }
+
+    const normalizedCommand = command.toLowerCase();
+    if (MINI_GAME_START_COMMANDS.has(normalizedCommand)) {
+      startMiniGame();
+      return true;
+    }
+
+    if (!miniGameActive) {
+      return false;
+    }
+
+    const guess = Number(command);
+    if (!/^\d+$/.test(command) || guess < MINI_GAME_MIN_GUESS || guess > MINI_GAME_MAX_GUESS) {
+      appendShoutboxMessage(MINI_GAME_RANGE_ERROR_MSG);
+      return true;
+    }
+
+    miniGameAttempts += 1;
+    if (guess === miniGameTarget) {
+      miniGameActive = false;
+      appendShoutboxMessage(`GAME> ${guess} is correct. You win.`);
+      appendShoutboxMessage('GAME> Type C:\\Naimean\\play to replay.');
+      return true;
+    }
+
+    const attemptsRemaining = MINI_GAME_MAX_ATTEMPTS - miniGameAttempts;
+    if (attemptsRemaining <= 0) {
+      miniGameActive = false;
+      appendShoutboxMessage(`GAME> Out of attempts. The number was ${miniGameTarget}.`);
+      appendShoutboxMessage('GAME> Type C:\\Naimean\\play to try again.');
+      return true;
+    }
+
+    appendShoutboxMessage(`GAME> ${guess} is too ${guess < miniGameTarget ? 'low' : 'high'}. ${attemptsRemaining} attempts left.`);
+    return true;
+  }
+
+  function getRandomNumber(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
   async function runNedryGateSequence() {
     setBootScreenPoweringOff(false);
     if (bootScreen) {
@@ -627,6 +718,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     await playStaticTransition();
     if (shoutboxInput) {
+      miniGameActive = false;
+      miniGameTarget = 0;
+      miniGameAttempts = 0;
+      resetShoutboxMessages();
       resetFinalInput();
       shoutboxInput.focus();
     }
@@ -1093,6 +1188,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (FINAL_UNLOCK_VALUES.has(text)) {
           runPleaseSequence();
+          return;
+        }
+
+        if (handleMiniGameCommand(text)) {
+          resetFinalInput();
           return;
         }
 
