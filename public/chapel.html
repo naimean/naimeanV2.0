@@ -44,6 +44,8 @@
       --chapel-medial-bloom-center-offset: 10px;
       --chapel-medial-bloom-upshift: 50px;
       --chapel-light-intensity-scale: 1.07;
+      --chapel-light-global-offset-x: 0px;
+      --chapel-light-global-offset-y: 0px;
     }
 
     .chapel-stitch {
@@ -94,6 +96,7 @@
       z-index: 9;
       pointer-events: none;
       box-shadow: 0 0 6px #000a;
+      transform: translate(var(--chapel-light-global-offset-x), var(--chapel-light-global-offset-y));
     }
 
     .chapel-power-light {
@@ -204,7 +207,10 @@
       position: absolute;
       pointer-events: none;
       border-radius: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(
+        calc(-50% + var(--chapel-light-global-offset-x)),
+        calc(-50% + var(--chapel-light-global-offset-y))
+      );
       mix-blend-mode: lighten;
       filter: blur(9px);
       z-index: 4;
@@ -217,6 +223,74 @@
         rgba(210, 110, 25, 0.02) 68%,
         transparent 82%
       );
+    }
+
+    .lighting-adjust-panel {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 120;
+      display: grid;
+      grid-template-columns: repeat(3, 38px);
+      grid-template-rows: repeat(3, 38px);
+      gap: 4px;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .lighting-adjust-panel button {
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      background: rgba(28, 28, 28, 0.88);
+      color: #f7f7f7;
+      border-radius: 6px;
+      font-size: 16px;
+      line-height: 1;
+      font-family: inherit;
+      padding: 0;
+      min-width: 0;
+      min-height: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .lighting-adjust-panel button:active {
+      background: rgba(62, 62, 62, 0.96);
+    }
+
+    #lighting-nudge-up { grid-column: 2; grid-row: 1; }
+    #lighting-nudge-left { grid-column: 1; grid-row: 2; }
+    #lighting-reset { grid-column: 2; grid-row: 2; }
+    #lighting-nudge-right { grid-column: 3; grid-row: 2; }
+    #lighting-nudge-down { grid-column: 2; grid-row: 3; }
+
+    .lighting-adjust-status {
+      position: fixed;
+      left: 12px;
+      bottom: 140px;
+      z-index: 120;
+      color: rgba(255, 255, 255, 0.92);
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      background: rgba(0, 0, 0, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 6px;
+      padding: 5px 7px;
+      pointer-events: none;
+      text-transform: uppercase;
+    }
+
+    @media (min-width: 901px) {
+      .lighting-adjust-panel,
+      .lighting-adjust-status {
+        opacity: 0.82;
+      }
     }
   </style>
 </head>
@@ -246,6 +320,14 @@
       <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-center-offset));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift) - var(--chapel-light-elements-upshift));width:52%;height:6%"></div>
     </div>
   </div>
+  <div class="lighting-adjust-status" id="lighting-adjust-status" aria-live="polite"></div>
+  <div class="lighting-adjust-panel" id="lighting-adjust-panel" role="group" aria-label="Move lighting effects">
+    <button type="button" id="lighting-nudge-up" aria-label="Move lights up">▲</button>
+    <button type="button" id="lighting-nudge-left" aria-label="Move lights left">◀</button>
+    <button type="button" id="lighting-reset" aria-label="Reset light offset">↺</button>
+    <button type="button" id="lighting-nudge-right" aria-label="Move lights right">▶</button>
+    <button type="button" id="lighting-nudge-down" aria-label="Move lights down">▼</button>
+  </div>
 
   <script src="diagnostics.js"></script>
   <script>
@@ -261,8 +343,16 @@
     const congregationAudio = document.getElementById('congregation-audio');
     const rockRollContinuationMedia = document.getElementById('rock-roll-continuation-media');
     const chapelTvCounter = document.getElementById('chapel-tv-counter');
+    const chapelWrapper = document.querySelector('.chapel-wrapper');
     const chapelImage = document.querySelector('.chapel-img');
     const torchBlooms = Array.from(document.querySelectorAll('.torch-bloom'));
+    const lightingAdjustStatus = document.getElementById('lighting-adjust-status');
+    const LIGHTING_OFFSET_X_KEY = 'naimean-chapel-light-offset-x';
+    const LIGHTING_OFFSET_Y_KEY = 'naimean-chapel-light-offset-y';
+    const LIGHTING_OFFSET_STEP_PX = 4;
+    const LIGHTING_OFFSET_MIN_PX = -240;
+    const LIGHTING_OFFSET_MAX_PX = 240;
+    const lightingOffset = { x: 0, y: 0 };
     congregationAudio.volume = 0.04;
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
     const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
@@ -376,6 +466,109 @@
       });
       window.addEventListener('orientationchange', scheduleUpdate);
       scheduleUpdate();
+    }
+
+    function readStoredLightingOffset(key) {
+      try {
+        const rawValue = window.localStorage.getItem(key);
+        if (rawValue === null) {
+          return 0;
+        }
+        const parsedValue = Number(rawValue);
+        if (!Number.isFinite(parsedValue)) {
+          return 0;
+        }
+        return clampValue(Math.round(parsedValue), LIGHTING_OFFSET_MIN_PX, LIGHTING_OFFSET_MAX_PX);
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    function saveLightingOffset() {
+      try {
+        window.localStorage.setItem(LIGHTING_OFFSET_X_KEY, String(lightingOffset.x));
+        window.localStorage.setItem(LIGHTING_OFFSET_Y_KEY, String(lightingOffset.y));
+      } catch (_) {}
+    }
+
+    function renderLightingOffsetStatus() {
+      if (!lightingAdjustStatus) {
+        return;
+      }
+      lightingAdjustStatus.textContent = `light x:${lightingOffset.x} y:${lightingOffset.y}`;
+    }
+
+    function applyLightingOffset() {
+      if (!chapelWrapper) {
+        return;
+      }
+      chapelWrapper.style.setProperty('--chapel-light-global-offset-x', `${lightingOffset.x}px`);
+      chapelWrapper.style.setProperty('--chapel-light-global-offset-y', `${lightingOffset.y}px`);
+      renderLightingOffsetStatus();
+      window.requestAnimationFrame(updateTorchBloomIntensityFromImage);
+    }
+
+    function updateLightingOffset(dx, dy) {
+      lightingOffset.x = clampValue(lightingOffset.x + dx, LIGHTING_OFFSET_MIN_PX, LIGHTING_OFFSET_MAX_PX);
+      lightingOffset.y = clampValue(lightingOffset.y + dy, LIGHTING_OFFSET_MIN_PX, LIGHTING_OFFSET_MAX_PX);
+      applyLightingOffset();
+      saveLightingOffset();
+    }
+
+    function resetLightingOffset() {
+      lightingOffset.x = 0;
+      lightingOffset.y = 0;
+      applyLightingOffset();
+      saveLightingOffset();
+    }
+
+    function bindLightingAdjustControls() {
+      const nudgeUp = document.getElementById('lighting-nudge-up');
+      const nudgeDown = document.getElementById('lighting-nudge-down');
+      const nudgeLeft = document.getElementById('lighting-nudge-left');
+      const nudgeRight = document.getElementById('lighting-nudge-right');
+      const resetButton = document.getElementById('lighting-reset');
+
+      if (!nudgeUp || !nudgeDown || !nudgeLeft || !nudgeRight || !resetButton) {
+        return;
+      }
+
+      nudgeUp.addEventListener('click', function () { updateLightingOffset(0, -LIGHTING_OFFSET_STEP_PX); });
+      nudgeDown.addEventListener('click', function () { updateLightingOffset(0, LIGHTING_OFFSET_STEP_PX); });
+      nudgeLeft.addEventListener('click', function () { updateLightingOffset(-LIGHTING_OFFSET_STEP_PX, 0); });
+      nudgeRight.addEventListener('click', function () { updateLightingOffset(LIGHTING_OFFSET_STEP_PX, 0); });
+      resetButton.addEventListener('click', resetLightingOffset);
+
+      document.addEventListener('keydown', function (event) {
+        if (!event.shiftKey || event.repeat) {
+          return;
+        }
+
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          updateLightingOffset(0, -LIGHTING_OFFSET_STEP_PX);
+          return;
+        }
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          updateLightingOffset(0, LIGHTING_OFFSET_STEP_PX);
+          return;
+        }
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          updateLightingOffset(-LIGHTING_OFFSET_STEP_PX, 0);
+          return;
+        }
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          updateLightingOffset(LIGHTING_OFFSET_STEP_PX, 0);
+          return;
+        }
+        if (event.key === '0') {
+          event.preventDefault();
+          resetLightingOffset();
+        }
+      });
     }
 
     function buildRickrollApiUrls(pathname) {
@@ -711,6 +904,10 @@
     }
 
     renderRickrollCount();
+    lightingOffset.x = readStoredLightingOffset(LIGHTING_OFFSET_X_KEY);
+    lightingOffset.y = readStoredLightingOffset(LIGHTING_OFFSET_Y_KEY);
+    applyLightingOffset();
+    bindLightingAdjustControls();
     startRockRollContinuation(consumeRockRollContinuation());
     bindTorchBloomIntensityUpdates();
 
@@ -856,7 +1053,6 @@
     }
 
     function scrollToCurrentStartPoint() {
-      var chapelWrapper = document.querySelector('.chapel-wrapper');
       if (!chapelWrapper) {
         var fallbackTarget = document.body.scrollHeight - window.innerHeight;
         window.scrollTo(0, fallbackTarget);
