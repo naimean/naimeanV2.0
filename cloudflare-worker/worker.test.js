@@ -43,15 +43,25 @@ function isEnabledEnvFlag(value) {
   return TRUE_LIKE_ENV_VALUES.has(value.trim().toLowerCase());
 }
 
-function parseAllowedOriginList(value) {
+function parseAllowedOriginList(value, env) {
   if (!value || typeof value !== 'string') return [];
-  return value
+  const items = value
     .split(',')
     .map((entry) => entry.trim())
-    .filter(Boolean)
-    .map((entry) => new URL(entry))
-    .filter((url) => url.protocol === 'https:' || url.protocol === 'http:')
-    .map((url) => normalizeOriginUrl(url));
+    .filter(Boolean);
+  const normalizedOrigins = [];
+  for (const item of items) {
+    try {
+      const url = new URL(item);
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') continue;
+      normalizedOrigins.push(normalizeOriginUrl(url));
+    } catch (_error) {
+      if (isNonProductionEnvironment(env)) {
+        // Keep parity with worker behavior: invalid entries are ignored.
+      }
+    }
+  }
+  return normalizedOrigins;
 }
 
 function parseAllowedHostnameSuffixes(value) {
@@ -75,7 +85,7 @@ function isAllowedOrigin(origin, env) {
   const url = new URL(origin);
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
   const normalizedOrigin = normalizeOriginUrl(url);
-  const allowedOrigins = new Set(parseAllowedOriginList(env.CORS_ALLOWED_ORIGINS || ''));
+  const allowedOrigins = new Set(parseAllowedOriginList(env.CORS_ALLOWED_ORIGINS || '', env));
   if (allowedOrigins.has(normalizedOrigin)) return true;
   const hostname = url.hostname.toLowerCase();
   const allowedSuffixes = getAllowedHostnameSuffixes(env);
