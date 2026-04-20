@@ -12,7 +12,7 @@ A Commodore 64-themed interactive landing page with retro effects, puzzles, and 
 - Shoutbox with hint system and Discord join prompt
 - Shoutbox mini-game command flow with number-guess gameplay (`C:\Naimean\play`)
 - Discord OAuth worker-route foundation and in-screen auth command/status flow
-- POST-first counter write flow (`/hit`, `/increment`) with legacy GET fallback
+- POST-only counter write flow (`/hit`, `/increment`)
 - Mobile responsive and accessible
 
 ## Usage
@@ -33,7 +33,7 @@ A Commodore 64-themed interactive landing page with retro effects, puzzles, and 
 - Added shoutbox mini-game flow and replay support while preserving existing unlock behavior.
 - Added Discord OAuth integration foundation (`/auth/discord/*`, `/auth/session`, `/auth/logout`) with callback result handling and one-time URL cleanup.
 - Added edge security-header hardening baseline (CSP/HSTS + secure header policy target).
-- Added POST-first write behavior for counter endpoints while keeping legacy GET compatibility during migration.
+- Started hardening the next recommendation item by enforcing POST-only writes for counter endpoints.
 - Documented and prioritized Cloudflare security and deployment recommendations in `CLOUDFLARE_README.md`.
 
 ## Deployment

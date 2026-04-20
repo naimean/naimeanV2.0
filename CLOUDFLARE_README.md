@@ -8,7 +8,7 @@ This document maps out the Cloudflare infrastructure for **naimean.com** and **m
 
 - Added Cloudflare-focused security hardening baseline coverage (edge headers, OAuth/session controls, API abuse controls, input safety, secret/supply-chain hygiene).
 - Added route/config drift tracking priority for `/board*` and `/uploads/*` to keep docs and runtime behavior aligned.
-- Added POST-first migration direction for state-changing counter routes (`/hit`, `/increment`) while preserving temporary legacy `GET` fallback.
+- Added POST-only hardening direction for state-changing counter routes (`/hit`, `/increment`) to remove legacy unauthenticated `GET` writes.
 - Added stricter environment-based CORS allowlisting guidance.
 - Added Zero Trust policy requirement for privileged/admin operations.
 - Added D1/R2 migration, backup/export, and restore safeguards to improve operational resilience.
@@ -101,8 +101,6 @@ Known API paths:
 - `GET  /get` — return current counter value
 - `POST /hit` — increment counter, return new value (preferred)
 - `POST /increment` — alias of `/hit` (preferred)
-- `GET  /hit` — legacy compatibility alias (deprecated)
-- `GET  /increment` — legacy compatibility alias (deprecated)
 - `GET  /auth/session` — return current session info
 - `GET  /auth/discord/login` — initiate Discord OAuth PKCE flow
 - `GET  /auth/discord/callback` — complete Discord OAuth flow
@@ -259,6 +257,7 @@ wrangler secret put TOOL_URL_SNOW
 | 2026-04-20 | Added route/config drift check for `/board*` and `/uploads/*` paths | Reduced risk of undocumented behavior across Worker layers |
 | 2026-04-20 | Added recommendation to migrate state-changing counter actions away from unauthenticated `GET` | Reduced accidental/abusive triggering risk |
 | 2026-04-20 | Started POST-first migration for `/hit` and `/increment` with legacy `GET` fallback | Reduced accidental triggering risk while preserving compatibility during rollout |
+| 2026-04-20 | Started POST-only enforcement for `/hit` and `/increment`; removed legacy `GET` write path | Reduced abuse surface from state-changing `GET` requests |
 | 2026-04-20 | Added stricter CORS allowlisting guidance per environment | Reduced cross-origin exposure |
 | 2026-04-20 | Added Zero Trust policy requirement for privileged/admin operations | Reduced administrative attack surface |
 | 2026-04-20 | Added D1/R2 backup, restore, and migration safeguards | Improved recoverability and operations resilience |
@@ -273,7 +272,7 @@ wrangler secret put TOOL_URL_SNOW
 
 #### P1 — Next
 - ✅ Route/config drift resolved: documentation now matches live proxy behavior (no `/board*` or `/uploads/*` routes).
-- Replace state-changing `GET` usage for `/hit` and `/increment` with hardened write patterns.
+- ✅ Replace state-changing `GET` usage for `/hit` and `/increment` with hardened write patterns (POST-only writes enforced).
 - Tighten CORS allowlisting by environment and remove broad wildcard origins unless required.
 - Add Cloudflare CI checks (wrangler config validation, route smoke tests, endpoint contract checks).
 
