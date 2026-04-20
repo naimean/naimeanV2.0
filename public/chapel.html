@@ -193,9 +193,8 @@
       pointer-events: auto;
     }
 
-    /* Warm torch-bloom overlays — radial glows at each wall-sconce position.
-       mix-blend-mode: screen adds luminance without darkening, naturally masking
-       horizontal stitch seams that run through the torch rows. */
+    /* Warm bloom overlays for stitched seam dark spots.
+       mix-blend-mode: screen adds luminance without darkening. */
     .torch-bloom {
       position: absolute;
       pointer-events: none;
@@ -227,18 +226,12 @@
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
-      <!-- Torch bloom glows: upper vault pair -->
-      <div class="torch-bloom" aria-hidden="true" style="left:12.0%;top:24.4%;width:18%;aspect-ratio:1"></div>
-      <div class="torch-bloom" aria-hidden="true" style="left:87.7%;top:24.4%;width:18%;aspect-ratio:1"></div>
-      <!-- Torch bloom glows: mid-upper pair -->
-      <div class="torch-bloom" aria-hidden="true" style="left:18.6%;top:31.9%;width:18%;aspect-ratio:1"></div>
-      <div class="torch-bloom" aria-hidden="true" style="left:81.2%;top:31.9%;width:18%;aspect-ratio:1"></div>
-      <!-- Torch bloom glows: lower pair at seam ~54.5% — larger to cover stitch line -->
+      <!-- Seam bloom glows around the darkest stitched regions -->
       <div class="torch-bloom" aria-hidden="true" style="left:14.7%;top:54.5%;width:26%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:83.9%;top:54.5%;width:26%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~54.5% to cover the middle stretch of the stitch line -->
       <div class="torch-bloom" aria-hidden="true" style="left:50%;top:54.5%;width:52%;height:6%"></div>
-      <!-- Torch bloom glows: bottom pair at seam ~58.5% — larger to cover stitch line -->
+      <!-- Secondary seam bloom glows at lower stitched dark spots -->
       <div class="torch-bloom" aria-hidden="true" style="left:15.8%;top:58.5%;width:26%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:76.5%;top:58.5%;width:26%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~58.5% to cover the middle stretch of the stitch line -->
