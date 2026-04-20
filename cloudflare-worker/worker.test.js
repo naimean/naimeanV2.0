@@ -10,6 +10,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import worker from './worker.js';
 
 // ─── Inline copies of the pure helpers from worker.js ────────────────────────
 // We duplicate the helpers here so the tests run under plain Node.js without
@@ -262,4 +263,94 @@ test('isAllowedOrigin – production suffix matching requires explicit opt-in', 
     CORS_ALLOW_PROD_ORIGIN_SUFFIXES: 'true',
   };
   assert.strictEqual(isAllowedOrigin('https://preview.pages.dev', env), true);
+});
+
+// ─── Endpoint contract tests (real worker handler with mock D1 binding) ───────
+// These tests import the actual exported handler from worker.js and invoke it
+// with a minimal mock D1 database.  They validate endpoint routing, response
+// shapes, HTTP method enforcement, and security-header presence without
+// requiring a live Cloudflare environment.  Node.js 18+ globals (fetch,
+// Request, Response, crypto.subtle, btoa/atob) satisfy all worker dependencies.
+
+const mockDb = {
+  prepare(_sql) {
+    return {
+      bind(..._args) {
+        return { async first() { return { value: 0 }; } };
+      },
+    };
+  },
+};
+
+function makeContractEnv(overrides = {}) {
+  return {
+    DB: mockDb,
+    APP_ENV: 'test',
+    CORS_ALLOWED_ORIGINS: 'http://localhost',
+    ...overrides,
+  };
+}
+
+function makeContractRequest(method, path, headers = {}) {
+  return new Request(`http://localhost${path}`, { method, headers });
+}
+
+test('contract: GET /get returns 200 with a numeric counter value', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/get'), makeContractEnv());
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(typeof body.value, 'number');
+});
+
+test('contract: POST /hit returns 200 with a numeric counter value', async () => {
+  const res = await worker.fetch(makeContractRequest('POST', '/hit'), makeContractEnv());
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(typeof body.value, 'number');
+});
+
+test('contract: POST /increment is an alias for /hit and returns 200', async () => {
+  const res = await worker.fetch(makeContractRequest('POST', '/increment'), makeContractEnv());
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(typeof body.value, 'number');
+});
+
+test('contract: GET /auth/session returns unauthenticated when no session cookie is present', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/auth/session'), makeContractEnv());
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(body.authenticated, false);
+});
+
+test('contract: POST /auth/logout clears the session cookie and returns ok', async () => {
+  const res = await worker.fetch(makeContractRequest('POST', '/auth/logout'), makeContractEnv());
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(body.ok, true);
+});
+
+test('contract: OPTIONS preflight on a counter route returns 204', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('OPTIONS', '/get', { Origin: 'http://localhost' }),
+    makeContractEnv(),
+  );
+  assert.strictEqual(res.status, 204);
+});
+
+test('contract: unsupported method on an API route returns 405', async () => {
+  const res = await worker.fetch(makeContractRequest('DELETE', '/get'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+test('contract: GET /go/:tool without a session returns 401', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/go/whiteboard'), makeContractEnv());
+  assert.strictEqual(res.status, 401);
+});
+
+test('contract: API responses carry required security headers', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/get'), makeContractEnv());
+  assert.ok(res.headers.get('Content-Security-Policy'), 'CSP header must be set');
+  assert.strictEqual(res.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.strictEqual(res.headers.get('X-Frame-Options'), 'DENY');
 });
