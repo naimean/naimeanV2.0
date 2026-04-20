@@ -4,6 +4,17 @@ This document maps out the Cloudflare infrastructure for **naimean.com** and **m
 
 ---
 
+## Recent Updates (2026-04-20)
+
+- Added Cloudflare-focused security hardening baseline coverage (edge headers, OAuth/session controls, API abuse controls, input safety, secret/supply-chain hygiene).
+- Added route/config drift tracking priority for `/board*` and `/uploads/*` to keep docs and runtime behavior aligned.
+- Added POST-first migration direction for state-changing counter routes (`/hit`, `/increment`) while preserving temporary legacy `GET` fallback.
+- Added stricter environment-based CORS allowlisting guidance.
+- Added Zero Trust policy requirement for privileged/admin operations.
+- Added D1/R2 migration, backup/export, and restore safeguards to improve operational resilience.
+
+---
+
 ## Architecture Overview
 
 ```text
@@ -270,3 +281,7 @@ wrangler secret put TOOL_URL_SNOW
 - Standardize worker compatibility dates and deployment controls across frontend/backend workers.
 - Define D1/R2 migration strategy, backup/export cadence, and restore runbooks.
 - Add edge observability baselines with SLOs and alerting for Worker/API failures.
+
+---
+
+_Last updated: 2026-04-20_
