@@ -644,13 +644,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return false;
     }
 
-    if (!/^\d+$/.test(command)) {
-      appendShoutboxMessage(MINI_GAME_RANGE_ERROR_MSG);
-      return true;
-    }
-
     const guess = Number(command);
-    if (guess < MINI_GAME_MIN_GUESS || guess > MINI_GAME_MAX_GUESS) {
+    if (!/^\d+$/.test(command) || guess < MINI_GAME_MIN_GUESS || guess > MINI_GAME_MAX_GUESS) {
       appendShoutboxMessage(MINI_GAME_RANGE_ERROR_MSG);
       return true;
     }
