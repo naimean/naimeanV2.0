@@ -138,7 +138,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const nextPath = pageUrl.pathname + pageUrl.search + pageUrl.hash;
       window.history.replaceState({}, document.title, nextPath);
       return authOutcome.trim().toLowerCase();
-    } catch (_) {
+    } catch (error) {
+      void error;
       return '';
     }
   }
@@ -697,7 +698,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (authSession.authenticated) {
         appendShoutboxMessage('AUTH> Discord sign-in succeeded.');
       } else {
-        appendShoutboxMessage('AUTH> Discord sign-in returned, but no active session was detected.');
+        appendShoutboxMessage('AUTH> Discord sign-in completed, but session initialization failed. Type C:\\Naimean\\login to try again.');
       }
       return;
     }
