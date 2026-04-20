@@ -198,6 +198,46 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .congregation-btn {
+      position: absolute;
+      background: transparent;
+      opacity: 0;
+      pointer-events: auto;
+      border: none;
+      cursor: pointer;
+      z-index: 10;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .congregation-btn-crusty {
+      left: 16%;
+      top: 76.5%;
+      width: 8%;
+      height: 17%;
+    }
+
+    .congregation-btn-goose {
+      left: 31%;
+      top: 77.5%;
+      width: 8%;
+      height: 16%;
+    }
+
+    .congregation-btn-rick {
+      left: 54.5%;
+      top: 76.5%;
+      width: 8%;
+      height: 17%;
+    }
+
+    .congregation-btn-morty {
+      left: 69.5%;
+      top: 77.5%;
+      width: 8%;
+      height: 16%;
+    }
+
     /* Page transition fade overlay */
     .fade-overlay {
       position: fixed;
@@ -255,6 +295,10 @@
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
+      <button class="congregation-btn congregation-btn-crusty" id="congregation-btn-crusty" aria-label="Crusty"></button>
+      <button class="congregation-btn congregation-btn-goose" id="congregation-btn-goose" aria-label="Goose"></button>
+      <button class="congregation-btn congregation-btn-rick" id="congregation-btn-rick" aria-label="Rick"></button>
+      <button class="congregation-btn congregation-btn-morty" id="congregation-btn-morty" aria-label="Morty"></button>
       <!-- Seam bloom glows around the darkest stitched regions -->
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
@@ -957,6 +1001,10 @@
 
     // Invisible button click → bedroom_antechamber.html
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
+    document.getElementById('congregation-btn-crusty').addEventListener('click', navigateToSite);
+    document.getElementById('congregation-btn-goose').addEventListener('click', navigateToSite);
+    document.getElementById('congregation-btn-rick').addEventListener('click', navigateToSite);
+    document.getElementById('congregation-btn-morty').addEventListener('click', navigateToSite);
 
     // Enter key → same behavior
     document.addEventListener('keydown', function (e) {
