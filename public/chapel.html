@@ -45,7 +45,7 @@
       width: 100%;
     }
 
-    /* Very subtle seam harmonizer to avoid introducing a visible dark band. */
+    /* Warm seam harmonizer to lift stitched ceiling seams and smooth the vault gradient. */
     .chapel-wrapper::after {
       content: '';
       position: absolute;
@@ -53,11 +53,13 @@
       pointer-events: none;
       z-index: 3;
       background: linear-gradient(to bottom,
-        transparent 37.9%,
-        rgba(0, 0, 0, 0.02) 39.0%,
-        rgba(0, 0, 0, 0.05) 40.0%,
-        rgba(0, 0, 0, 0.02) 41.0%,
-        transparent 42.1%
+        transparent 34.6%,
+        rgba(232, 166, 94, 0.035) 36.4%,
+        rgba(246, 178, 104, 0.105) 39.2%,
+        rgba(232, 166, 94, 0.04) 42.0%,
+        rgba(224, 156, 90, 0.075) 45.2%,
+        rgba(214, 148, 86, 0.03) 48.4%,
+        transparent 52.6%
       );
     }
 
