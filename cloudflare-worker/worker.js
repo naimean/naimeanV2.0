@@ -656,6 +656,9 @@ const GO_ROUTE_TOOL_MAP = {
   '/go/capex': 'TOOL_URL_CAPEX',
   '/go/snow': 'TOOL_URL_SNOW',
 };
+const GO_ROUTE_DEFAULT_TOOL_URL_BY_ENV_KEY = {
+  TOOL_URL_SNOW: 'https://recoverycoa.okta.com/app/servicenow_ud/exk76nqofjVLeLdqj697/sso/saml?SAMLRequest=nVNdb%2BIwEPwrkd%2FzCQSwCFIu6HRIXA9Brg%2F3UrnOpnWb2MHrBPrvLwlpy0OLrvfqnZ2dmV0vkJVFUNG4No9yB4ca0FinspBIz5WI1FpSxVAglawEpIbTffxzQwPHo5VWRnFVECtGBG2EkomSWJeg96AbweH3bhORR2MqpK6rgasG9AtXzMFz3Zbq6HBVupI1FXsAJ1PEWrUqhGQd3cfN6tmwvotVlTswtUR3debC6XkayoPKn243sMkOT%2BF86iIqt%2FNDrO9Kc%2BjdRiRnBQKx1quI7G8SPgJvOg4nMJ5NvOk8zOfBOBgFo3vg3PNmoxaIW4YoGnhvRaxhLdEwaSISeEFoe2M78FJ%2FRoM59X0nnIR%2FiLUdcvomZCbkw%2FVQ788gpD%2FSdGtvf%2B3TnqARGeibFv31PG9BY59lS0%2BWi36ztNeuL5d9XRZ73TBZ%2FsP8hXs5ZZhZ0U7%2FerVVheAvVlwU6phoYKb1ZHQN%2FXpKZj4X4jt%2B%2FyIyO%2B%2BhFEomijjLNCAS923QcMuQ9btuj9LAyViJKiumBXZZwIlx85bGJSwpWq87yP8rm6swTnnH3T53l3RUOusuA3irM9VMYqW0eU3uI0XLofiJv%2Ffy5X9e%2FgU%3D&RelayState=62e1d93a83d883105c84f2efeeaad314',
+};
 
 async function handleGoRedirect(pathname, request, env, origin) {
   const session = await getSessionFromRequest(request, env);
@@ -668,7 +671,8 @@ async function handleGoRedirect(pathname, request, env, origin) {
     return jsonResponse({ error: 'Not found' }, 404, origin, env);
   }
 
-  const destination = typeof env[envKey] === 'string' ? env[envKey].trim() : '';
+  const configuredDestination = typeof env[envKey] === 'string' ? env[envKey].trim() : '';
+  const destination = configuredDestination || GO_ROUTE_DEFAULT_TOOL_URL_BY_ENV_KEY[envKey] || '';
   if (!destination) {
     return jsonResponse({ error: 'Tool URL not configured' }, 503, origin, env);
   }
