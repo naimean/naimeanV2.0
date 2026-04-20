@@ -353,7 +353,8 @@ For end users, the main function is: **visit the site, experience an interactive
 - Main script: `cloudflare-worker/worker.js`
 - D1 binding: `DB` -> `barrelroll-counter-db`
 
-### Backend Secret/Env Inputs (expected by code)
+### Backend Secret/Env Inputs (expected by code/runtime setup)
+- `ROUTER_SECRET` (documented deployment secret; reserved for trusted internal routing controls)
 - `SESSION_SECRET`
 - `DISCORD_CLIENT_ID`
 - `DISCORD_CLIENT_SECRET`
