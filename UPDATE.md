@@ -58,6 +58,7 @@
 - Started Discord OAuth integration foundation with new `/auth/discord/*`, `/auth/session`, and `/auth/logout` worker routes
 - Added shoutbox auth command wiring (`C:\Naimean\login`, `C:\Naimean\logout`) and in-screen auth status messaging
 - Added Discord OAuth callback result handling in the boot/shoutbox flow with one-time URL cleanup and status feedback
+- Started highest-priority Cloudflare hardening implementation by enforcing strict edge/API response headers (CSP/HSTS/secure headers)
 
 ## 2026-04-15
 - Data light moved down 3px and right 5px for precise placement

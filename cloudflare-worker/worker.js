@@ -27,6 +27,17 @@ const OAUTH_FLOW_TTL_SECONDS = 60 * 10; // 10 minutes
 const DISCORD_API_BASE_URL = 'https://discord.com/api/v10';
 const textEncoder = new TextEncoder();
 
+function securityHeaders() {
+  return {
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Content-Security-Policy': "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' https://discord.com https://*.discord.com;",
+  };
+}
+
 function corsHeaders(origin) {
   if (!isAllowedOrigin(origin)) {
     // Origin not in allowlist – omit ACAO so browsers block the request.
@@ -75,6 +86,7 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
       'Pragma': 'no-cache',
       'Expires': '0',
       ...corsHeaders(origin),
+      ...securityHeaders(),
       ...extraHeaders,
     },
   });
@@ -127,6 +139,7 @@ function createRedirectResponse(location, setCookies = []) {
     headers: {
       Location: location,
       'Cache-Control': 'no-store',
+      ...securityHeaders(),
     },
   });
 
@@ -532,7 +545,7 @@ export default {
 
     // Handle CORS pre-flight for API routes.
     if ((isCounterRoute || isAuthRoute) && request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders(origin) });
+      return new Response(null, { status: 204, headers: { ...corsHeaders(origin), ...securityHeaders() } });
     }
 
     try {
