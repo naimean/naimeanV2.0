@@ -45,7 +45,7 @@
       width: 100%;
     }
 
-    /* Narrow seam softener just above center. */
+    /* Very subtle seam harmonizer to avoid introducing a visible dark band. */
     .chapel-wrapper::after {
       content: '';
       position: absolute;
@@ -53,11 +53,11 @@
       pointer-events: none;
       z-index: 3;
       background: linear-gradient(to bottom,
-        transparent 37.8%,
-        rgba(0, 0, 0, 0.10) 38.9%,
-        rgba(0, 0, 0, 0.22) 40.0%,
-        rgba(0, 0, 0, 0.12) 41.1%,
-        transparent 42.3%
+        transparent 37.9%,
+        rgba(0, 0, 0, 0.02) 39.0%,
+        rgba(0, 0, 0, 0.05) 40.0%,
+        rgba(0, 0, 0, 0.02) 41.0%,
+        transparent 42.1%
       );
     }
 
