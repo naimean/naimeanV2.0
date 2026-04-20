@@ -10,7 +10,7 @@ const DOCUMENT_CSP = [
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",
-  "connect-src 'self' https://discord.com https://*.discord.com https://barrelrollcounter-worker.naimean.workers.dev https://whiteboard.cloud.microsoft https://app.smartsheet.com https://recoverycoa.service-now.com",
+  "connect-src 'self' https://discord.com https://*.discord.com https://barrelrollcounter-worker.naimean.workers.dev https://whiteboard.cloud.microsoft.com https://app.smartsheet.com https://recoverycoa.service-now.com",
   "frame-src 'self' https://discord.com https://*.discord.com",
   "form-action 'self' https://app.smartsheet.com",
   "upgrade-insecure-requests",
