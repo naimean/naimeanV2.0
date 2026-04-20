@@ -1112,6 +1112,7 @@ function playZeldaSecretSound() {
     const DEFAULT_AUDIO_FALLBACK_DURATION_MS = 8000;
     let settled = false;
     let fallbackTimer = null;
+    let synthAudioContext = null;
 
     const finish = () => {
       if (settled) {
@@ -1121,6 +1122,10 @@ function playZeldaSecretSound() {
       if (fallbackTimer) {
         clearTimeout(fallbackTimer);
       }
+      if (synthAudioContext && typeof synthAudioContext.close === 'function' && synthAudioContext.state !== 'closed') {
+        synthAudioContext.close().catch(() => {});
+      }
+      synthAudioContext = null;
       zeldaSecretAudio.removeEventListener('ended', finish);
       zeldaSecretAudio.removeEventListener('error', finish);
       resolve();
@@ -1143,7 +1148,8 @@ function playZeldaSecretSound() {
     }).catch(() => {
       // If the mp3 file is missing, fall back to a short chime sequence.
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        synthAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = synthAudioContext;
         const notes = [783.99, 987.77, 1174.66, 1567.98];
         const notePeakGain = 0.14;
         const noteSpacingSeconds = 0.14;
