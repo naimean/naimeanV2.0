@@ -44,10 +44,16 @@ function normalizeOriginUrl(url) {
 }
 
 function isValidHostnameSuffix(value) {
-  return Boolean(value)
-    && /^[a-z0-9.-]+$/.test(value)
-    && !value.startsWith('.')
-    && !value.endsWith('.');
+  if (!value || value.startsWith('.') || value.endsWith('.')) {
+    return false;
+  }
+
+  const labels = value.split('.');
+  if (labels.length === 0) {
+    return false;
+  }
+
+  return labels.every((label) => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label));
 }
 
 function isNonProductionEnvironment(env) {
