@@ -181,13 +181,8 @@
       }
     }
 
-    /* Invisible hotspot over the trap door square area. */
-    .trapdoor-btn {
+    .invisible-hotspot-btn {
       position: absolute;
-      left: 33%;
-      top: 77%;
-      width: 34%;
-      height: 16%;
       background: transparent;
       opacity: 0;
       pointer-events: auto;
@@ -198,16 +193,12 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .congregation-btn {
-      position: absolute;
-      background: transparent;
-      opacity: 0;
-      pointer-events: auto;
-      border: none;
-      cursor: pointer;
-      z-index: 10;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
+    /* Invisible hotspot over the trap door square area. */
+    .trapdoor-btn {
+      left: 33%;
+      top: 77%;
+      width: 34%;
+      height: 16%;
     }
 
     .congregation-btn:focus-visible {
@@ -301,11 +292,11 @@
         </div>
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
-      <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
-      <button class="congregation-btn congregation-btn-crusty" id="congregation-btn-crusty" aria-label="Enter the descent through Crusty"></button>
-      <button class="congregation-btn congregation-btn-goose" id="congregation-btn-goose" aria-label="Enter the descent through Goose"></button>
-      <button class="congregation-btn congregation-btn-rick" id="congregation-btn-rick" aria-label="Enter the descent through Rick"></button>
-      <button class="congregation-btn congregation-btn-morty" id="congregation-btn-morty" aria-label="Enter the descent through Morty"></button>
+      <button class="invisible-hotspot-btn trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
+      <button class="invisible-hotspot-btn congregation-btn congregation-btn-crusty" id="congregation-btn-crusty" aria-label="Enter the descent through Crusty"></button>
+      <button class="invisible-hotspot-btn congregation-btn congregation-btn-goose" id="congregation-btn-goose" aria-label="Enter the descent through Goose"></button>
+      <button class="invisible-hotspot-btn congregation-btn congregation-btn-rick" id="congregation-btn-rick" aria-label="Enter the descent through Rick"></button>
+      <button class="invisible-hotspot-btn congregation-btn congregation-btn-morty" id="congregation-btn-morty" aria-label="Enter the descent through Morty"></button>
       <!-- Seam bloom glows around the darkest stitched regions -->
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
@@ -1008,10 +999,9 @@
 
     // Invisible button click → bedroom_antechamber.html
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
-    document.getElementById('congregation-btn-crusty').addEventListener('click', navigateToSite);
-    document.getElementById('congregation-btn-goose').addEventListener('click', navigateToSite);
-    document.getElementById('congregation-btn-rick').addEventListener('click', navigateToSite);
-    document.getElementById('congregation-btn-morty').addEventListener('click', navigateToSite);
+    ['congregation-btn-crusty', 'congregation-btn-goose', 'congregation-btn-rick', 'congregation-btn-morty'].forEach(function (buttonId) {
+      document.getElementById(buttonId).addEventListener('click', navigateToSite);
+    });
 
     // Enter key → same behavior
     document.addEventListener('keydown', function (e) {
