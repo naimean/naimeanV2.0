@@ -176,14 +176,12 @@ deploy-workers:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
         wranglerVersion: "4.84.0"
-        command: deploy
         workingDirectory: .
     - uses: cloudflare/wrangler-action@v3.15.0
       with:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
         wranglerVersion: "4.84.0"
-        command: deploy
         workingDirectory: cloudflare-worker
 ```
 
