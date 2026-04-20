@@ -51,6 +51,16 @@
 
 # Update Log
 
+## 2026-04-20 (hardening + CI + accessibility)
+- Added CSRF same-origin guard on POST `/auth/logout` — blocks cross-origin cookie-clearing attacks while preserving same-site browser behaviour
+- Fixed `wrangler.toml` `run_worker_first` list: added `/auth` so auth routes are guaranteed worker-handled; removed unimplemented `/board*` and `/uploads/*` entries to eliminate route/config drift
+- Updated `cloudflare-worker/wrangler.toml` compatibility date from `2024-01-01` to `2026-04-18` to match the frontend worker
+- Strengthened `src/index.js` edge security headers: all responses now receive `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and HSTS regardless of content-type; HTML gets the strict document CSP and a `no-cache` directive; versioned media/font assets get a `max-age=31536000, immutable` cache-control header
+- Added `cloudflare-worker/worker.test.js` — 14 unit tests for pure worker utility functions (cookie parsing, base64url, sanitizeReturnPath, CORS helpers) using Node.js built-in test runner
+- Upgraded `.github/workflows/github-pages.yml` CI: added `lint-and-check` job with JS syntax validation (`node --check`) for all four source files, wrangler config field checks, route-alignment assertion, worker unit test run, and asset existence checks; `deployment-check` and `deploy` jobs now depend on `lint-and-check`
+- Accessibility: added `role="log"` and `aria-live="polite"` to shoutbox messages container; added `aria-label` to shoutbox submit button and boot inline-submit button; wrapped page in `<main>` landmark; added `fetchpriority="high"` to hero C64 image
+- Focus-visible styles: added visible keyboard focus ring to power button and all boot-submit buttons
+
 ## 2026-04-20
 - Started highest-priority roadmap item by adding a shoutbox mini-game command flow
 - Added in-screen system/game status messages and number-guess gameplay (`C:\Naimean\play`)
@@ -58,7 +68,9 @@
 - Started Discord OAuth integration foundation with new `/auth/discord/*`, `/auth/session`, and `/auth/logout` worker routes
 - Added shoutbox auth command wiring (`C:\Naimean\login`, `C:\Naimean\logout`) and in-screen auth status messaging
 - Added Discord OAuth callback result handling in the boot/shoutbox flow with one-time URL cleanup and status feedback
-- Started the next highest-priority security item by enforcing edge security headers (CSP/HSTS plus strict browser policy headers) on frontend and backend worker responses
+- Started next P0 security item by enforcing edge security headers (CSP/HSTS + baseline browser hardening headers) across frontend and API worker responses
+- Started the next priority hardening item by moving counter write flow to POST-first (`/increment`, `/hit`) with legacy GET fallback compatibility
+- Started the next priority hardening item by tightening CORS allowlisting with environment-aware origin controls and no default wildcard suffix matching
 
 ## 2026-04-15
 - Data light moved down 3px and right 5px for precise placement

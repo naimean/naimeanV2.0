@@ -9,8 +9,10 @@
  *
  * Endpoints:
  *   GET  /get  – return the current counter value
- *   GET  /hit  – increment the counter by 1, return the new value
- *   GET  /increment  – alias of /hit for backward compatibility
+ *   POST /hit  – increment the counter by 1, return the new value
+ *   POST /increment  – alias of /hit for backward compatibility
+ *   GET  /hit  – legacy compatibility alias (deprecated)
+ *   GET  /increment  – legacy compatibility alias (deprecated)
  *   GET  /auth/session
  *   GET  /auth/discord/login
  *   GET  /auth/discord/callback
@@ -22,52 +24,94 @@
 const COUNTER_ID = 'rickrolls';
 const SESSION_COOKIE_NAME = 'naimean_session';
 const OAUTH_COOKIE_NAME = 'naimean_discord_oauth';
+const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const OAUTH_FLOW_TTL_SECONDS = 60 * 10; // 10 minutes
 const DISCORD_API_BASE_URL = 'https://discord.com/api/v10';
 const textEncoder = new TextEncoder();
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: https:",
-  "media-src 'self' blob: data:",
-  "connect-src 'self' https://discord.com https://discordapp.com",
-  "frame-src https://discord.com",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'self'",
-].join('; ');
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://naimean.com',
+  'https://www.naimean.com',
+  'https://naimean.github.io',
+];
+const DEFAULT_DEV_ALLOWED_ORIGINS = [
+  'http://localhost',
+  'http://127.0.0.1',
+];
 
-function applySecurityHeaders(request, response) {
-  const headers = new Headers(response.headers);
-  const contentType = headers.get('Content-Type') || '';
-  const isHtmlResponse = contentType.toLowerCase().includes('text/html');
-  const protocol = new URL(request.url).protocol;
-
-  headers.set('X-Content-Type-Options', 'nosniff');
-  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-
-  if (protocol === 'https:') {
-    headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  }
-
-  if (isHtmlResponse) {
-    headers.set('Content-Security-Policy', CONTENT_SECURITY_POLICY);
-  }
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+function normalizeOriginUrl(url) {
+  return `${url.protocol}//${url.host}`.toLowerCase();
 }
 
-function corsHeaders(origin) {
-  if (!isAllowedOrigin(origin)) {
+function isValidHostnameSuffix(value) {
+  if (!value || value.startsWith('.') || value.endsWith('.')) {
+    return false;
+  }
+
+  const labels = value.split('.');
+  return labels.every((label) => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label));
+}
+
+function isNonProductionEnvironment(env) {
+  const rawValue = typeof env.APP_ENV === 'string'
+    ? env.APP_ENV
+    : (typeof env.ENVIRONMENT === 'string' ? env.ENVIRONMENT : '');
+  const normalized = rawValue.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return normalized !== 'production' && normalized !== 'prod';
+}
+
+function parseAllowedOriginList(value, env) {
+  if (!value || typeof value !== 'string') {
+    return [];
+  }
+
+  const items = value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  const normalizedOrigins = [];
+  for (const item of items) {
+    try {
+      const url = new URL(item);
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+        continue;
+      }
+      normalizedOrigins.push(normalizeOriginUrl(url));
+    } catch (error) {
+      if (isNonProductionEnvironment(env)) {
+        console.warn('Ignoring invalid CORS_ALLOWED_ORIGINS entry:', item, error);
+      }
+    }
+  }
+  return normalizedOrigins;
+}
+
+function parseAllowedHostnameSuffixes(value) {
+  if (!value || typeof value !== 'string') {
+    return [];
+  }
+  return value
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => isValidHostnameSuffix(entry));
+}
+
+function getAllowedOriginsSet(env) {
+  const configured = parseAllowedOriginList(env.CORS_ALLOWED_ORIGINS, env);
+  const baseOrigins = configured.length > 0 ? configured : DEFAULT_ALLOWED_ORIGINS;
+
+  if (isNonProductionEnvironment(env)) {
+    return new Set([...baseOrigins, ...DEFAULT_DEV_ALLOWED_ORIGINS]);
+  }
+  return new Set(baseOrigins);
+}
+
+function corsHeaders(origin, env) {
+  if (!isAllowedOrigin(origin, env)) {
     // Origin not in allowlist – omit ACAO so browsers block the request.
     return {};
   }
@@ -81,7 +125,7 @@ function corsHeaders(origin) {
   };
 }
 
-function isAllowedOrigin(origin) {
+function isAllowedOrigin(origin, env) {
   if (!origin) {
     return false;
   }
@@ -92,20 +136,27 @@ function isAllowedOrigin(origin) {
       return false;
     }
 
+    const normalizedOrigin = normalizeOriginUrl(url);
+    const allowedOrigins = getAllowedOriginsSet(env);
+    if (allowedOrigins.has(normalizedOrigin)) {
+      return true;
+    }
+
     const hostname = url.hostname.toLowerCase();
-    return hostname === 'naimean.com'
-      || hostname === 'www.naimean.com'
-      || hostname === 'naimean.github.io'
-      || hostname === 'localhost'
-      || hostname === '127.0.0.1'
-      || hostname.endsWith('.naimean.com')
-      || hostname.endsWith('.pages.dev');
-  } catch (_) {
+    const allowedSuffixes = parseAllowedHostnameSuffixes(env.CORS_ALLOWED_ORIGIN_SUFFIXES);
+    if (allowedSuffixes.length === 0) {
+      return false;
+    }
+    return allowedSuffixes.some((suffix) => hostname.endsWith(`.${suffix}`));
+  } catch (error) {
+    if (isNonProductionEnvironment(env)) {
+      console.warn('Invalid Origin header for CORS evaluation:', origin, error);
+    }
     return false;
   }
 }
 
-function jsonResponse(data, status, origin, extraHeaders = {}) {
+function jsonResponse(data, status, origin, env, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
@@ -113,9 +164,28 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
       'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
       'Pragma': 'no-cache',
       'Expires': '0',
-      ...corsHeaders(origin),
+      ...corsHeaders(origin, env),
       ...extraHeaders,
     },
+  });
+}
+
+function applyApiSecurityHeaders(response, isSecureTransport) {
+  const headers = new Headers(response.headers);
+  headers.set('Content-Security-Policy', API_CSP);
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('Referrer-Policy', 'no-referrer');
+  headers.set('Permissions-Policy', 'accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()');
+
+  if (isSecureTransport) {
+    headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
   });
 }
 
@@ -369,7 +439,7 @@ async function getSessionFromRequest(request, env) {
 async function handleAuthSession(request, env, origin) {
   const session = await getSessionFromRequest(request, env);
   if (!session) {
-    return jsonResponse({ authenticated: false }, 200, origin);
+    return jsonResponse({ authenticated: false }, 200, origin, env);
   }
 
   return jsonResponse({
@@ -380,10 +450,18 @@ async function handleAuthSession(request, env, origin) {
       displayName: session.displayName || '',
       avatar: session.avatar || '',
     },
-  }, 200, origin);
+  }, 200, origin, env);
 }
 
 async function handleAuthLogout(request, env, origin, url) {
+  // CSRF guard: require the request to originate from an allowed origin.
+  // SameSite=Lax cookies prevent cross-site POST in modern browsers, but an
+  // explicit origin check provides defence-in-depth for older clients and
+  // non-browser environments.
+  if (origin && !isAllowedOrigin(origin, env)) {
+    return jsonResponse({ error: 'Forbidden' }, 403, origin, env);
+  }
+
   const clearSessionCookie = serializeCookie(SESSION_COOKIE_NAME, '', {
     maxAge: 0,
     secure: shouldUseSecureCookie(url),
@@ -393,6 +471,7 @@ async function handleAuthLogout(request, env, origin, url) {
     { ok: true },
     200,
     origin,
+    env,
     { 'Set-Cookie': clearSessionCookie },
   );
 }
@@ -400,7 +479,7 @@ async function handleAuthLogout(request, env, origin, url) {
 async function handleDiscordLogin(request, env, url) {
   const config = getAuthConfig(env);
   if (!config.isConfigured) {
-    return jsonResponse({ error: 'Discord OAuth not configured' }, 503, request.headers.get('Origin') || '');
+    return jsonResponse({ error: 'Discord OAuth not configured' }, 503, request.headers.get('Origin') || '', env);
   }
 
   const returnToRaw = new URL(request.url).searchParams.get('returnTo');
@@ -554,60 +633,114 @@ async function handleDiscordCallback(request, env, url) {
   return createRedirectResponse(buildRelativeUrlWithParam(returnTo, 'auth', 'success'), [clearOauthCookie, sessionCookie]);
 }
 
+const GO_ROUTE_TOOL_MAP = {
+  '/go/whiteboard': 'TOOL_URL_WHITEBOARD',
+  '/go/capex': 'TOOL_URL_CAPEX',
+  '/go/snow': 'TOOL_URL_SNOW',
+};
+
+async function handleGoRedirect(pathname, request, env, origin) {
+  const session = await getSessionFromRequest(request, env);
+  if (!session) {
+    return jsonResponse({ error: 'Unauthorized' }, 401, origin, env);
+  }
+
+  const envKey = GO_ROUTE_TOOL_MAP[pathname];
+  if (!envKey) {
+    return jsonResponse({ error: 'Not found' }, 404, origin, env);
+  }
+
+  const destination = typeof env[envKey] === 'string' ? env[envKey].trim() : '';
+  if (!destination) {
+    return jsonResponse({ error: 'Tool URL not configured' }, 503, origin, env);
+  }
+
+  let destinationUrl;
+  try {
+    destinationUrl = new URL(destination);
+  } catch (_) {
+    return jsonResponse({ error: 'Tool URL not configured' }, 503, origin, env);
+  }
+
+  if (destinationUrl.protocol !== 'https:') {
+    return jsonResponse({ error: 'Tool URL not configured' }, 503, origin, env);
+  }
+
+  // Use 303 (See Other) for cross-origin redirects so that:
+  //  - the method is always changed to GET on follow,
+  //  - the referrer is suppressed by the Referrer-Policy: no-referrer header
+  //    applied by applyApiSecurityHeaders, preventing the destination from
+  //    seeing the originating URL.
+  return new Response(null, {
+    status: 303,
+    headers: {
+      Location: destinationUrl.toString(),
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
 export default {
   async fetch(request, env) {
-    const secureResponse = (response) => applySecurityHeaders(request, response);
     const origin = request.headers.get('Origin') || '';
     const url = new URL(request.url);
+    const isSecureTransport = url.protocol === 'https:';
     const { pathname } = url;
     const isGetRoute = pathname === '/get';
     const isHitRoute = pathname === '/hit' || pathname === '/increment';
     const isCounterRoute = isGetRoute || isHitRoute;
     const isAuthRoute = pathname.startsWith('/auth/');
+    const isGoRoute = pathname.startsWith('/go/');
+    const withApiSecurityHeaders = (response) => applyApiSecurityHeaders(response, isSecureTransport);
 
-    // Serve static assets for all non-counter/non-auth paths.
-    if (!isCounterRoute && !isAuthRoute) {
-      return secureResponse(await env.ASSETS.fetch(request));
+    // Serve static assets for all non-counter/non-auth/non-go paths.
+    if (!isCounterRoute && !isAuthRoute && !isGoRoute) {
+      return env.ASSETS.fetch(request);
     }
 
     // Handle CORS pre-flight for API routes.
-    if ((isCounterRoute || isAuthRoute) && request.method === 'OPTIONS') {
-      return secureResponse(new Response(null, { status: 204, headers: corsHeaders(origin) }));
+    if ((isCounterRoute || isAuthRoute || isGoRoute) && request.method === 'OPTIONS') {
+      return withApiSecurityHeaders(new Response(null, { status: 204, headers: corsHeaders(origin, env) }));
     }
 
     try {
       // ── Counter routes (GET only) ─────────────────────────────────────────
       if (request.method === 'GET' && isGetRoute) {
         const value = await getCount(env.DB);
-        return secureResponse(jsonResponse({ value }, 200, origin));
+        return withApiSecurityHeaders(jsonResponse({ value }, 200, origin, env));
       }
 
-      if (request.method === 'GET' && isHitRoute) {
+      if ((request.method === 'POST' || request.method === 'GET') && isHitRoute) {
         const value = await incrementCount(env.DB);
-        return secureResponse(jsonResponse({ value }, 200, origin));
+        return withApiSecurityHeaders(jsonResponse({ value }, 200, origin, env));
       }
 
       // ── Auth routes ────────────────────────────────────────────────────────
       if (request.method === 'GET' && pathname === '/auth/session') {
-        return secureResponse(await handleAuthSession(request, env, origin));
+        return withApiSecurityHeaders(await handleAuthSession(request, env, origin));
       }
 
       if (request.method === 'POST' && pathname === '/auth/logout') {
-        return secureResponse(await handleAuthLogout(request, env, origin, url));
+        return withApiSecurityHeaders(await handleAuthLogout(request, env, origin, url));
       }
 
       if (request.method === 'GET' && pathname === '/auth/discord/login') {
-        return secureResponse(await handleDiscordLogin(request, env, url));
+        return withApiSecurityHeaders(await handleDiscordLogin(request, env, url));
       }
 
       if (request.method === 'GET' && pathname === '/auth/discord/callback') {
-        return secureResponse(await handleDiscordCallback(request, env, url));
+        return withApiSecurityHeaders(await handleDiscordCallback(request, env, url));
       }
 
-      return secureResponse(jsonResponse({ error: 'Method not allowed' }, 405, origin));
+      // ── Go routes (authenticated server-side redirects) ────────────────────
+      if (request.method === 'GET' && isGoRoute) {
+        return withApiSecurityHeaders(await handleGoRedirect(pathname, request, env, origin));
+      }
+
+      return withApiSecurityHeaders(jsonResponse({ error: 'Method not allowed' }, 405, origin, env));
     } catch (err) {
       console.error('Worker error:', err);
-      return secureResponse(jsonResponse({ error: 'Internal server error' }, 500, origin));
+      return withApiSecurityHeaders(jsonResponse({ error: 'Internal server error' }, 500, origin, env));
     }
   },
 };
