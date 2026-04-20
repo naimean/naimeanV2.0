@@ -215,6 +215,32 @@
       background: rgba(255, 255, 255, 0.2);
     }
 
+    #crusty-button {
+      left: 16%;
+      top: calc(76.5% - 200px);
+      width: 8%;
+      height: 17%;
+    }
+
+    #goose-button {
+      left: 31%;
+      top: calc(77.5% - 200px);
+      width: 8%;
+      height: 16%;
+    }
+
+    #rick-button {
+      left: 69.5%;
+      top: calc(76.5% - 200px);
+      width: 8%;
+      height: 17%;
+    }
+
+    #morty-button {
+      left: 54.5%;
+      top: calc(77.5% - 200px);
+      width: 8%;
+      height: 16%;
     .congregation-btn-crusty {
       left: calc(16% - 115px);
       top: calc(76.5% - 415px);
@@ -304,10 +330,10 @@
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="invisible-hotspot-btn trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
-      <button class="invisible-hotspot-btn congregation-btn congregation-btn-crusty" id="congregation-btn-crusty" aria-label="Enter the descent through Crusty"></button>
-      <button class="invisible-hotspot-btn congregation-btn congregation-btn-goose" id="congregation-btn-goose" aria-label="Enter the descent through Goose"></button>
-      <button class="invisible-hotspot-btn congregation-btn congregation-btn-rick" id="congregation-btn-rick" aria-label="Enter the descent through Rick"></button>
-      <button class="invisible-hotspot-btn congregation-btn congregation-btn-morty" id="congregation-btn-morty" aria-label="Enter the descent through Morty"></button>
+      <button class="invisible-hotspot-btn congregation-btn" id="crusty-button" aria-label="Play Crusty laugh"></button>
+      <button class="invisible-hotspot-btn congregation-btn" id="goose-button" aria-label="Play Goose honk"></button>
+      <button class="invisible-hotspot-btn congregation-btn" id="morty-button" aria-label="Play Morty aw jeez"></button>
+      <button class="invisible-hotspot-btn congregation-btn" id="rick-button" aria-label="Play Rick nope"></button>
       <!-- Seam bloom glows around the darkest stitched regions -->
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
@@ -1008,8 +1034,19 @@
 
     document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
 
-    // Invisible button click → bedroom_antechamber.html
+    function openAudioAsset(assetPath) {
+      window.location.assign(assetPath);
+    }
+
+    // Invisible congregation button clicks → audio files
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
+    [
+      ['crusty-button', 'assets/goose_honk.mp3'],
+      ['goose-button', 'assets/goose_honk.mp3'],
+      ['morty-button', 'assets/goose_honk.mp3'],
+      ['rick-button', 'assets/goose_honk.mp3']
+    ].forEach(function ([buttonId, assetPath]) {
+      document.getElementById(buttonId).addEventListener('click', function () { openAudioAsset(assetPath); });
     const congregationButtonAudioMap = {
       'congregation-btn-crusty': 'congregation-audio-crusty',
       'congregation-btn-goose': 'congregation-audio-goose',
