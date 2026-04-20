@@ -664,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function() {
       appendShoutboxMessage('AUTH> Type C:\\Naimean\\logout to sign out.');
       return;
     }
-    appendShoutboxMessage('AUTH> Discord sign-in in progress. Type C:\\Naimean\\login to sign in.');
+    appendShoutboxMessage('AUTH> Not signed in. Type C:\\Naimean\\login to sign in with Discord.');
   }
 
   async function showAuthStatusInShoutbox() {

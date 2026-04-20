@@ -101,12 +101,8 @@ function parseCookies(headerValue) {
   return result;
 }
 
-function isLocalHost(hostname) {
-  return hostname === 'localhost' || hostname === '127.0.0.1';
-}
-
 function shouldUseSecureCookie(requestUrl) {
-  return requestUrl.protocol === 'https:' && !isLocalHost(requestUrl.hostname);
+  return requestUrl.protocol === 'https:';
 }
 
 function serializeCookie(name, value, options = {}) {
@@ -388,8 +384,6 @@ async function handleDiscordLogin(request, env, url) {
   authorizeUrl.searchParams.set('state', state);
   authorizeUrl.searchParams.set('code_challenge', codeChallenge);
   authorizeUrl.searchParams.set('code_challenge_method', 'S256');
-  authorizeUrl.searchParams.set('prompt', 'consent');
-
   return createRedirectResponse(authorizeUrl.toString(), [oauthCookie]);
 }
 
