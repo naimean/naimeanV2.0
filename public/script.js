@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
       window.history.replaceState({}, document.title, nextPath);
       return authOutcome.trim().toLowerCase();
     } catch (_error) {
+      // If URL parsing/history update fails, continue without auth callback messaging.
       return '';
     }
   }
@@ -704,7 +705,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const fallback = 'AUTH> Discord sign-in did not complete. Type C:\\Naimean\\login to try again.';
     const authErrors = {
-      missing: fallback,
       expired: 'AUTH> Discord sign-in expired. Type C:\\Naimean\\login to try again.',
       state: 'AUTH> Discord sign-in security check failed. Type C:\\Naimean\\login to retry.',
       token: 'AUTH> Discord token exchange failed. Type C:\\Naimean\\login to retry.',
