@@ -126,6 +126,7 @@
 - Sanitize and escape all user-generated shoutbox content to prevent XSS. ✅
 - Add secret management and dependency vulnerability scanning in CI. ✅ (dependency-review-action added to PR workflow)
 - Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources. ✅ (hardcoded tool URLs removed from client; /go/* routes added with session auth gate)
+- Wire up automated `wrangler deploy` for both workers in GitHub Actions CI. ✅ (deploy-workers job using cloudflare/wrangler-action@v3.15.0; requires CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID secrets)
 - Add Cloudflare One / Zero Trust Access policies for admin/backdoor operations and any non-public dashboards/endpoints.
 
 ## P1 — Near-Term Priority (Stability + Delivery Confidence)
