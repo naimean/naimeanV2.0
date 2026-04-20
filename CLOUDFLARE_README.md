@@ -227,6 +227,7 @@ wrangler secret put DISCORD_WEBHOOK_URL
 
 | Date | Change | Result |
 |---|---|---|
+| 2026-04-20 | Enforced strict edge security headers on frontend proxy and backend API worker responses | P0 hardening started for CSP/HSTS/secure-header baseline |
 | 2026-04-20 | Added Cloudflare-focused hardening baseline and controls checklist | Security posture standardized after critical-vulnerability remediation |
 | 2026-04-20 | Added route/config drift check for `/board*` and `/uploads/*` paths | Reduced risk of undocumented behavior across Worker layers |
 | 2026-04-20 | Added recommendation to migrate state-changing counter actions away from unauthenticated `GET` | Reduced accidental/abusive triggering risk |
@@ -238,7 +239,7 @@ wrangler secret put DISCORD_WEBHOOK_URL
 ### Prioritized Cloudflare Recommendation Backlog
 
 #### P0 — Immediate
-- Enforce strict edge security controls (CSP/HSTS/secure headers, rate limiting, bot protection).
+- Enforce strict edge security controls (CSP/HSTS/secure headers, rate limiting, bot protection). *(In progress: CSP/HSTS/secure headers now enforced on edge/API responses)*
 - Lock down OAuth/session security (PKCE/state validation and short-lived sessions).
 - Sanitize and escape all user-generated board content.
 - Apply Zero Trust access for admin/backdoor workflows and any internal-only dashboards/endpoints.

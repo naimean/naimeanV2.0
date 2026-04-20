@@ -236,6 +236,7 @@ function createRedirectResponse(location, setCookies = []) {
     headers: {
       Location: location,
       'Cache-Control': 'no-store',
+      ...securityHeaders(),
     },
   });
 
