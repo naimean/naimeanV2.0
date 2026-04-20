@@ -330,15 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function fetchRickrollIncrementCount(urls, options = {}) {
-    try {
-      return await fetchRickrollCount(urls, { ...options, method: 'POST' });
-    } catch (postError) {
-      if (window.NaimeanDiag) {
-        const fallbackSuffix = postError && postError.message ? ` (${postError.message})` : '';
-        window.NaimeanDiag.log('increment: POST failed, retrying with legacy GET' + fallbackSuffix);
-      }
-      return fetchRickrollCount(urls, { ...options, method: 'GET' });
-    }
+    return fetchRickrollCount(urls, { ...options, method: 'POST' });
   }
 
   function setDiscordRickrollCounterVisible(isVisible) {
