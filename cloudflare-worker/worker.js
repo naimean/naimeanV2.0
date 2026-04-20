@@ -95,8 +95,7 @@ function parseAllowedHostnameSuffixes(value) {
   return value
     .split(',')
     .map((entry) => entry.trim().toLowerCase())
-    .filter((entry) => isValidHostnameSuffix(entry))
-    .filter(Boolean);
+    .filter((entry) => isValidHostnameSuffix(entry));
 }
 
 function getAllowedOrigins(env) {
@@ -143,6 +142,9 @@ function isAllowedOrigin(origin, env) {
 
     const hostname = url.hostname.toLowerCase();
     const allowedSuffixes = parseAllowedHostnameSuffixes(env.CORS_ALLOWED_ORIGIN_SUFFIXES);
+    if (allowedSuffixes.length === 0) {
+      return false;
+    }
     return allowedSuffixes.some((suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`));
   } catch (error) {
     if (isNonProductionEnvironment(env)) {
