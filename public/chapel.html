@@ -204,6 +204,8 @@
       mix-blend-mode: lighten;
       filter: blur(9px);
       z-index: 4;
+      opacity: var(--torch-bloom-intensity, 1);
+      transition: opacity 180ms linear;
       background: radial-gradient(
         circle,
         rgba(255, 190, 80, 0.11) 0%,
@@ -232,12 +234,12 @@
       <div class="torch-bloom" aria-hidden="true" style="left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~54.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:50%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:52%;height:6%"></div>
+      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% - 20px);top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - 50px);width:52%;height:6%"></div>
       <!-- Secondary seam bloom glows at lower stitched dark spots -->
       <div class="torch-bloom" aria-hidden="true" style="left:15.8%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="left:76.5%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~58.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:50%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift));width:52%;height:6%"></div>
+      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + 20px);top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - 50px);width:52%;height:6%"></div>
     </div>
   </div>
 
@@ -255,6 +257,8 @@
     const congregationAudio = document.getElementById('congregation-audio');
     const rockRollContinuationMedia = document.getElementById('rock-roll-continuation-media');
     const chapelTvCounter = document.getElementById('chapel-tv-counter');
+    const chapelImage = document.querySelector('.chapel-img');
+    const torchBlooms = Array.from(document.querySelectorAll('.torch-bloom'));
     congregationAudio.volume = 0.04;
     const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
     const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
@@ -275,6 +279,90 @@
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
     let rockRollContinuationPending = false;
+    let torchBloomSampleCanvas = null;
+    let torchBloomSampleContext = null;
+
+    function clampValue(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function ensureTorchBloomSampleContext() {
+      if (!chapelImage || !chapelImage.naturalWidth || !chapelImage.naturalHeight) {
+        return null;
+      }
+
+      if (!torchBloomSampleCanvas) {
+        torchBloomSampleCanvas = document.createElement('canvas');
+        torchBloomSampleContext = torchBloomSampleCanvas.getContext('2d', { willReadFrequently: true });
+      }
+
+      if (!torchBloomSampleContext) {
+        return null;
+      }
+
+      if (torchBloomSampleCanvas.width !== chapelImage.naturalWidth || torchBloomSampleCanvas.height !== chapelImage.naturalHeight) {
+        torchBloomSampleCanvas.width = chapelImage.naturalWidth;
+        torchBloomSampleCanvas.height = chapelImage.naturalHeight;
+      }
+
+      torchBloomSampleContext.clearRect(0, 0, torchBloomSampleCanvas.width, torchBloomSampleCanvas.height);
+      torchBloomSampleContext.drawImage(chapelImage, 0, 0, torchBloomSampleCanvas.width, torchBloomSampleCanvas.height);
+      return torchBloomSampleContext;
+    }
+
+    function updateTorchBloomIntensityFromImage() {
+      if (!chapelImage || !torchBlooms.length || !chapelImage.complete) {
+        return;
+      }
+
+      const context = ensureTorchBloomSampleContext();
+      if (!context) {
+        return;
+      }
+
+      const imageRect = chapelImage.getBoundingClientRect();
+      if (!imageRect.width || !imageRect.height) {
+        return;
+      }
+
+      const maxX = chapelImage.naturalWidth - 1;
+      const maxY = chapelImage.naturalHeight - 1;
+
+      torchBlooms.forEach(function (bloom) {
+        const bloomRect = bloom.getBoundingClientRect();
+        const centerX = bloomRect.left + (bloomRect.width / 2);
+        const centerY = bloomRect.top + (bloomRect.height / 2);
+        const normalizedX = clampValue((centerX - imageRect.left) / imageRect.width, 0, 1);
+        const normalizedY = clampValue((centerY - imageRect.top) / imageRect.height, 0, 1);
+        const sampleX = Math.round(normalizedX * maxX);
+        const sampleY = Math.round(normalizedY * maxY);
+        const sample = context.getImageData(sampleX, sampleY, 1, 1).data;
+        const luminance = ((0.2126 * sample[0]) + (0.7152 * sample[1]) + (0.0722 * sample[2])) / 255;
+        const intensity = clampValue(0.24 + (luminance * 0.66), 0.16, 0.9);
+        bloom.style.setProperty('--torch-bloom-intensity', intensity.toFixed(3));
+      });
+    }
+
+    function bindTorchBloomIntensityUpdates() {
+      if (!chapelImage || !torchBlooms.length) {
+        return;
+      }
+
+      let resizeTimer = null;
+      function scheduleUpdate() {
+        window.requestAnimationFrame(updateTorchBloomIntensityFromImage);
+      }
+
+      chapelImage.addEventListener('load', scheduleUpdate);
+      window.addEventListener('resize', function () {
+        if (resizeTimer !== null) {
+          clearTimeout(resizeTimer);
+        }
+        resizeTimer = setTimeout(scheduleUpdate, 120);
+      });
+      window.addEventListener('orientationchange', scheduleUpdate);
+      scheduleUpdate();
+    }
 
     function buildRickrollApiUrls(pathname) {
       const candidates = [];
@@ -610,6 +698,7 @@
 
     renderRickrollCount();
     startRockRollContinuation(consumeRockRollContinuation());
+    bindTorchBloomIntensityUpdates();
 
     // Fallback reveal in case full window load is delayed by media/network activity.
     const LOAD_REVEAL_FALLBACK_MS = 1200;
