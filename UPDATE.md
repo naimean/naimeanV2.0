@@ -60,6 +60,7 @@
 - Added Discord OAuth callback result handling in the boot/shoutbox flow with one-time URL cleanup and status feedback
 - Started next P0 security item by enforcing edge security headers (CSP/HSTS + baseline browser hardening headers) across frontend and API worker responses
 - Started the next priority hardening item by moving counter write flow to POST-first (`/increment`, `/hit`) with legacy GET fallback compatibility
+- Started the next priority hardening item by tightening CORS allowlisting with environment-aware origin controls and no default wildcard suffix matching
 
 ## 2026-04-15
 - Data light moved down 3px and right 5px for precise placement
