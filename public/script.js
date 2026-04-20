@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const AUTH_DISCORD_LOGIN_PATH = '/auth/discord/login';
   const AUTH_LOGOUT_API_URL = '/auth/logout';
   const AUTH_RESULT_QUERY_PARAM = 'auth';
+  const SNOW_BUTTON_URL = 'https://recoverycoa.okta.com/app/servicenow_ud/exk76nqofjVLeLdqj697/sso/saml?SAMLRequest=nVNdb%2BIwEPwrkd%2FzCQSwCFIu6HRIXA9Brg%2F3UrnOpnWb2MHrBPrvLwlpy0OLrvfqnZ2dmV0vkJVFUNG4No9yB4ca0FinspBIz5WI1FpSxVAglawEpIbTffxzQwPHo5VWRnFVECtGBG2EkomSWJeg96AbweH3bhORR2MqpK6rgasG9AtXzMFz3Zbq6HBVupI1FXsAJ1PEWrUqhGQd3cfN6tmwvotVlTswtUR3debC6XkayoPKn243sMkOT%2BF86iIqt%2FNDrO9Kc%2BjdRiRnBQKx1quI7G8SPgJvOg4nMJ5NvOk8zOfBOBgFo3vg3PNmoxaIW4YoGnhvRaxhLdEwaSISeEFoe2M78FJ%2FRoM59X0nnIR%2FiLUdcvomZCbkw%2FVQ788gpD%2FSdGtvf%2B3TnqARGeibFv31PG9BY59lS0%2BWi36ztNeuL5d9XRZ73TBZ%2FsP8hXs5ZZhZ0U7%2FerVVheAvVlwU6phoYKb1ZHQN%2FXpKZj4X4jt%2B%2FyIyO%2B%2BhFEomijjLNCAS923QcMuQ9btuj9LAyViJKiumBXZZwIlx85bGJSwpWq87yP8rm6swTnnH3T53l3RUOusuA3irM9VMYqW0eU3uI0XLofiJv%2Ffy5X9e%2FgU%3D&RelayState=62e1d93a83d883105c84f2efeeaad314';
   const createUnauthenticatedSession = () => ({ authenticated: false, user: null });
   let authSession = createUnauthenticatedSession();
 
@@ -1195,7 +1196,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (bootSnowBtn) {
     bootSnowBtn.addEventListener('click', function() {
-      window.open('/go/snow', '_blank', 'noopener,noreferrer');
+      window.open(SNOW_BUTTON_URL, '_blank', 'noopener,noreferrer');
     });
   }
 
