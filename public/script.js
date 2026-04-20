@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
   ]);
   const POWER_BUTTON_COOLDOWN_MS = 5000;
   const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
+  const AUTH_LOGIN_COMMANDS = new Set(['login', 'signin', 'discord']);
+  const AUTH_LOGOUT_COMMANDS = new Set(['logout', 'signout']);
   const MINI_GAME_MIN_GUESS = 1;
   const MINI_GAME_MAX_GUESS = 9;
   const MINI_GAME_MAX_ATTEMPTS = 5;
@@ -114,9 +116,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const DISCORD_INVITE_REDIRECT_PENDING_KEY = 'naimean-discord-invite-redirect-pending';
   const PRANK_REDIRECT_DELAY_MS = 5000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
+  const AUTH_SESSION_API_URL = '/auth/session';
+  const AUTH_DISCORD_LOGIN_PATH = '/auth/discord/login';
+  const AUTH_LOGOUT_API_URL = '/auth/logout';
   const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
   const CAP_EX_URL = 'https://app.smartsheet.com/b/form/70b07591b76a4289bc6f5d5e1aabac91?';
   const SNOW_URL = 'https://recoverycoa.service-now.com/now/nav/ui/classic/params/target/incident_list.do?sysparm_query=stateNOT%20IN6%2C7%2C8%5Eassigned_to%3D7fc866ea1b1d7110153886a7624bcbc0&sysparm_first_row=1&sysparm_view=';
+  const createUnauthenticatedSession = () => ({ authenticated: false, user: null });
+  let authSession = createUnauthenticatedSession();
 
   function buildRickrollApiUrls(pathname) {
     const candidates = [];
@@ -614,6 +621,90 @@ document.addEventListener('DOMContentLoaded', function() {
     appendShoutboxMessage('SYSTEM> You can still type C:\\Naimean\\please at any time.');
   }
 
+  function getReturnToPath() {
+    const pathname = window.location.pathname || '/';
+    const search = window.location.search || '';
+    const hash = window.location.hash || '';
+    return `${pathname}${search}${hash}`;
+  }
+
+  function beginDiscordLogin() {
+    const returnTo = encodeURIComponent(getReturnToPath());
+    window.location.assign(`${AUTH_DISCORD_LOGIN_PATH}?returnTo=${returnTo}`);
+  }
+
+  async function refreshAuthSession() {
+    try {
+      const response = await fetch(AUTH_SESSION_API_URL, {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      if (!response.ok) {
+        authSession = createUnauthenticatedSession();
+        return authSession;
+      }
+      const payload = await response.json();
+      authSession = {
+        authenticated: Boolean(payload && payload.authenticated),
+        user: payload && payload.user ? payload.user : null,
+      };
+      return authSession;
+    } catch (_) {
+      authSession = createUnauthenticatedSession();
+      return authSession;
+    }
+  }
+
+  function appendAuthStatusMessage() {
+    const displayName = authSession && authSession.user
+      ? (authSession.user.displayName || authSession.user.username || authSession.user.id || 'Discord user')
+      : '';
+    if (authSession && authSession.authenticated) {
+      appendShoutboxMessage(`AUTH> Signed in as ${displayName}.`);
+      appendShoutboxMessage('AUTH> Type C:\\Naimean\\logout to sign out.');
+      return;
+    }
+    appendShoutboxMessage('AUTH> Not signed in. Type C:\\Naimean\\login to sign in with Discord.');
+  }
+
+  async function showAuthStatusInShoutbox() {
+    await refreshAuthSession();
+    appendAuthStatusMessage();
+  }
+
+  async function handleAuthCommand(text) {
+    if (!text.startsWith(FINAL_PREFIX)) {
+      return false;
+    }
+
+    const command = text.slice(FINAL_PREFIX.length).trim().toLowerCase();
+    if (!command) {
+      return false;
+    }
+
+    if (AUTH_LOGIN_COMMANDS.has(command)) {
+      appendShoutboxMessage('AUTH> Redirecting to Discord sign-in...');
+      beginDiscordLogin();
+      return true;
+    }
+
+    if (AUTH_LOGOUT_COMMANDS.has(command)) {
+      try {
+        await fetch(AUTH_LOGOUT_API_URL, {
+          method: 'POST',
+          credentials: 'same-origin',
+        });
+      } catch (_) {}
+      authSession = createUnauthenticatedSession();
+      appendShoutboxMessage('AUTH> Signed out.');
+      appendShoutboxMessage('AUTH> Type C:\\Naimean\\login to sign back in.');
+      return true;
+    }
+
+    return false;
+  }
+
   function startMiniGame() {
     miniGameActive = true;
     miniGameAttempts = 0;
@@ -722,6 +813,7 @@ document.addEventListener('DOMContentLoaded', function() {
       miniGameTarget = 0;
       miniGameAttempts = 0;
       resetShoutboxMessages();
+      await showAuthStatusInShoutbox();
       resetFinalInput();
       shoutboxInput.focus();
     }
@@ -1178,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (shoutboxForm && shoutboxInput) {
-      shoutboxForm.addEventListener('submit', function(e) {
+      shoutboxForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const text = shoutboxInput.value.trim();
@@ -1188,6 +1280,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (FINAL_UNLOCK_VALUES.has(text)) {
           runPleaseSequence();
+          return;
+        }
+
+        if (await handleAuthCommand(text)) {
+          resetFinalInput();
           return;
         }
 

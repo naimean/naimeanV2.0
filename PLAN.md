@@ -28,6 +28,7 @@
 ## In Progress
 - Debug overlay alignment and button clickability
 - Shrink and center shadow box, align overlays
+- Integrate Discord OAuth foundation routes and shoutbox auth command flow
 
 ## Next Steps
 1. Add entertaining mini-games or interactive experiences
