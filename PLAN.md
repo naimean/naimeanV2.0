@@ -131,7 +131,7 @@
 ## P1 — Near-Term Priority (Stability + Delivery Confidence)
 - ✅ Align Cloudflare route documentation/config with actual proxy behavior (`/board*` and `/uploads/*` routes removed; docs now match `src/index.js` PROXY_PATHS and `wrangler.toml` `run_worker_first`).
 - Replace state-changing `GET` counter endpoints (`/hit`, `/increment`) with `POST` (or require signed requests) to reduce abuse and accidental triggering.
-- Tighten CORS allowlisting by environment and remove broad wildcard origins (e.g., unrestricted `*.pages.dev`) unless strictly required.
+- Tighten CORS allowlisting by environment and remove broad wildcard origins (e.g., unrestricted `*.pages.dev`) unless strictly required. ✅ (production suffix matching now requires explicit opt-in)
 - Add Cloudflare-focused CI checks (wrangler config validation, route smoke tests, and endpoint contract checks) on pull requests.
 - Add automated test coverage for core flows (boot, overlays, auth, shoutbox posting).
 - Set up linting/formatting checks for HTML/CSS/JS in pull requests.
