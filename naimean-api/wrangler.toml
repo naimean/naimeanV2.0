@@ -1,3 +1,24 @@
+# ⚠️  Before deploying this worker, complete the following steps:
+#
+# 1. Confirm the database_id and KV namespace id below match the IDs shown in the
+#    Cloudflare dashboard (Workers & Pages → D1 / KV).
+#
+# 2. Run the D1 migration once to initialise the entries table:
+#      wrangler d1 execute naimean-db --file=naimean-api/migrations/0000_create_entries.sql
+#
+# 3. The Durable Object migration in [[migrations]] below is applied automatically
+#    by wrangler on first deploy — no manual step needed.
+#
+# 4. Set the required API token secret (never commit the value):
+#      wrangler secret put API_TOKEN   # strong random string, e.g. openssl rand -hex 32
+#
+#    Optionally, restrict CORS to specific origins via environment variable:
+#      wrangler secret put CORS_ALLOWED_ORIGINS   # comma-separated, e.g. https://naimean.com
+#
+# 5. Deploy:
+#      wrangler deploy
+#
+
 name = "naimean-api"
 main = "src/worker.js"
 compatibility_date = "2026-04-14"

@@ -2,22 +2,32 @@ name = "barrelrollcounter-worker"
 main = "worker.js"
 compatibility_date = "2026-04-18"
 
-# ⚠️  Before deploying, replace <DATABASE_ID> below with the actual ID shown in
+# ⚠️  Before deploying, confirm the database_id below matches the ID shown in
 #     the Cloudflare dashboard under Workers & Pages → D1 → barrelroll-counter-db → Database ID.
 #
-# Then run once to initialise the tables:
+# Then run once to initialise all tables (counter, layout overrides, registered users):
 #   wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
 #
-# Set the router secret (never commit the value — it is stored by Cloudflare):
-#   wrangler secret put ROUTER_SECRET
+# Set ALL required secrets before first deploy (never commit values — stored by Cloudflare):
 #
-# Restrict POST /layout to a single Discord account (your numeric Discord user ID):
-#   wrangler secret put OWNER_DISCORD_ID
+#   Shared internal-routing secret (must match the naimeanv2 edge router):
+#     wrangler secret put ROUTER_SECRET
 #
-# Set the authenticated redirect URLs for internal tools (never commit values):
-#   wrangler secret put TOOL_URL_WHITEBOARD
-#   wrangler secret put TOOL_URL_CAPEX
-#   wrangler secret put TOOL_URL_SNOW
+#   Session token signing key (generate a long random string, e.g. openssl rand -hex 32):
+#     wrangler secret put SESSION_SECRET
+#
+#   Discord OAuth app credentials (from https://discord.com/developers/applications):
+#     wrangler secret put DISCORD_CLIENT_ID
+#     wrangler secret put DISCORD_CLIENT_SECRET
+#     wrangler secret put DISCORD_REDIRECT_URI   # e.g. https://naimean.com/auth/discord/callback
+#
+#   Restrict POST /layout to a single Discord account (your numeric Discord user ID):
+#     wrangler secret put OWNER_DISCORD_ID
+#
+#   Authenticated redirect targets for the /go/* tool launcher:
+#     wrangler secret put TOOL_URL_WHITEBOARD
+#     wrangler secret put TOOL_URL_CAPEX
+#     wrangler secret put TOOL_URL_SNOW
 #
 # And deploy with:
 #   wrangler deploy
