@@ -1228,7 +1228,9 @@
       }, 500);
     });
 
-    const TRAPDOOR_RETURN_PATH = '/bedroom_antechamber.html';
+    const TRAPDOOR_DESTINATION_PATH = '/bedroom_antechamber.html';
+    const DISCORD_AUTH_GATE_URL = '/auth/discord/login?returnTo=' + encodeURIComponent(TRAPDOOR_DESTINATION_PATH);
+    const FADE_TRANSITION_DURATION_MS = 900;
 
     function navigateToSite() {
       if (isNavigatingFromChapel) {
@@ -1236,7 +1238,6 @@
       }
       isNavigatingFromChapel = true;
 
-      const discordAuthGateUrl = '/auth/discord/login?returnTo=' + encodeURIComponent(TRAPDOOR_RETURN_PATH);
       playDoorOpeningSound();
       congregationAudio.pause();
       if (rockRollContinuationMedia) {
@@ -1254,22 +1255,23 @@
       })
         .then(function (response) {
           if (!response.ok) {
-            throw new Error('Auth check failed');
+            throw new Error('Auth check failed with status ' + response.status);
           }
           return response.json();
         })
         .then(function (payload) {
-          const nextLocation = payload && payload.authenticated === true
-            ? 'bedroom_antechamber.html'
-            : discordAuthGateUrl;
+          const nextLocation = payload.authenticated === true
+            ? TRAPDOOR_DESTINATION_PATH
+            : DISCORD_AUTH_GATE_URL;
           setTimeout(function () {
             window.location.assign(nextLocation);
-          }, 900);
+          }, FADE_TRANSITION_DURATION_MS);
         })
-        .catch(function () {
+        .catch(function (error) {
+          console.warn('Trapdoor auth check failed, redirecting to Discord auth gate.', error);
           setTimeout(function () {
-            window.location.assign(discordAuthGateUrl);
-          }, 900);
+            window.location.assign(DISCORD_AUTH_GATE_URL);
+          }, FADE_TRANSITION_DURATION_MS);
         });
     }
 
