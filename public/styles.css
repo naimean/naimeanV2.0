@@ -561,6 +561,79 @@ body {
   z-index: 3;
 }
 
+.discord-auth-chip {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: calc(100% - 20px);
+}
+
+.discord-auth-login-btn {
+  border: 1px solid rgba(142, 240, 178, 0.8);
+  border-radius: 999px;
+  background: rgba(6, 14, 8, 0.72);
+  color: #8ef0b2;
+  font-family: 'VT323', monospace;
+  font-size: 1em;
+  line-height: 1;
+  padding: 4px 12px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.discord-auth-login-btn:hover,
+.discord-auth-login-btn:focus-visible {
+  background: rgba(28, 68, 38, 0.92);
+  box-shadow: 0 0 0 2px rgba(142, 240, 178, 0.25);
+  outline: none;
+}
+
+.discord-auth-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.discord-auth-name {
+  border: 1px solid rgba(142, 240, 178, 0.8);
+  border-radius: 999px;
+  background: rgba(6, 14, 8, 0.72);
+  color: #8ef0b2;
+  padding: 3px 9px 2px;
+  max-width: 15ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.discord-auth-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(142, 240, 178, 0.8);
+  background: rgba(6, 14, 8, 0.72);
+  color: #8ef0b2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95em;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+.discord-auth-avatar-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
 .prank-video-overlay {
   position: absolute;
   inset: 0;
