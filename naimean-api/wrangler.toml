@@ -3,24 +3,26 @@ main = "src/worker.js"
 compatibility_date = "2026-04-14"
 compatibility_flags = ["nodejs_compat"]
 
-# workers.dev subdomain enabled for testing/preview (naimean-api.naimean.workers.dev)
-workers_dev = true
-
-# Route: maps naimean.com/api/* to this Worker
 [[routes]]
 pattern = "naimean.com/api/*"
 zone_name = "naimean.com"
 
-# D1 database binding — accessible as env.DB in worker.js
 [[d1_databases]]
-binding = "DB"                          # Referenced as env.DB in worker.js
+binding = "DB"
 database_name = "naimean-db"
 database_id = "0871f90d-f7e3-467a-a1f9-4e74ac8aef42"
 
-# ⚠️  KV namespace binding — accessible as env.KV in worker.js
-# Create the namespace first, then paste the ID below:
-#   wrangler kv namespace create "KV"
-#
-# [[kv_namespaces]]
-# binding = "KV"
-# id = "<REPLACE_WITH_KV_NAMESPACE_ID>"
+[[kv_namespaces]]
+binding = "KV"
+id = "dff7175059ce478eab8c910949ca330f"
+
+[[durable_objects.bindings]]
+name = "NAIMEAN_AGENT"
+class_name = "NaimeanAgent"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["NaimeanAgent"]
+
+[limits]
+cpu_ms = 200
