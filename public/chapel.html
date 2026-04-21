@@ -336,8 +336,6 @@
       top: 12%;
       width: 18px;
       height: 72%;
-      --sauce-drip-mid-y: 5480%;
-      --sauce-drip-end-y: 5630%;
       transform: translateX(-50%);
       pointer-events: none;
       z-index: 6;
@@ -364,19 +362,23 @@
     @keyframes sauce-drip-fall {
       0% {
         opacity: 0;
+        top: 0;
         transform: translate(-50%, 0) scale(0.5);
       }
       10% {
         opacity: 0.95;
-        transform: translate(-50%, 6%) scale(0.82, 1.2);
+        top: 2%;
+        transform: translate(-50%, 0) scale(0.82, 1.2);
       }
       80% {
         opacity: 0.98;
-        transform: translate(-50%, var(--sauce-drip-mid-y)) scale(0.9, 1.26);
+        top: calc(100% - 24px);
+        transform: translate(-50%, 0) scale(0.9, 1.26);
       }
       100% {
         opacity: 0;
-        transform: translate(-50%, var(--sauce-drip-end-y)) scale(1.02, 0.82);
+        top: calc(100% - 10px);
+        transform: translate(-50%, 0) scale(1.02, 0.82);
       }
     }
 
@@ -674,7 +676,7 @@
 
     function getNextSauceDripDelayMs() {
       const intervalRange = SAUCE_DRIP_MAX_INTERVAL_MS - SAUCE_DRIP_MIN_INTERVAL_MS;
-      const randomOffset = Math.min(intervalRange, Math.floor(Math.random() * (intervalRange + 1)));
+      const randomOffset = Math.floor(Math.random() * (intervalRange + 1));
       return SAUCE_DRIP_MIN_INTERVAL_MS + randomOffset;
     }
 
