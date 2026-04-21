@@ -324,6 +324,8 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     #hotspot-move-tool {
@@ -1259,19 +1261,27 @@
     document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
     setupHotspotTools();
 
-    function openAudioAsset(assetPath) {
-      window.location.assign(assetPath);
+    function playHotspotAudio(audioElement) {
+      if (!audioElement) {
+        return;
+      }
+
+      audioElement.currentTime = 0;
+      const playPromise = audioElement.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function () {});
+      }
     }
 
     // Invisible congregation button clicks → audio files
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
     [
-      ['crusty-button', 'assets/krusty_laugh.mp3'],
-      ['goose-button', 'assets/goose_honk.mp3'],
-      ['morty-button', 'assets/morty_aw_jeez.mp3'],
-      ['rick-button', 'assets/rick_nope.mp3']
-    ].forEach(function ([buttonId, assetPath]) {
-      document.getElementById(buttonId).addEventListener('click', function () { openAudioAsset(assetPath); });
+      ['crusty-button', document.getElementById('congregation-audio-crusty')],
+      ['goose-button', document.getElementById('congregation-audio-goose')],
+      ['morty-button', document.getElementById('congregation-audio-morty')],
+      ['rick-button', document.getElementById('congregation-audio-rick')]
+    ].forEach(function ([buttonId, audioElement]) {
+      document.getElementById(buttonId).addEventListener('click', function () { playHotspotAudio(audioElement); });
     });
 
     // Enter key → same behavior
