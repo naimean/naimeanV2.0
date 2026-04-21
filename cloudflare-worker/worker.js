@@ -663,10 +663,16 @@ async function handleGetLayout(request, env, origin) {
 }
 
 async function handlePostLayout(request, env, origin) {
-  // Require a valid Discord auth session to save layout changes.
+  // Require a valid auth session to save layout changes.
   const session = await getSessionFromRequest(request, env);
   if (!session) {
     return jsonResponse({ error: 'Unauthorized' }, 401, origin, env);
+  }
+
+  // If OWNER_DISCORD_ID is configured, only that user may write layout changes.
+  const ownerId = typeof env.OWNER_DISCORD_ID === 'string' ? env.OWNER_DISCORD_ID.trim() : '';
+  if (ownerId && session.sub !== ownerId) {
+    return jsonResponse({ error: 'Forbidden' }, 403, origin, env);
   }
 
   let body;

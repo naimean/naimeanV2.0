@@ -11,6 +11,9 @@ compatibility_date = "2026-04-18"
 # Set the router secret (never commit the value — it is stored by Cloudflare):
 #   wrangler secret put ROUTER_SECRET
 #
+# Restrict POST /layout to a single Discord account (your numeric Discord user ID):
+#   wrangler secret put OWNER_DISCORD_ID
+#
 # Set the authenticated redirect URLs for internal tools (never commit values):
 #   wrangler secret put TOOL_URL_WHITEBOARD
 #   wrangler secret put TOOL_URL_CAPEX
