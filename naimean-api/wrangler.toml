@@ -25,4 +25,4 @@ tag = "v1"
 new_sqlite_classes = ["NaimeanAgent"]
 
 [limits]
-cpu_ms = 50
+cpu_ms = 200

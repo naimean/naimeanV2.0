@@ -1,5 +1,7 @@
 import { Agent, routeAgentRequest } from "agents";
 
+const TOKEN_ENCODER = new TextEncoder();
+
 export class NaimeanAgent extends Agent {
   #schemaReady = false;
   #schemaInitPromise = null;
@@ -137,9 +139,8 @@ function unauthorized(request, env) {
 }
 
 function constantTimeEqual(a, b) {
-  const encoder = new TextEncoder();
-  const left = encoder.encode(String(a));
-  const right = encoder.encode(String(b));
+  const left = TOKEN_ENCODER.encode(String(a));
+  const right = TOKEN_ENCODER.encode(String(b));
   const maxLength = Math.max(left.length, right.length);
   let diff = left.length ^ right.length;
 
@@ -155,7 +156,7 @@ function constantTimeEqual(a, b) {
 function isAuthorized(request, env) {
   const expected = env.API_TOKEN;
   if (!expected) {
-    return true;
+    return false;
   }
   const auth = request.headers.get("Authorization") || "";
   return constantTimeEqual(auth, `Bearer ${expected}`);
@@ -170,7 +171,7 @@ export default {
       return jsonResponse(request, env, null, 204);
     }
 
-    if (path === "/health" || path === "/status") {
+    if (path === "/health") {
       return jsonResponse(request, env, {
         ok: true,
         service: "naimean-api",

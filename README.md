@@ -259,10 +259,11 @@ A standalone Cloudflare Worker deployed separately from this repo. Route: `naime
 | Method | Path | Description | Body |
 |---|---|---|---|
 | `GET` | `/api/health` | Worker health check | — |
-| `GET` | `/api/status` | Worker + DO status info | — |
-| `GET` | `/api/:instance/status` | Increment and return per-instance request count | — |
+| `GET` | `/api/status` | Increment and return per-instance request count | — |
 | `POST` | `/api/chat` | Echo chat message and persist history | `{ "message": "..." }` |
 | `GET` | `/api/history` | Return persisted chat history for the instance | — |
+
+`/api/health` is public; all other `naimean-api` endpoints require `Authorization: Bearer <API_TOKEN>`.
 
 ### Database
 
