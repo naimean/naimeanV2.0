@@ -30,6 +30,11 @@ jobs:
           node --check public/script.js
           node --check public/diagnostics.js
 
+      - name: Check naimean-api worker JS syntax
+        run: |
+          node --check naimean-api/src/worker.js
+          node --check naimean-api/src/agents/naimean-agent.js
+
       - name: Run worker unit tests
         run: node --test cloudflare-worker/worker.test.js
 
@@ -51,6 +56,13 @@ jobs:
           grep -q '\[\[d1_databases\]\]' cloudflare-worker/wrangler.toml
           # Confirm the D1 schema migration file exists
           test -f cloudflare-worker/schema.sql
+          # Validate naimean-api wrangler.toml required fields
+          grep -q 'name' naimean-api/wrangler.toml
+          grep -q 'main' naimean-api/wrangler.toml
+          grep -qE 'compatibility_date = "[0-9]{4}-[0-9]{2}-[0-9]{2}"' naimean-api/wrangler.toml
+          grep -q '\[\[d1_databases\]\]' naimean-api/wrangler.toml
+          # Confirm the naimean-api migration file exists
+          test -f naimean-api/migrations/0000_create_entries.sql
 
       - name: Check bidirectional route alignment (PROXY_PATHS ↔ run_worker_first)
         run: node scripts/check-route-alignment.js
@@ -165,3 +177,10 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.84.0"
           workingDirectory: cloudflare-worker
+
+      - name: Deploy naimean-api worker
+        uses: cloudflare/wrangler-action@v3.15.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: naimean-api
