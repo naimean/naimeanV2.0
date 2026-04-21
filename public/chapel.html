@@ -206,6 +206,15 @@
       top: calc(77% + 15px);
       width: calc(34% + 140px);
       height: max(calc(16% - 190px), 24px);
+      outline: none;
+      box-shadow: none;
+    }
+
+    .trapdoor-btn:focus,
+    .trapdoor-btn:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.9);
+      outline-offset: 2px;
+      box-shadow: none;
     }
 
     .congregation-btn:focus-visible {
@@ -1485,9 +1494,9 @@
           }, FADE_TRANSITION_DURATION_MS);
         })
         .catch(function (error) {
-          console.warn('Trapdoor auth check failed, redirecting to Discord auth gate.', error);
+          console.warn('Trapdoor auth check failed, falling back to default destination.', error);
           setTimeout(function () {
-            window.location.assign(DISCORD_AUTH_GATE_URL);
+            window.location.assign(TRAPDOOR_DESTINATION_PATH);
           }, FADE_TRANSITION_DURATION_MS);
         });
     }
