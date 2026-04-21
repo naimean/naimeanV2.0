@@ -287,6 +287,7 @@ function makeContractEnv(overrides = {}) {
     DB: mockDb,
     APP_ENV: 'test',
     CORS_ALLOWED_ORIGINS: 'http://localhost',
+    RATE_LIMIT_ENABLED: 'false', // disabled for contract tests; see dedicated rate-limit tests below
     ...overrides,
   };
 }
@@ -353,4 +354,83 @@ test('contract: API responses carry required security headers', async () => {
   assert.ok(res.headers.get('Content-Security-Policy'), 'CSP header must be set');
   assert.strictEqual(res.headers.get('X-Content-Type-Options'), 'nosniff');
   assert.strictEqual(res.headers.get('X-Frame-Options'), 'DENY');
+});
+
+// ─── Rate limiting tests ──────────────────────────────────────────────────────
+// Each test uses a distinct CF-Connecting-IP so in-process state from one test
+// cannot affect another.  Rate limiting is explicitly enabled via the env flag.
+
+function makeRlRequest(method, path, ip) {
+  return worker.fetch(
+    new Request(`http://localhost${path}`, {
+      method,
+      headers: { 'CF-Connecting-IP': ip },
+    }),
+    makeContractEnv({ RATE_LIMIT_ENABLED: 'true' }),
+  );
+}
+
+test('rate limit: POST /hit allows 10 requests then returns 429', async () => {
+  const ip = '198.51.100.1';
+  for (let i = 0; i < 10; i++) {
+    const res = await makeRlRequest('POST', '/hit', ip);
+    assert.strictEqual(res.status, 200, `request ${i + 1} should succeed`);
+  }
+  const throttled = await makeRlRequest('POST', '/hit', ip);
+  assert.strictEqual(throttled.status, 429);
+  assert.ok(throttled.headers.get('Retry-After'), 'Retry-After header must be present');
+});
+
+test('rate limit: POST /increment shares the /hit bucket', async () => {
+  const ip = '198.51.100.2';
+  // Exhaust the hit bucket via /hit
+  for (let i = 0; i < 10; i++) {
+    await makeRlRequest('POST', '/hit', ip);
+  }
+  // /increment from the same IP must be throttled (same 'hit' bucket)
+  const res = await makeRlRequest('POST', '/increment', ip);
+  assert.strictEqual(res.status, 429);
+});
+
+test('rate limit: different IPs are tracked independently', async () => {
+  const ip1 = '198.51.100.3';
+  const ip2 = '198.51.100.4';
+  for (let i = 0; i < 10; i++) {
+    await makeRlRequest('POST', '/hit', ip1);
+  }
+  // ip1 is exhausted but ip2 should still be allowed
+  const res = await makeRlRequest('POST', '/hit', ip2);
+  assert.strictEqual(res.status, 200);
+});
+
+test('rate limit: 429 response carries required security headers', async () => {
+  const ip = '198.51.100.5';
+  for (let i = 0; i < 10; i++) {
+    await makeRlRequest('POST', '/hit', ip);
+  }
+  const res = await makeRlRequest('POST', '/hit', ip);
+  assert.strictEqual(res.status, 429);
+  assert.ok(res.headers.get('Content-Security-Policy'), 'CSP header must be set on 429');
+  assert.strictEqual(res.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.strictEqual(res.headers.get('X-Frame-Options'), 'DENY');
+});
+
+test('rate limit: GET /auth/discord/login is capped at 5 requests per minute', async () => {
+  const ip = '198.51.100.6';
+  for (let i = 0; i < 5; i++) {
+    const res = await makeRlRequest('GET', '/auth/discord/login', ip);
+    assert.notStrictEqual(res.status, 429, `request ${i + 1} must not be throttled`);
+  }
+  const throttled = await makeRlRequest('GET', '/auth/discord/login', ip);
+  assert.strictEqual(throttled.status, 429);
+});
+
+test('rate limit: GET /get allows 60 requests then returns 429', async () => {
+  const ip = '198.51.100.7';
+  for (let i = 0; i < 60; i++) {
+    const res = await makeRlRequest('GET', '/get', ip);
+    assert.strictEqual(res.status, 200, `request ${i + 1} should succeed`);
+  }
+  const throttled = await makeRlRequest('GET', '/get', ip);
+  assert.strictEqual(throttled.status, 429);
 });
