@@ -2,20 +2,28 @@ import { Agent, routeAgentRequest } from "agents";
 
 export class NaimeanAgent extends Agent {
   #schemaReady = false;
+  #schemaInitPromise = null;
 
   async ensureSchema() {
     if (this.#schemaReady) {
       return;
     }
-    await this.sql`
-      CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        role TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      )
-    `;
-    this.#schemaReady = true;
+
+    if (!this.#schemaInitPromise) {
+      this.#schemaInitPromise = (async () => {
+        await this.sql`
+          CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+          )
+        `;
+        this.#schemaReady = true;
+      })();
+    }
+
+    await this.#schemaInitPromise;
   }
 
   async onRequest(request) {
@@ -23,12 +31,16 @@ export class NaimeanAgent extends Agent {
     const url = new URL(request.url);
 
     if (url.pathname === "/status") {
-      const count = (await this.state.storage.get("request_count")) || 0;
-      await this.state.storage.put("request_count", count + 1);
+      const count = await this.state.storage.transaction(async (txn) => {
+        const current = (await txn.get("request_count")) || 0;
+        const next = current + 1;
+        await txn.put("request_count", next);
+        return next;
+      });
       return Response.json({
         agent: "naimean-agent",
         instance: this.name,
-        requestCount: count + 1,
+        requestCount: count,
         timestamp: new Date().toISOString(),
       });
     }
