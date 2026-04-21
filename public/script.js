@@ -671,9 +671,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     shoutboxMessages.textContent = '';
-    appendShoutboxMessage('SYSTEM> Access granted.');
-    appendShoutboxMessage('SYSTEM> Type C:\\Naimean\\play to launch mini-game mode.');
-    appendShoutboxMessage('SYSTEM> You can still type C:\\Naimean\\please at any time.');
   }
 
   function getReturnToPath() {
@@ -1105,8 +1102,6 @@ document.addEventListener('DOMContentLoaded', function() {
       miniGameTarget = 0;
       miniGameAttempts = 0;
       resetShoutboxMessages();
-      await showAuthStatusInShoutbox();
-      appendAuthOutcomeMessage();
       resetFinalInput();
       shoutboxInput.focus();
     }
@@ -1588,16 +1583,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (FINAL_UNLOCK_VALUES.has(text)) {
           runPleaseSequence();
-          return;
-        }
-
-        if (await handleAuthCommand(text)) {
-          resetFinalInput();
-          return;
-        }
-
-        if (handleMiniGameCommand(text)) {
-          resetFinalInput();
           return;
         }
 
