@@ -60,6 +60,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const shoutboxHintShell = document.getElementById('shoutbox-hint-shell');
   const prankVideoOverlay = document.getElementById('prank-video-overlay');
   const prankVideo = document.getElementById('prank-video');
+  const emailAuthOverlay = document.getElementById('email-auth-overlay');
+  const emailAuthForm = document.getElementById('email-auth-form');
+  const emailAuthTitle = document.getElementById('email-auth-title');
+  const emailAuthEmailInput = document.getElementById('email-auth-email');
+  const emailAuthUsernameField = document.getElementById('email-auth-username-field');
+  const emailAuthUsernameInput = document.getElementById('email-auth-username');
+  const emailAuthPasswordInput = document.getElementById('email-auth-password');
+  const emailAuthError = document.getElementById('email-auth-error');
+  const emailAuthSubmit = document.getElementById('email-auth-submit');
+  const emailAuthCancel = document.getElementById('email-auth-cancel');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
   const BOOT_DEFAULT_SUFFIX = 'Admin';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
@@ -119,6 +129,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const AUTH_SESSION_API_URL = '/auth/session';
   const AUTH_DISCORD_LOGIN_PATH = '/auth/discord/login';
   const AUTH_LOGOUT_API_URL = '/auth/logout';
+  const AUTH_REGISTER_API_URL = '/auth/register';
+  const AUTH_EMAIL_LOGIN_API_URL = '/auth/emaillogin';
+  const AUTH_REGISTER_COMMANDS = new Set(['register', 'signup']);
+  const AUTH_EMAIL_LOGIN_COMMANDS = new Set(['emaillogin', 'email-login']);
   const AUTH_RESULT_QUERY_PARAM = 'auth';
   const createUnauthenticatedSession = () => ({ authenticated: false, user: null });
   let authSession = createUnauthenticatedSession();
@@ -562,7 +576,18 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function isKnownBootUser(normalizedUser) {
-    return Object.prototype.hasOwnProperty.call(BOOT_ROLE_VISIBILITY_BY_USER, normalizedUser);
+    if (Object.prototype.hasOwnProperty.call(BOOT_ROLE_VISIBILITY_BY_USER, normalizedUser)) {
+      return true;
+    }
+    // A user who is already authenticated (via email or Discord) is always
+    // recognised for their own session username so they can pass the boot screen.
+    if (authSession && authSession.authenticated && authSession.user) {
+      const sessionUser = (authSession.user.username || '').trim().toUpperCase();
+      if (sessionUser && sessionUser === normalizedUser) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function resetFinalInput() {
@@ -678,16 +703,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // Pre-fills the boot input with the authenticated user's username so they
+  // are recognised by the bedroom switcher without typing anything.
+  function applySessionToBootInput() {
+    if (!bootInput || !authSession || !authSession.authenticated || !authSession.user) {
+      return;
+    }
+    const username = authSession.user.username;
+    if (!username) {
+      return;
+    }
+    bootInput.value = `${BOOT_PREFIX}${username}`;
+    updateBootQuickLinkVisibility();
+  }
+
   function appendAuthStatusMessage() {
-    const displayName = authSession && authSession.user
-      ? (authSession.user.displayName || authSession.user.username || authSession.user.id || 'Discord user')
+    const user = authSession && authSession.user;
+    const displayName = user
+      ? (user.displayName || user.username || user.id || 'user')
       : '';
     if (authSession && authSession.authenticated) {
       appendShoutboxMessage(`AUTH> Signed in as ${displayName}.`);
       appendShoutboxMessage('AUTH> Type C:\\Naimean\\logout to sign out.');
       return;
     }
-    appendShoutboxMessage('AUTH> Not signed in. Type C:\\Naimean\\login to sign in with Discord.');
+    appendShoutboxMessage('AUTH> Not signed in.');
+    appendShoutboxMessage('AUTH> Type C:\\Naimean\\login to sign in with Discord.');
+    appendShoutboxMessage('AUTH> Type C:\\Naimean\\register to create an email account.');
+    appendShoutboxMessage('AUTH> Type C:\\Naimean\\emaillogin to sign in with email.');
   }
 
   function appendAuthOutcomeMessage() {
@@ -720,6 +763,106 @@ document.addEventListener('DOMContentLoaded', function() {
     appendAuthStatusMessage();
   }
 
+  // ─── Email auth form ──────────────────────────────────────────────────────
+  // 'register' mode shows the username field; 'emaillogin' mode hides it.
+
+  let emailAuthMode = 'register'; // 'register' | 'emaillogin'
+
+  function showEmailAuthForm(mode) {
+    if (!emailAuthOverlay || !emailAuthForm) {
+      return;
+    }
+    emailAuthMode = mode === 'emaillogin' ? 'emaillogin' : 'register';
+    if (emailAuthTitle) {
+      emailAuthTitle.textContent = emailAuthMode === 'emaillogin' ? 'EMAIL SIGN-IN' : 'REGISTER';
+    }
+    if (emailAuthUsernameField) {
+      emailAuthUsernameField.style.display = emailAuthMode === 'register' ? '' : 'none';
+    }
+    if (emailAuthError) {
+      emailAuthError.textContent = '';
+    }
+    if (emailAuthEmailInput) {
+      emailAuthEmailInput.value = '';
+    }
+    if (emailAuthUsernameInput) {
+      emailAuthUsernameInput.value = '';
+    }
+    if (emailAuthPasswordInput) {
+      emailAuthPasswordInput.value = '';
+    }
+    if (emailAuthSubmit) {
+      emailAuthSubmit.disabled = false;
+    }
+    emailAuthOverlay.classList.add('visible');
+    if (emailAuthEmailInput) {
+      emailAuthEmailInput.focus();
+    }
+  }
+
+  function hideEmailAuthForm() {
+    if (!emailAuthOverlay) {
+      return;
+    }
+    emailAuthOverlay.classList.remove('visible');
+    if (shoutboxInput) {
+      shoutboxInput.focus();
+    }
+  }
+
+  if (emailAuthCancel) {
+    emailAuthCancel.addEventListener('click', hideEmailAuthForm);
+  }
+
+  if (emailAuthForm) {
+    emailAuthForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (!emailAuthEmailInput || !emailAuthPasswordInput || !emailAuthError || !emailAuthSubmit) {
+        return;
+      }
+
+      const email = emailAuthEmailInput.value.trim();
+      const password = emailAuthPasswordInput.value;
+      const username = emailAuthUsernameInput ? emailAuthUsernameInput.value.trim() : '';
+
+      emailAuthError.textContent = '';
+      emailAuthSubmit.disabled = true;
+
+      try {
+        const isRegister = emailAuthMode === 'register';
+        const body = isRegister
+          ? { email, username, password }
+          : { email, password };
+        const response = await fetch(
+          isRegister ? AUTH_REGISTER_API_URL : AUTH_EMAIL_LOGIN_API_URL,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(body),
+          },
+        );
+        const payload = await response.json();
+        if (!response.ok) {
+          emailAuthError.textContent = (payload && payload.error) || 'Something went wrong. Please try again.';
+          emailAuthSubmit.disabled = false;
+          return;
+        }
+        // Success — refresh session and pre-populate boot input.
+        hideEmailAuthForm();
+        await refreshAuthSession();
+        applySessionToBootInput();
+        const action = emailAuthMode === 'register' ? 'Account created.' : 'Signed in.';
+        appendShoutboxMessage(`AUTH> ${action} Welcome, ${payload.username}.`);
+        appendShoutboxMessage('AUTH> Your username has been loaded into the boot switcher.');
+        appendShoutboxMessage('AUTH> Type C:\\Naimean\\logout to sign out.');
+      } catch (_) {
+        emailAuthError.textContent = 'Network error. Please try again.';
+        emailAuthSubmit.disabled = false;
+      }
+    });
+  }
+
   async function handleAuthCommand(text) {
     if (!text.startsWith(FINAL_PREFIX)) {
       return false;
@@ -733,6 +876,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (AUTH_LOGIN_COMMANDS.has(command)) {
       appendShoutboxMessage('AUTH> Redirecting to Discord sign-in...');
       beginDiscordLogin();
+      return true;
+    }
+
+    if (AUTH_REGISTER_COMMANDS.has(command)) {
+      showEmailAuthForm('register');
+      return true;
+    }
+
+    if (AUTH_EMAIL_LOGIN_COMMANDS.has(command)) {
+      showEmailAuthForm('emaillogin');
       return true;
     }
 
@@ -896,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootInput) {
       bootInput.style.display = 'inline-block';
       resetBootInput();
+      applySessionToBootInput();
       bootInput.focus();
       selectBootEditableSuffix();
     }
@@ -1226,6 +1380,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     resetBootInput();
     updateBootQuickLinkVisibility();
+    // Eagerly refresh the session so the boot input is pre-populated if the
+    // user is already signed in from a previous visit.
+    refreshAuthSession().then(applySessionToBootInput).catch(function () {});
   }
 
   if (shoutboxInput) {
