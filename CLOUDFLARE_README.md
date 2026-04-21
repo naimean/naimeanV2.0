@@ -142,12 +142,12 @@ Workers routes:
 
 ## GitHub ↔ Cloudflare Workflow
 
-### Current state (target)
+### Current state
 
 | Worker | Deployment method | CI/CD |
 |---|---|---|
 | `naimeanv2` | Wrangler | GitHub Actions |
-| `barrelrollcounter-worker` | Wrangler (recommended) | GitHub Actions (recommended) |
+| `barrelrollcounter-worker` | Wrangler | GitHub Actions |
 
 ### Required GitHub secrets
 
@@ -155,37 +155,42 @@ Add in **Settings → Secrets and variables → Actions**:
 
 | Secret | Purpose |
 |---|---|
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID (secret or Actions variable) |
 | `CLOUDFLARE_API_TOKEN` | Token with Workers deploy permissions |
 
 Never commit these values to the repository.
 
-### Example workflow
+### Existing workflow in this repo
 
-Create `.github/workflows/deploy.yml`:
+Worker deploy automation is already wired in `.github/workflows/github-pages.yml` via the `deploy-workers` job using `cloudflare/wrangler-action@v3.15.0` with explicit Wrangler v4:
 
 ```yaml
-name: Deploy Worker
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build & Deploy Worker
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config wrangler.toml
+deploy-workers:
+  if: github.event_name != 'pull_request'
+  needs: lint-and-check
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: cloudflare/wrangler-action@v3.15.0
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        wranglerVersion: "4.84.0"
+        workingDirectory: .
+    - uses: cloudflare/wrangler-action@v3.15.0
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        wranglerVersion: "4.84.0"
+        workingDirectory: cloudflare-worker
 ```
+
+### `deploy-workers` failure troubleshooting
+
+If logs show `The process '/usr/local/bin/npx' failed with exit code 1`, check the first Cloudflare API error in the same log block:
+- `Authentication error [code: 10000]` means token/account configuration is wrong (not a missing `package.json` dependency issue in this repo).
+- Ensure `CLOUDFLARE_API_TOKEN` has Worker deploy permissions for the target account.
+- Ensure account ID is provided via `CLOUDFLARE_ACCOUNT_ID` secret/variable.
 
 Branch behavior:
 - `main` → auto-deploy
@@ -197,6 +202,9 @@ Branch behavior:
 ## Local Development
 
 ```bash
+# This repo has no package.json and no npm dependencies.
+# Only Wrangler CLI is required for local Worker/dev/deploy commands.
+
 # Install Wrangler
 npm install -g wrangler
 
@@ -228,7 +236,7 @@ wrangler secret put TOOL_URL_SNOW
 ## Contributor Checklist
 
 - Clone the repo
-- Install dependencies
+- Install Wrangler CLI
 - Run `wrangler dev`
 - Create `feature/*` branch
 - Open PR into `main`
@@ -262,7 +270,7 @@ wrangler secret put TOOL_URL_SNOW
 | 2026-04-20 | Added stricter CORS allowlisting guidance per environment | Reduced cross-origin exposure |
 | 2026-04-20 | Added Zero Trust policy requirement for privileged/admin operations | Reduced administrative attack surface |
 | 2026-04-20 | Added D1/R2 backup, restore, and migration safeguards | Improved recoverability and operations resilience |
-| 2026-04-20 | Added `deploy-workers` CI job using `cloudflare/wrangler-action@v3.15.0` to automate `wrangler deploy` for both workers on push to main | Workers now deploy automatically; requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets |
+| 2026-04-20 | Added `deploy-workers` CI job using `cloudflare/wrangler-action@v3.15.0` to automate `wrangler deploy` for both workers on push to main | Workers now deploy automatically; requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (secret/variable) |
 
 ### Prioritized Cloudflare Recommendation Backlog
 
@@ -270,7 +278,7 @@ wrangler secret put TOOL_URL_SNOW
 - Enforce strict edge security controls (CSP/HSTS/secure headers, rate limiting, bot protection). *(In progress: CSP/HSTS/secure headers now enforced on edge/API responses)*
 - Lock down OAuth/session security (PKCE/state validation and short-lived sessions).
 - Sanitize and escape all user-generated board content.
-- ✅ Wire up automated `wrangler deploy` for both workers in GitHub Actions CI. *(deploy-workers job added using cloudflare/wrangler-action@v3.15.0; requires CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID repo secrets)*
+- ✅ Wire up automated `wrangler deploy` for both workers in GitHub Actions CI. *(deploy-workers job added using cloudflare/wrangler-action@v3.15.0; requires CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID secret/variable)*
 - Apply Zero Trust access for admin/backdoor workflows and any internal-only dashboards/endpoints.
 
 #### P1 — Next

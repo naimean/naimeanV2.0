@@ -80,6 +80,19 @@
       -webkit-user-drag: none;
     }
 
+    .chapel-trans-rick {
+      position: absolute;
+      left: calc(46.1% + 20px);
+      top: calc(54.8% + 200px);
+      width: clamp(42px, 9.2%, 80px);
+      height: auto;
+      transform: translate(-50%, -100%);
+      z-index: 5;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
     /* Pulsing power button — positioned over the C64's power button on the altar */
     .chapel-power-btn {
       position: absolute;
@@ -118,12 +131,12 @@
     /* Invisible hotspot over the chapel computer screen to return to index. */
     .chapel-return-btn {
       position: absolute;
-      left: 44.6%;
-      top: 52.0%;
-      width: 12%;
-      height: 7%;
+      left: calc(44.6% - 15px);
+      top: calc(52.0% + 52px);
+      width: calc(12% - 5px);
+      height: calc(7% - 102px);
       background: transparent;
-      opacity: 0;
+      opacity: 1;
       pointer-events: auto;
       border: none;
       cursor: pointer;
@@ -157,8 +170,8 @@
     @media (min-width: 900px) {
       /* Desktop-only requested offset: hitbox moved 10px left and 30px down. */
       .chapel-return-btn {
-        left: calc(46.4% - 10px);
-        top: calc(53.2% + 30px);
+        left: calc(46.4% - 25px);
+        top: calc(53.2% + 82px);
       }
 
       /* Desktop tweak: shift counter further left and down from base placement. */
@@ -168,21 +181,94 @@
       }
     }
 
-    /* Invisible hotspot over the trap door square area. */
-    .trapdoor-btn {
+    .invisible-hotspot-btn {
       position: absolute;
-      left: 33%;
-      top: 77%;
-      width: 34%;
-      height: 16%;
       background: transparent;
-      opacity: 0;
+      opacity: 1;
       pointer-events: auto;
       border: none;
       cursor: pointer;
       z-index: 10;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    .chapel-return-btn,
+    .invisible-hotspot-btn {
+      outline: 2px dashed rgba(255, 255, 255, 0.95);
+      outline-offset: -1px;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Invisible hotspot over the trap door square area. */
+    .trapdoor-btn {
+      left: calc(33% - 20px);
+      top: calc(77% + 15px);
+      width: calc(34% + 40px);
+      height: max(calc(16% - 115px), 24px);
+    }
+
+    .congregation-btn:focus-visible {
+      opacity: 1;
+      outline: 2px solid rgba(255, 255, 255, 0.9);
+      outline-offset: 2px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    #crusty-button {
+      left: 16%;
+      top: calc(76.5% - 200px);
+      width: 8%;
+      height: 17%;
+    }
+
+    #goose-button {
+      left: 31%;
+      top: calc(77.5% - 200px);
+      width: 8%;
+      height: 16%;
+    }
+
+    #rick-button {
+      left: 69.5%;
+      top: calc(76.5% - 200px);
+      width: 8%;
+      height: 17%;
+    }
+
+    #morty-button {
+      left: 54.5%;
+      top: calc(77.5% - 200px);
+      width: 8%;
+      height: 16%;
+    }
+
+    .congregation-btn-crusty {
+      left: calc(16% - 115px);
+      top: calc(76.5% - 415px);
+      width: calc(8% + 65px);
+      height: max(calc(17% - 300px), 24px);
+    }
+
+    .congregation-btn-goose {
+      left: calc(31% - 40px);
+      top: calc(77.5% - 450px);
+      width: calc(8% + 30px);
+      height: max(calc(16% - 330px), 24px);
+    }
+
+    .congregation-btn-rick {
+      left: calc(54.5% + 57px);
+      top: calc(76.5% - 500px);
+      width: calc(8% + 28px);
+      height: max(calc(17% - 350px), 24px);
+    }
+
+    .congregation-btn-morty {
+      left: calc(69.5% + 95px);
+      top: calc(77.5% - 420px);
+      width: calc(8% + 25px);
+      height: max(calc(16% - 350px), 24px);
     }
 
     /* Page transition fade overlay */
@@ -225,22 +311,143 @@
       );
     }
 
+    .hotspot-tool {
+      position: fixed;
+      right: 12px;
+      z-index: 120;
+      width: min(260px, calc(100vw - 24px));
+      background: rgba(0, 0, 0, 0.88);
+      border: 1px solid rgba(210, 210, 210, 0.6);
+      color: #fff;
+      font: 12px/1.3 'IBM Plex Mono', 'Courier New', monospace;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #hotspot-move-tool {
+      top: 12px;
+    }
+
+    #hotspot-size-tool {
+      top: 210px;
+    }
+
+    .hotspot-tool-title {
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hotspot-tool select,
+    .hotspot-tool button {
+      font: inherit;
+    }
+
+    .hotspot-tool select {
+      width: 100%;
+      background: #111;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      padding: 4px;
+    }
+
+    .hotspot-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .hotspot-tool button {
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      padding: 4px;
+      cursor: pointer;
+    }
+
+    .hotspot-tool button:hover,
+    .hotspot-tool button:focus-visible {
+      background: #2a2a2a;
+      outline: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .hotspot-tool-meta {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.82);
+      word-break: break-word;
+    }
+
   </style>
 </head>
 <body>
   <div class="fade-overlay" id="fade-overlay"></div>
   <audio id="congregation-audio" src="assets/congregation.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-crusty" src="assets/krusty_laugh.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-goose" src="assets/goose_honk.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-rick" src="assets/rick_nope.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-morty" src="assets/morty_aw_jeez.mp3" preload="auto"></audio>
   <video id="rock-roll-continuation-media" src="assets/notarickroll.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
 
-  <div class="chapel-outer">
-    <div class="chapel-wrapper">
-      <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
-      <div class="chapel-power-btn" aria-hidden="true">
-        <span class="chapel-power-light"></span>
-      </div>
+    <div class="chapel-outer">
+      <div class="chapel-wrapper">
+        <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
+        <img src="assets/trans_rick.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" hidden aria-hidden="true" />
+        <div class="chapel-power-btn" aria-hidden="true">
+          <span class="chapel-power-light"></span>
+        </div>
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
-      <button class="trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
+      <button class="invisible-hotspot-btn trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
+      <button class="invisible-hotspot-btn congregation-btn" id="crusty-button" aria-label="Play Crusty laugh"></button>
+      <button class="invisible-hotspot-btn congregation-btn" id="goose-button" aria-label="Play Goose honk"></button>
+      <button class="invisible-hotspot-btn congregation-btn" id="morty-button" aria-label="Play Morty aw jeez"></button>
+      <button class="invisible-hotspot-btn congregation-btn" id="rick-button" aria-label="Play Rick nope"></button>
+      <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move invisible hotspot tool">
+        <h2 class="hotspot-tool-title">Move Tool</h2>
+        <select id="move-tool-target" data-hotspot-target>
+          <option value="chapel-return-btn">return hotspot</option>
+          <option value="trapdoor-btn">trapdoor hotspot</option>
+          <option value="crusty-button">crusty hotspot</option>
+          <option value="goose-button">goose hotspot</option>
+          <option value="morty-button">morty hotspot</option>
+          <option value="rick-button">rick hotspot</option>
+        </select>
+        <div class="hotspot-tool-grid">
+          <button type="button" data-move-prop="top" data-move-step="-2">up</button>
+          <button type="button" data-move-prop="top" data-move-step="2">down</button>
+          <button type="button" data-move-prop="left" data-move-step="-2">left</button>
+          <button type="button" data-move-prop="left" data-move-step="2">right</button>
+        </div>
+        <div class="hotspot-tool-grid">
+          <button type="button" data-hotspot-action="show">show</button>
+          <button type="button" data-hotspot-action="hide">hide</button>
+        </div>
+        <div class="hotspot-tool-meta" id="move-tool-meta" aria-live="polite">Select a hotspot to view dimensions.</div>
+      </section>
+      <section class="hotspot-tool" id="hotspot-size-tool" aria-label="Resize invisible hotspot tool">
+        <h2 class="hotspot-tool-title">Size Tool</h2>
+        <select id="size-tool-target" data-hotspot-target>
+          <option value="chapel-return-btn">return hotspot</option>
+          <option value="trapdoor-btn">trapdoor hotspot</option>
+          <option value="crusty-button">crusty hotspot</option>
+          <option value="goose-button">goose hotspot</option>
+          <option value="morty-button">morty hotspot</option>
+          <option value="rick-button">rick hotspot</option>
+        </select>
+        <div class="hotspot-tool-grid">
+          <button type="button" data-size-prop="width" data-size-step="2">w +</button>
+          <button type="button" data-size-prop="width" data-size-step="-2">w -</button>
+          <button type="button" data-size-prop="height" data-size-step="2">h +</button>
+          <button type="button" data-size-prop="height" data-size-step="-2">h -</button>
+        </div>
+        <div class="hotspot-tool-grid">
+          <button type="button" data-hotspot-action="show">show</button>
+          <button type="button" data-hotspot-action="hide">hide</button>
+        </div>
+        <div class="hotspot-tool-meta" id="size-tool-meta" aria-live="polite">Select a hotspot to view dimensions.</div>
+      </section>
       <!-- Seam bloom glows around the darkest stitched regions -->
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
@@ -267,6 +474,7 @@
     const congregationAudio = document.getElementById('congregation-audio');
     const rockRollContinuationMedia = document.getElementById('rock-roll-continuation-media');
     const chapelTvCounter = document.getElementById('chapel-tv-counter');
+    const chapelTransRick = document.getElementById('chapel-trans-rick');
     const chapelWrapper = document.querySelector('.chapel-wrapper');
     const chapelImage = document.querySelector('.chapel-img');
     const torchBlooms = Array.from(document.querySelectorAll('.torch-bloom'));
@@ -292,6 +500,7 @@
     const BLOOM_MIN_INTENSITY = 0.16;
     const BLOOM_MAX_INTENSITY = 0.9;
     const BLOOM_RESIZE_DEBOUNCE_MS = 120;
+    const HOTSPOT_TOOL_DEFAULT_TARGET = 'chapel-return-btn';
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
@@ -301,6 +510,123 @@
     let torchBloomSampleCanvas = null;
     let torchBloomSampleContext = null;
     let torchBloomIntensityBound = false;
+
+    function parseNumericValue(value) {
+      const numericValue = Number.parseFloat(value);
+      return Number.isFinite(numericValue) ? numericValue : 0;
+    }
+
+    function getHotspotTargetById(targetId) {
+      return document.getElementById(targetId);
+    }
+
+    function getSelectedHotspotId() {
+      const firstSelector = document.querySelector('[data-hotspot-target]');
+      return firstSelector ? firstSelector.value : HOTSPOT_TOOL_DEFAULT_TARGET;
+    }
+
+    function syncHotspotTargetSelection(nextTargetId) {
+      document.querySelectorAll('[data-hotspot-target]').forEach(function (selector) {
+        selector.value = nextTargetId;
+      });
+    }
+
+    function setHotspotVisibility(targetId, visible) {
+      const target = getHotspotTargetById(targetId);
+      if (!target) {
+        return;
+      }
+
+      if (visible) {
+        target.style.visibility = 'visible';
+        target.style.pointerEvents = 'auto';
+      } else {
+        target.style.visibility = 'hidden';
+        target.style.pointerEvents = 'none';
+      }
+    }
+
+    function adjustHotspotDimension(targetId, property, deltaPx) {
+      const target = getHotspotTargetById(targetId);
+      if (!target) {
+        return;
+      }
+
+      const currentPx = parseNumericValue(window.getComputedStyle(target)[property]);
+      const nextPx = property === 'width' || property === 'height'
+        ? Math.max(1, currentPx + deltaPx)
+        : currentPx + deltaPx;
+      target.style[property] = `${nextPx}px`;
+    }
+
+    function renderHotspotToolMeta() {
+      const target = getHotspotTargetById(getSelectedHotspotId());
+      const moveMeta = document.getElementById('move-tool-meta');
+      const sizeMeta = document.getElementById('size-tool-meta');
+      if (!target || !moveMeta || !sizeMeta) {
+        return;
+      }
+
+      const computed = window.getComputedStyle(target);
+      const metaText = `left ${Math.round(parseNumericValue(computed.left))} | top ${Math.round(parseNumericValue(computed.top))} | w ${Math.round(parseNumericValue(computed.width))} | h ${Math.round(parseNumericValue(computed.height))}`;
+      moveMeta.textContent = metaText;
+      sizeMeta.textContent = metaText;
+    }
+
+    function setupHotspotTools() {
+      const moveTool = document.getElementById('hotspot-move-tool');
+      const sizeTool = document.getElementById('hotspot-size-tool');
+      if (!moveTool || !sizeTool) {
+        return;
+      }
+
+      syncHotspotTargetSelection(HOTSPOT_TOOL_DEFAULT_TARGET);
+      renderHotspotToolMeta();
+
+      document.querySelectorAll('[data-hotspot-target]').forEach(function (selector) {
+        selector.addEventListener('change', function () {
+          syncHotspotTargetSelection(selector.value);
+          renderHotspotToolMeta();
+        });
+      });
+
+      moveTool.querySelectorAll('[data-move-prop]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          const targetId = getSelectedHotspotId();
+          const property = button.getAttribute('data-move-prop');
+          const deltaPx = parseNumericValue(button.getAttribute('data-move-step'));
+          adjustHotspotDimension(targetId, property, deltaPx);
+          renderHotspotToolMeta();
+        });
+      });
+
+      sizeTool.querySelectorAll('[data-size-prop]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          const targetId = getSelectedHotspotId();
+          const property = button.getAttribute('data-size-prop');
+          const deltaPx = parseNumericValue(button.getAttribute('data-size-step'));
+          adjustHotspotDimension(targetId, property, deltaPx);
+          renderHotspotToolMeta();
+        });
+      });
+
+      document.querySelectorAll('[data-hotspot-action]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          const targetId = getSelectedHotspotId();
+          const action = button.getAttribute('data-hotspot-action');
+          setHotspotVisibility(targetId, action === 'show');
+          renderHotspotToolMeta();
+        });
+      });
+    }
+
+    function setTransRickVisibility(isVisible) {
+      if (!chapelTransRick) {
+        return;
+      }
+
+      chapelTransRick.hidden = !isVisible;
+    }
 
     function clampValue(value, min, max) {
       return Math.min(max, Math.max(min, value));
@@ -652,6 +978,8 @@
     }
 
     function startRockRollContinuation(playbackState) {
+      setTransRickVisibility(Boolean(playbackState));
+
       if (!playbackState || !rockRollContinuationMedia) {
         clearRockRollContinuationState();
         return;
@@ -929,9 +1257,22 @@
     }
 
     document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
+    setupHotspotTools();
 
-    // Invisible button click → bedroom_antechamber.html
+    function openAudioAsset(assetPath) {
+      window.location.assign(assetPath);
+    }
+
+    // Invisible congregation button clicks → audio files
     document.getElementById('trapdoor-btn').addEventListener('click', navigateToSite);
+    [
+      ['crusty-button', 'assets/krusty_laugh.mp3'],
+      ['goose-button', 'assets/goose_honk.mp3'],
+      ['morty-button', 'assets/morty_aw_jeez.mp3'],
+      ['rick-button', 'assets/rick_nope.mp3']
+    ].forEach(function ([buttonId, assetPath]) {
+      document.getElementById(buttonId).addEventListener('click', function () { openAudioAsset(assetPath); });
+    });
 
     // Enter key → same behavior
     document.addEventListener('keydown', function (e) {
