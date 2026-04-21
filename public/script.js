@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const discordAuthUser = document.getElementById('discord-auth-user');
   const discordAuthName = document.getElementById('discord-auth-name');
   const discordAuthAvatar = document.getElementById('discord-auth-avatar');
+  const discordAuthAvatarImage = document.getElementById('discord-auth-avatar-image');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
   const BOOT_DEFAULT_SUFFIX = 'Admin';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
@@ -138,6 +139,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const AUTH_REGISTER_COMMANDS = new Set(['register', 'signup']);
   const AUTH_EMAIL_LOGIN_COMMANDS = new Set(['emaillogin', 'email-login']);
   const AUTH_RESULT_QUERY_PARAM = 'auth';
+  // Discord user IDs are numeric snowflakes and avatar hashes are 32 hex chars with optional animated `a_` prefix.
+  const DISCORD_USER_ID_PATTERN = /^\d{5,30}$/;
+  const DISCORD_AVATAR_HASH_PATTERN = /^(a_)?[a-f0-9]{32}$/i;
   const createUnauthenticatedSession = () => ({ authenticated: false, user: null });
   let authSession = createUnauthenticatedSession();
 
@@ -697,15 +701,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     const userId = typeof user.id === 'string' ? user.id.trim() : '';
     const avatarHash = typeof user.avatar === 'string' ? user.avatar.trim() : '';
-    if (!userId || !avatarHash) {
+    if (!DISCORD_USER_ID_PATTERN.test(userId) || !DISCORD_AVATAR_HASH_PATTERN.test(avatarHash)) {
       return '';
     }
+    // Discord uses an `a_` hash prefix for animated avatars.
     const extension = avatarHash.startsWith('a_') ? 'gif' : 'png';
-    return `https://cdn.discordapp.com/avatars/${encodeURIComponent(userId)}/${encodeURIComponent(avatarHash)}.${extension}?size=64`;
+    return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${extension}?size=64`;
+  }
+
+  function isSafeDiscordAvatarUrl(url) {
+    if (typeof url !== 'string' || !url) {
+      return false;
+    }
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== 'https:' || parsedUrl.hostname !== 'cdn.discordapp.com') {
+        return false;
+      }
+      const avatarPathMatch = parsedUrl.pathname.match(/^\/avatars\/([^/]+)\/([^/.]+)\.(png|gif)$/i);
+      if (!avatarPathMatch) {
+        return false;
+      }
+      const [, userId, avatarHash] = avatarPathMatch;
+      if (!DISCORD_USER_ID_PATTERN.test(userId) || !DISCORD_AVATAR_HASH_PATTERN.test(avatarHash)) {
+        return false;
+      }
+      const queryEntries = Array.from(parsedUrl.searchParams.entries());
+      return queryEntries.length === 1
+        && queryEntries[0][0] === 'size'
+        && queryEntries[0][1] === '64';
+    } catch (_) {
+      return false;
+    }
   }
 
   function renderDiscordAuthChip() {
-    if (!discordAuthLoginBtn || !discordAuthUser || !discordAuthName || !discordAuthAvatar) {
+    if (!discordAuthLoginBtn || !discordAuthUser || !discordAuthName || !discordAuthAvatar || !discordAuthAvatarImage) {
       return;
     }
 
@@ -714,20 +745,26 @@ document.addEventListener('DOMContentLoaded', function() {
       discordAuthUser.hidden = true;
       discordAuthName.textContent = '';
       discordAuthAvatar.textContent = '';
-      discordAuthAvatar.style.backgroundImage = '';
+      discordAuthAvatarImage.src = '';
+      discordAuthAvatarImage.hidden = true;
       return;
     }
 
     const displayName = getSessionDisplayName(authSession.user);
     const avatarUrl = getDiscordAvatarUrl(authSession.user);
+    const safeAvatarUrl = isSafeDiscordAvatarUrl(avatarUrl)
+      ? avatarUrl
+      : '';
     discordAuthName.textContent = displayName || 'user';
     discordAuthLoginBtn.hidden = true;
     discordAuthUser.hidden = false;
-    if (avatarUrl) {
-      discordAuthAvatar.style.backgroundImage = `url("${avatarUrl}")`;
+    if (safeAvatarUrl) {
+      discordAuthAvatarImage.src = safeAvatarUrl;
+      discordAuthAvatarImage.hidden = false;
       discordAuthAvatar.textContent = '';
     } else {
-      discordAuthAvatar.style.backgroundImage = '';
+      discordAuthAvatarImage.src = '';
+      discordAuthAvatarImage.hidden = true;
       discordAuthAvatar.textContent = (displayName || 'U').charAt(0);
     }
   }

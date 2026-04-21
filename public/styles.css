@@ -624,9 +624,14 @@ body {
   justify-content: center;
   font-size: 0.95em;
   text-transform: uppercase;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+.discord-auth-avatar-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .prank-video-overlay {
