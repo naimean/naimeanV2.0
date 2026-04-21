@@ -384,7 +384,7 @@
 
     @media (max-width: 899px) {
       .sauce-drip-lane {
-        left: calc(50% + 50px - 40px);
+        left: calc(50% + 50px - 40px + 8px);
       }
 
       .sauce-drip {
@@ -395,12 +395,12 @@
       @keyframes sauce-drip-fall {
         80% {
           opacity: 0.98;
-          top: calc(100% - (124px - 40px));
+          top: calc(100% - (124px - 80px));
           transform: translate(-50%, 0) scale(0.9, 1.26);
         }
         100% {
           opacity: 0;
-          top: calc(100% - (150px - 40px));
+          top: calc(100% - (150px - 80px));
           transform: translate(-50%, 0) scale(1.02, 0.82);
         }
       }
