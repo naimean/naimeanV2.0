@@ -51,7 +51,15 @@
 
 # Update Log
 
-## 2026-04-20 (P1: Cloudflare CI checks)
+## 2026-04-21 (P0: worker-side rate limiting)
+- Added IP-keyed sliding-window rate limiting to `cloudflare-worker/worker.js` for all API routes: 10 req/min on POST `/hit`+`/increment` (shared bucket), 5 req/min on `/auth/discord/login` and `/auth/discord/callback`, 10 req/min on `/auth/logout`, 30 req/min on `/auth/session` and `/go/*`, 60 req/min on GET `/get`.
+- Rate limiter returns 429 with a `Retry-After` header computed at check time (no timestamp race).
+- `CF-Connecting-IP` is used as the client key (Cloudflare-injected, not spoofable); falls back to `X-Forwarded-For` for non-Cloudflare environments.
+- Periodic stale-entry eviction (every 500 new-entry creations) bounds isolate memory usage.
+- Rate limiting can be disabled per-deployment via `RATE_LIMIT_ENABLED=false` (used in test env).
+- Added 6 new tests in `cloudflare-worker/worker.test.js`; test suite grows from 26 → 32 passing tests.
+
+
 - Added endpoint contract tests to `cloudflare-worker/worker.test.js`: imported the real worker handler with a minimal mock D1 binding and exercised `GET /get`, `POST /hit`, `POST /increment`, `GET /auth/session`, `POST /auth/logout`, `OPTIONS` preflight, method-not-allowed (405), `GET /go/:tool` unauthenticated (401), and required security-header presence. Test suite grows from 17 → 26 passing tests.
 - Strengthened wrangler config validation in `.github/workflows/github-pages.yml`: added `compatibility_date` format check (YYYY-MM-DD), `run_worker_first` key presence, `[[d1_databases]]` binding in the counter worker config, and `schema.sql` file existence.
 - Replaced the single `/auth` route spot-check with a full bidirectional route-alignment step: verifies every entry in `PROXY_PATHS` appears in `run_worker_first` and vice versa, so config drift between the edge router and the wrangler proxy list is caught in CI.
