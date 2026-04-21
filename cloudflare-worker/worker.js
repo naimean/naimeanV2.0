@@ -544,7 +544,7 @@ function isValidElementId(id) {
   return /^[a-zA-Z0-9_\-.]+$/.test(id);
 }
 
-function sanitizeLayoutNumber(value) {
+function parseLayoutNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
@@ -609,10 +609,19 @@ async function handlePostLayout(request, env, origin) {
     }
 
     const dims = overrides[elementId] || {};
-    const top = sanitizeLayoutNumber(dims.top);
-    const left = sanitizeLayoutNumber(dims.left);
-    const width = sanitizeLayoutNumber(dims.width);
-    const height = sanitizeLayoutNumber(dims.height);
+    const top = parseLayoutNumber(dims.top);
+    const left = parseLayoutNumber(dims.left);
+    const width = parseLayoutNumber(dims.width);
+    const height = parseLayoutNumber(dims.height);
+
+    // Reject clearly out-of-range percentages (allow some slack beyond 100% for
+    // elements that intentionally bleed outside the wrapper).
+    const MAX_PCT = 200;
+    for (const [name, val] of [['top', top], ['left', left], ['width', width], ['height', height]]) {
+      if (val !== null && (val < -MAX_PCT || val > MAX_PCT)) {
+        return jsonResponse({ error: `Value out of range for ${elementId}.${name}` }, 400, origin, env);
+      }
+    }
 
     statements.push(
       env.DB.prepare(

@@ -813,16 +813,15 @@
     // ── Load saved layout overrides from server on page init ─────────────────────
     function applyLayoutOverrides(overrides) {
       if (!overrides || typeof overrides !== 'object') { return; }
-      const wrapper = chapelWrapper;
-      if (!wrapper) { return; }
       Object.keys(overrides).forEach(function (id) {
         const el = document.getElementById(id);
         if (!el) { return; }
         const dims = overrides[id];
-        if (dims.top != null) { el.style.top = dims.top + '%'; }
-        if (dims.left != null) { el.style.left = dims.left + '%'; }
-        if (dims.width != null) { el.style.width = dims.width + '%'; }
-        if (dims.height != null) { el.style.height = dims.height + '%'; }
+        // Only apply finite numeric values to prevent injection from corrupted server data.
+        if (typeof dims.top === 'number' && Number.isFinite(dims.top)) { el.style.top = dims.top + '%'; }
+        if (typeof dims.left === 'number' && Number.isFinite(dims.left)) { el.style.left = dims.left + '%'; }
+        if (typeof dims.width === 'number' && Number.isFinite(dims.width)) { el.style.width = dims.width + '%'; }
+        if (typeof dims.height === 'number' && Number.isFinite(dims.height)) { el.style.height = dims.height + '%'; }
       });
     }
 
