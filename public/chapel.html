@@ -330,6 +330,58 @@
       );
     }
 
+    .sauce-drip-lane {
+      position: absolute;
+      left: 50%;
+      top: 12%;
+      width: 18px;
+      height: 72%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    .sauce-drip {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 10px;
+      height: 18px;
+      border-radius: 50% 50% 65% 65%;
+      background: radial-gradient(circle at 35% 26%, rgba(255, 196, 150, 0.78) 0%, rgba(167, 24, 15, 0.94) 65%, rgba(105, 10, 7, 0.98) 100%);
+      filter: drop-shadow(0 0 4px rgba(129, 18, 10, 0.7));
+      opacity: 0;
+      transform: translate(-50%, 0) scale(0.6);
+      will-change: transform, opacity;
+    }
+
+    .sauce-drip.is-dripping {
+      animation: sauce-drip-fall 1.6s ease-in forwards;
+    }
+
+    @keyframes sauce-drip-fall {
+      0% {
+        opacity: 0;
+        top: 0;
+        transform: translate(-50%, 0) scale(0.5);
+      }
+      10% {
+        opacity: 0.95;
+        top: 2%;
+        transform: translate(-50%, 0) scale(0.82, 1.2);
+      }
+      80% {
+        opacity: 0.98;
+        top: calc(100% - 24px);
+        transform: translate(-50%, 0) scale(0.9, 1.26);
+      }
+      100% {
+        opacity: 0;
+        top: calc(100% - 10px);
+        transform: translate(-50%, 0) scale(1.02, 0.82);
+      }
+    }
+
     .hotspot-tool {
       position: fixed;
       right: 12px;
@@ -470,6 +522,9 @@
       <button class="invisible-hotspot-btn congregation-btn" id="goose-button" aria-label="Play Goose honk"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="morty-button" aria-label="Play Morty aw jeez"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="rick-button" aria-label="Play Rick nope"></button>
+      <div class="sauce-drip-lane" aria-hidden="true">
+        <div class="sauce-drip" id="sauce-drip"></div>
+      </div>
       <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move invisible hotspot tool">
         <h2 class="hotspot-tool-title">Move Tool</h2>
         <select id="move-tool-target" data-hotspot-target>
@@ -587,6 +642,9 @@
     const BLOOM_RESIZE_DEBOUNCE_MS = 120;
     const HOTSPOT_TOOL_NONE_TARGET = '__none__';
     const HOTSPOT_TOOL_DEFAULT_TARGET = HOTSPOT_TOOL_NONE_TARGET;
+    const SAUCE_DRIP_MIN_INTERVAL_MS = 10000;
+    const SAUCE_DRIP_MAX_INTERVAL_MS = 15000;
+    const SAUCE_DRIP_ANIMATION_MS = 1600;
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
@@ -596,6 +654,9 @@
     let torchBloomSampleCanvas = null;
     let torchBloomSampleContext = null;
     let torchBloomIntensityBound = false;
+    let sauceDripTimerId = null;
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sauceDrip = document.getElementById('sauce-drip');
 
     function parseNumericValue(value) {
       const numericValue = Number.parseFloat(value);
@@ -612,6 +673,44 @@
     function getSelectedHotspotId() {
       const firstSelector = document.querySelector('[data-hotspot-target]');
       return firstSelector ? firstSelector.value : HOTSPOT_TOOL_DEFAULT_TARGET;
+    }
+
+    function getNextSauceDripDelayMs() {
+      const intervalRange = SAUCE_DRIP_MAX_INTERVAL_MS - SAUCE_DRIP_MIN_INTERVAL_MS;
+      const randomOffset = Math.floor(Math.random() * (intervalRange + 1));
+      return SAUCE_DRIP_MIN_INTERVAL_MS + randomOffset;
+    }
+
+    function clearSauceDripTimer() {
+      if (sauceDripTimerId !== null) {
+        window.clearTimeout(sauceDripTimerId);
+        sauceDripTimerId = null;
+      }
+    }
+
+    function triggerSauceDrip() {
+      if (!sauceDrip) {
+        return;
+      }
+      sauceDrip.classList.remove('is-dripping');
+      // Reading offsetWidth forces layout/reflow so removing+re-adding the class restarts the CSS animation.
+      void sauceDrip.offsetWidth;
+      sauceDrip.classList.add('is-dripping');
+      window.setTimeout(function () {
+        sauceDrip.classList.remove('is-dripping');
+      }, SAUCE_DRIP_ANIMATION_MS);
+    }
+
+    function scheduleNextSauceDrip() {
+      if (!sauceDrip || reducedMotionQuery.matches) {
+        return;
+      }
+      clearSauceDripTimer();
+      const nextDelayMs = getNextSauceDripDelayMs();
+      sauceDripTimerId = window.setTimeout(function () {
+        triggerSauceDrip();
+        scheduleNextSauceDrip();
+      }, nextDelayMs);
     }
 
     function syncHotspotTargetSelection(nextTargetId) {
@@ -1474,6 +1573,7 @@
         return;
       }
       isNavigatingFromChapel = true;
+      clearSauceDripTimer();
 
       playDoorOpeningSound();
       congregationAudio.pause();
@@ -1517,6 +1617,7 @@
         return;
       }
       isNavigatingFromChapel = true;
+      clearSauceDripTimer();
       try {
         window.sessionStorage.setItem(INDEX_FADE_IN_KEY, '1');
       } catch (_) {}
@@ -1535,6 +1636,7 @@
     document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
     setupHotspotTools();
     loadLayoutOverrides();
+    scheduleNextSauceDrip();
 
     function playHotspotAudio(audioElement) {
       if (!audioElement) {
