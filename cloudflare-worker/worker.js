@@ -60,6 +60,9 @@ const RATE_LIMITS = {
 
 // Key format: `${ip}:${routeKey}` → { count, windowStart }
 const rateLimitStore = new Map();
+// Counter used to trigger periodic eviction of expired entries.
+let _rateLimitCleanupCounter = 0;
+const RATE_LIMIT_CLEANUP_EVERY = 500;
 
 function normalizeOriginUrl(url) {
   return `${url.protocol}//${url.host}`.toLowerCase();
@@ -230,6 +233,10 @@ function applyApiSecurityHeaders(response, isSecureTransport) {
 }
 
 // Returns the best-available client IP from Cloudflare or proxy headers.
+// In Cloudflare Workers production deployments, CF-Connecting-IP is always
+// injected by Cloudflare infrastructure and cannot be spoofed or stripped by
+// clients.  The 'unknown' fallback is only reachable in local/non-Cloudflare
+// environments where RATE_LIMIT_ENABLED should be 'false' anyway.
 function getClientIp(request) {
   const cfIp = request.headers.get('CF-Connecting-IP');
   if (cfIp) {
@@ -244,22 +251,35 @@ function getClientIp(request) {
 
 // Checks whether a request from `ip` for `routeKey` is within `limit`.
 // Increments the counter on allowed requests and returns a result object.
+// `retryAfterSecs` is pre-computed at check time so callers don't re-derive
+// it from a timestamp (avoiding a theoretical race in long response paths).
 function checkRateLimit(ip, routeKey, limit) {
   const key = `${ip}:${routeKey}`;
   const now = Date.now();
   const entry = rateLimitStore.get(key);
 
   if (!entry || now - entry.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    // Periodically evict all expired entries to bound isolate memory usage.
+    _rateLimitCleanupCounter += 1;
+    if (_rateLimitCleanupCounter >= RATE_LIMIT_CLEANUP_EVERY) {
+      _rateLimitCleanupCounter = 0;
+      for (const [k, e] of rateLimitStore) {
+        if (now - e.windowStart >= RATE_LIMIT_WINDOW_MS) {
+          rateLimitStore.delete(k);
+        }
+      }
+    }
     rateLimitStore.set(key, { count: 1, windowStart: now });
-    return { allowed: true, remaining: limit - 1, resetAt: now + RATE_LIMIT_WINDOW_MS };
+    return { allowed: true, remaining: limit - 1 };
   }
 
   if (entry.count >= limit) {
-    return { allowed: false, remaining: 0, resetAt: entry.windowStart + RATE_LIMIT_WINDOW_MS };
+    const retryAfterSecs = Math.max(1, Math.ceil((entry.windowStart + RATE_LIMIT_WINDOW_MS - now) / 1000));
+    return { allowed: false, remaining: 0, retryAfterSecs };
   }
 
   entry.count += 1;
-  return { allowed: true, remaining: limit - entry.count, resetAt: entry.windowStart + RATE_LIMIT_WINDOW_MS };
+  return { allowed: true, remaining: limit - entry.count };
 }
 
 // Rate limiting is enabled by default; set RATE_LIMIT_ENABLED='false' to opt out.
@@ -270,8 +290,7 @@ function isRateLimitEnabled(env) {
   return isEnabledEnvFlag(env.RATE_LIMIT_ENABLED);
 }
 
-function rateLimitedResponse(resetAt, origin, env) {
-  const retryAfterSecs = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+function rateLimitedResponse(retryAfterSecs, origin, env) {
   return jsonResponse({ error: 'Too many requests' }, 429, origin, env, {
     'Retry-After': String(retryAfterSecs),
   });
@@ -823,7 +842,7 @@ export default {
         if (routeKey) {
           const rl = checkRateLimit(clientIp, routeKey, RATE_LIMITS[routeKey]);
           if (!rl.allowed) {
-            return withApiSecurityHeaders(rateLimitedResponse(rl.resetAt, origin, env));
+            return withApiSecurityHeaders(rateLimitedResponse(rl.retryAfterSecs, origin, env));
           }
         }
       }

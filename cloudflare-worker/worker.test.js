@@ -383,13 +383,17 @@ test('rate limit: POST /hit allows 10 requests then returns 429', async () => {
 
 test('rate limit: POST /increment shares the /hit bucket', async () => {
   const ip = '198.51.100.2';
-  // Exhaust the hit bucket via /hit
-  for (let i = 0; i < 10; i++) {
-    await makeRlRequest('POST', '/hit', ip);
+  // Interleave 5 /hit and 5 /increment requests – if they share one bucket
+  // the combined 10 requests exhaust the window and the 11th is throttled.
+  for (let i = 0; i < 5; i++) {
+    const r1 = await makeRlRequest('POST', '/hit', ip);
+    assert.strictEqual(r1.status, 200, `/hit request ${i + 1} should succeed`);
+    const r2 = await makeRlRequest('POST', '/increment', ip);
+    assert.strictEqual(r2.status, 200, `/increment request ${i + 1} should succeed`);
   }
-  // /increment from the same IP must be throttled (same 'hit' bucket)
-  const res = await makeRlRequest('POST', '/increment', ip);
-  assert.strictEqual(res.status, 429);
+  // 11th request (either endpoint) must be throttled
+  const throttled = await makeRlRequest('POST', '/hit', ip);
+  assert.strictEqual(throttled.status, 429);
 });
 
 test('rate limit: different IPs are tracked independently', async () => {

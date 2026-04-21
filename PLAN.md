@@ -122,7 +122,7 @@
 - Enforce strict Content Security Policy (CSP), HSTS, and secure headers at the edge (Cloudflare). ✅
 - Use Discord OAuth with PKCE/state validation and short-lived session tokens. ✅
 - Add Cloudflare WAF + bot protections (managed rules, rate limits, and Turnstile where user input/upload endpoints exist).
-- Add rate limiting and bot protection for shoutbox/auth endpoints.
+- Add rate limiting and bot protection for shoutbox/auth endpoints. ✅ (worker-side IP-keyed sliding-window rate limits: 10/min on writes, 5/min on auth flows, 60/min on reads; 429 + Retry-After responses)
 - Sanitize and escape all user-generated shoutbox content to prevent XSS. ✅
 - Add secret management and dependency vulnerability scanning in CI. ✅ (dependency-review-action added to PR workflow)
 - Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources. ✅ (hardcoded tool URLs removed from client; /go/* routes added with session auth gate)
