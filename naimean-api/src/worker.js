@@ -138,6 +138,15 @@ function unauthorized(request, env) {
   return jsonResponse(request, env, { error: "Unauthorized — provide Authorization: Bearer <token>" }, 401);
 }
 
+function missingApiToken(request, env) {
+  return jsonResponse(
+    request,
+    env,
+    { error: "API_TOKEN is not configured for protected naimean-api routes" },
+    503
+  );
+}
+
 function constantTimeEqual(a, b) {
   const left = TOKEN_ENCODER.encode(String(a));
   const right = TOKEN_ENCODER.encode(String(b));
@@ -177,6 +186,10 @@ export default {
         service: "naimean-api",
         durableObject: "NaimeanAgent",
       });
+    }
+
+    if (!env.API_TOKEN) {
+      return missingApiToken(request, env);
     }
 
     if (!isAuthorized(request, env)) {
