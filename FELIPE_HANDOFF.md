@@ -105,6 +105,10 @@ wrangler secret put DISCORD_CLIENT_SECRET --name barrelrollcounter-worker
 wrangler secret put DISCORD_REDIRECT_URI --name barrelrollcounter-worker
 # DISCORD_REDIRECT_URI value should be: https://naimean.com/auth/discord/callback
 
+# Restrict POST /layout to your Discord account (find your numeric ID in Discord:
+# Settings → Advanced → Developer Mode → right-click your username → Copy User ID)
+wrangler secret put OWNER_DISCORD_ID --name barrelrollcounter-worker
+
 # Destination URLs for the authenticated /go/* launcher
 wrangler secret put TOOL_URL_WHITEBOARD --name barrelrollcounter-worker
 wrangler secret put TOOL_URL_CAPEX --name barrelrollcounter-worker
@@ -209,6 +213,7 @@ In the Cloudflare dashboard under **Workers & Pages → naimeanv2 (or barrelroll
 | `barrelrollcounter-worker` | `DISCORD_CLIENT_ID` | From Discord developer portal |
 | `barrelrollcounter-worker` | `DISCORD_CLIENT_SECRET` | From Discord developer portal |
 | `barrelrollcounter-worker` | `DISCORD_REDIRECT_URI` | `https://naimean.com/auth/discord/callback` |
+| `barrelrollcounter-worker` | `OWNER_DISCORD_ID` | Your numeric Discord user ID; restricts `POST /layout` to owner only |
 | `barrelrollcounter-worker` | `TOOL_URL_WHITEBOARD` | Internal whiteboard tool URL |
 | `barrelrollcounter-worker` | `TOOL_URL_CAPEX` | Internal CapEx tool URL |
 | `barrelrollcounter-worker` | `TOOL_URL_SNOW` | ServiceNow URL |

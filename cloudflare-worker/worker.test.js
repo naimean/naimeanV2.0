@@ -627,6 +627,76 @@ test('contract: POST /layout returns 401 without an auth session', async () => {
   assert.strictEqual(body.error, 'Unauthorized');
 });
 
+// Helper: mint a signed session cookie using the same algorithm as the worker.
+const LAYOUT_AUTH_SESSION_SECRET = 'layout-test-session-secret-long-enough-for-hmac';
+async function createTestSessionCookie(sub) {
+  const payload = { sub, username: 'testuser', displayName: 'Test', avatar: '', exp: Date.now() + 3600_000 };
+  const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(LAYOUT_AUTH_SESSION_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', keyMaterial, new TextEncoder().encode(encodedPayload));
+  const encodedSig = Buffer.from(sig).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `naimean_session=${encodedPayload}.${encodedSig}`;
+}
+
+test('contract: POST /layout with matching OWNER_DISCORD_ID returns 200', async () => {
+  const ownerId = 'discord_owner_123';
+  const cookie = await createTestSessionCookie(ownerId);
+  const req = new Request('http://localhost/layout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: JSON.stringify({ page: 'chapel', overrides: {} }),
+  });
+  const env = makeContractEnv({
+    DB: makeLayoutDbCapture(),
+    SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET,
+    OWNER_DISCORD_ID: ownerId,
+  });
+  const res = await worker.fetch(req, env);
+  assert.strictEqual(res.status, 200);
+});
+
+test('contract: POST /layout with non-matching OWNER_DISCORD_ID returns 403', async () => {
+  const cookie = await createTestSessionCookie('discord_other_user');
+  const req = new Request('http://localhost/layout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: JSON.stringify({ page: 'chapel', overrides: {} }),
+  });
+  const env = makeContractEnv({
+    DB: makeLayoutDbCapture(),
+    SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET,
+    OWNER_DISCORD_ID: 'discord_owner_123',
+  });
+  const res = await worker.fetch(req, env);
+  assert.strictEqual(res.status, 403);
+  const body = await res.json();
+  assert.strictEqual(body.error, 'Forbidden');
+});
+
+test('contract: POST /layout with valid session and no OWNER_DISCORD_ID set returns 200', async () => {
+  const cookie = await createTestSessionCookie('anyone');
+  const req = new Request('http://localhost/layout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: JSON.stringify({ page: 'chapel', overrides: {} }),
+  });
+  const env = makeContractEnv({
+    DB: makeLayoutDbCapture(),
+    SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET,
+    // OWNER_DISCORD_ID intentionally omitted
+  });
+  const res = await worker.fetch(req, env);
+  assert.strictEqual(res.status, 200);
+});
+
 test('contract: OPTIONS preflight on /layout returns 204', async () => {
   const res = await worker.fetch(
     makeContractRequest('OPTIONS', '/layout', { Origin: 'http://localhost' }),

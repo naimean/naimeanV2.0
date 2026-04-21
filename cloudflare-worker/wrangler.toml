@@ -21,6 +21,9 @@ compatibility_date = "2026-04-18"
 #     wrangler secret put DISCORD_CLIENT_SECRET
 #     wrangler secret put DISCORD_REDIRECT_URI   # e.g. https://naimean.com/auth/discord/callback
 #
+#   Restrict POST /layout to a single Discord account (your numeric Discord user ID):
+#     wrangler secret put OWNER_DISCORD_ID
+#
 #   Authenticated redirect targets for the /go/* tool launcher:
 #     wrangler secret put TOOL_URL_WHITEBOARD
 #     wrangler secret put TOOL_URL_CAPEX
