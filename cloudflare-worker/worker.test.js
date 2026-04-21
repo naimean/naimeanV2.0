@@ -356,6 +356,115 @@ test('contract: API responses carry required security headers', async () => {
   assert.strictEqual(res.headers.get('X-Frame-Options'), 'DENY');
 });
 
+// ─── HTTP method enforcement tests ───────────────────────────────────────────
+// Each write/mutation endpoint only accepts a specific method.  Any other
+// method must be rejected with 405.
+
+test('contract: GET /hit is rejected with 405 (write endpoint requires POST)', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/hit'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+test('contract: GET /increment is rejected with 405 (write endpoint requires POST)', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/increment'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+test('contract: POST /get is rejected with 405 (read endpoint requires GET)', async () => {
+  const res = await worker.fetch(makeContractRequest('POST', '/get'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+test('contract: POST /auth/session is rejected with 405 (session endpoint requires GET)', async () => {
+  const res = await worker.fetch(makeContractRequest('POST', '/auth/session'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+test('contract: GET /auth/logout is rejected with 405 (logout endpoint requires POST)', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/auth/logout'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+test('contract: POST /auth/discord/login is rejected with 405 (login endpoint requires GET)', async () => {
+  const res = await worker.fetch(makeContractRequest('POST', '/auth/discord/login'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+test('contract: POST /auth/discord/callback is rejected with 405 (callback endpoint requires GET)', async () => {
+  const res = await worker.fetch(makeContractRequest('POST', '/auth/discord/callback'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+// ─── Discord OAuth login redirect tests ──────────────────────────────────────
+
+test('contract: GET /auth/discord/login returns 503 when OAuth is not configured', async () => {
+  // Default test env has no DISCORD_* vars
+  const res = await worker.fetch(makeContractRequest('GET', '/auth/discord/login'), makeContractEnv());
+  assert.strictEqual(res.status, 503);
+  const body = await res.json();
+  assert.ok(typeof body.error === 'string');
+});
+
+test('contract: GET /auth/discord/login redirects to Discord when fully configured', async () => {
+  const oauthEnv = makeContractEnv({
+    DISCORD_CLIENT_ID: 'test-client-id',
+    DISCORD_CLIENT_SECRET: 'test-client-secret',
+    DISCORD_REDIRECT_URI: 'https://naimean.com/auth/discord/callback',
+    SESSION_SECRET: 'a-secret-that-is-long-enough-for-hmac',
+  });
+  const res = await worker.fetch(makeContractRequest('GET', '/auth/discord/login'), oauthEnv);
+  // handleDiscordLogin uses createRedirectResponse which returns 302.
+  assert.strictEqual(res.status, 302, `expected 302 redirect, got ${res.status}`);
+  const location = res.headers.get('Location') || '';
+  assert.ok(location.startsWith('https://discord.com/'), `Location must point to Discord, got: ${location}`);
+  assert.ok(location.includes('client_id=test-client-id'), 'Location must include client_id');
+  assert.ok(location.includes('code_challenge'), 'Location must include PKCE code_challenge');
+  // An OAuth cookie must be set to persist the PKCE verifier across the redirect
+  const setCookie = res.headers.get('Set-Cookie') || '';
+  assert.ok(setCookie.includes('naimean_discord_oauth='), 'OAuth state cookie must be set');
+});
+
+// ─── Counter increment mock behavior ─────────────────────────────────────────
+
+test('contract: POST /increment returns an incremented value from D1', async () => {
+  // Mock a D1 that simulates a real value of 41 before increment → 42 after.
+  const mockDbWithValue = {
+    prepare(sql) {
+      // The worker uses an UPDATE … RETURNING statement to atomically increment
+      // and read back the new value, and a SELECT statement to read-only fetch.
+      // We detect which query is in flight by checking for the UPDATE keyword so
+      // the mock can return the correct post-increment value.
+      const isUpdate = sql.trim().toUpperCase().startsWith('UPDATE');
+      return {
+        bind(..._args) {
+          return {
+            async first() {
+              // UPDATE … RETURNING returns the new (incremented) value.
+              return { value: isUpdate ? 42 : 41 };
+            },
+          };
+        },
+      };
+    },
+  };
+  const res = await worker.fetch(
+    makeContractRequest('POST', '/increment'),
+    makeContractEnv({ DB: mockDbWithValue }),
+  );
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(body.value, 42);
+});
+
+// ─── /go/:tool unknown path ───────────────────────────────────────────────────
+
+test('contract: GET /go/unknown returns 401 without a session (auth checked before route lookup)', async () => {
+  // Without a valid session the worker short-circuits to 401 before checking
+  // whether the tool name is valid, which is the correct behavior.
+  const res = await worker.fetch(makeContractRequest('GET', '/go/unknown'), makeContractEnv());
+  assert.strictEqual(res.status, 401);
+});
+
 // ─── Rate limiting tests ──────────────────────────────────────────────────────
 // Each test uses a distinct CF-Connecting-IP so in-process state from one test
 // cannot affect another.  Rate limiting is explicitly enabled via the env flag.

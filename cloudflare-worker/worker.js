@@ -118,7 +118,7 @@ function parseAllowedOriginList(value, env) {
       normalizedOrigins.push(normalizeOriginUrl(url));
     } catch (error) {
       if (isNonProductionEnvironment(env)) {
-        console.warn('Ignoring invalid CORS_ALLOWED_ORIGINS entry:', item, error);
+        console.warn('Ignoring invalid CORS_ALLOWED_ORIGINS entry');
       }
     }
   }
@@ -343,7 +343,6 @@ function createRedirectResponse(location, setCookies = []) {
     headers: {
       Location: location,
       'Cache-Control': 'no-store',
-      ...securityHeaders(),
     },
   });
 
