@@ -336,6 +336,8 @@
       top: 12%;
       width: 18px;
       height: 72%;
+      --sauce-drip-mid-travel: 5480%;
+      --sauce-drip-end-travel: 5630%;
       transform: translateX(-50%);
       pointer-events: none;
       z-index: 6;
@@ -347,7 +349,7 @@
       top: 0;
       width: 10px;
       height: 18px;
-      border-radius: 60% 60% 72% 72%;
+      border-radius: 50% 50% 65% 65%;
       background: radial-gradient(circle at 35% 26%, rgba(255, 196, 150, 0.78) 0%, rgba(167, 24, 15, 0.94) 65%, rgba(105, 10, 7, 0.98) 100%);
       filter: drop-shadow(0 0 4px rgba(129, 18, 10, 0.7));
       opacity: 0;
@@ -370,11 +372,11 @@
       }
       80% {
         opacity: 0.98;
-        transform: translate(-50%, 5480%) scale(0.9, 1.26);
+        transform: translate(-50%, var(--sauce-drip-mid-travel)) scale(0.9, 1.26);
       }
       100% {
         opacity: 0;
-        transform: translate(-50%, 5630%) scale(1.02, 0.82);
+        transform: translate(-50%, var(--sauce-drip-end-travel)) scale(1.02, 0.82);
       }
     }
 
@@ -672,7 +674,14 @@
 
     function getNextSauceDripDelayMs() {
       const intervalRange = SAUCE_DRIP_MAX_INTERVAL_MS - SAUCE_DRIP_MIN_INTERVAL_MS;
-      return SAUCE_DRIP_MIN_INTERVAL_MS + Math.floor(Math.random() * (intervalRange + 1));
+      return SAUCE_DRIP_MIN_INTERVAL_MS + Math.floor(Math.random() * intervalRange);
+    }
+
+    function clearSauceDripTimer() {
+      if (sauceDripTimerId !== null) {
+        window.clearTimeout(sauceDripTimerId);
+        sauceDripTimerId = null;
+      }
     }
 
     function triggerSauceDrip() {
@@ -691,6 +700,7 @@
       if (!sauceDrip || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         return;
       }
+      clearSauceDripTimer();
       const nextDelayMs = getNextSauceDripDelayMs();
       sauceDripTimerId = window.setTimeout(function () {
         triggerSauceDrip();
@@ -1558,6 +1568,7 @@
         return;
       }
       isNavigatingFromChapel = true;
+      clearSauceDripTimer();
 
       playDoorOpeningSound();
       congregationAudio.pause();
@@ -1601,6 +1612,7 @@
         return;
       }
       isNavigatingFromChapel = true;
+      clearSauceDripTimer();
       try {
         window.sessionStorage.setItem(INDEX_FADE_IN_KEY, '1');
       } catch (_) {}
