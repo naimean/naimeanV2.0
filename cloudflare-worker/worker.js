@@ -38,6 +38,32 @@ const DEFAULT_DEV_ALLOWED_ORIGINS = [
 ];
 const TRUE_LIKE_ENV_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
+// ─── Rate limiting ─────────────────────────────────────────────────────────────
+// Sliding-window counters are kept in an in-memory Map for the lifetime of the
+// worker isolate.  Cloudflare recycles isolates periodically, so this gives
+// best-effort, per-isolate rate limiting without requiring Durable Objects.
+// Set the RATE_LIMIT_ENABLED env variable to 'false' to disable (e.g. in tests).
+
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1-minute sliding window
+
+// Maximum requests per IP per window for each route key.
+// Write and auth routes are tighter; read routes are more lenient.
+const RATE_LIMITS = {
+  get: 60,            // GET /get           – read-only counter
+  hit: 10,            // POST /hit, /increment – state-changing writes
+  auth_session: 30,   // GET  /auth/session  – session validation
+  auth_login: 5,      // GET  /auth/discord/login   – OAuth flow start
+  auth_callback: 5,   // GET  /auth/discord/callback – code exchange
+  auth_logout: 10,    // POST /auth/logout   – session teardown
+  go: 30,             // GET  /go/*          – authenticated redirects
+};
+
+// Key format: `${ip}:${routeKey}` → { count, windowStart }
+const rateLimitStore = new Map();
+// Counter used to trigger periodic eviction of expired entries.
+let _rateLimitCleanupCounter = 0;
+const RATE_LIMIT_CLEANUP_EVERY = 500;
+
 function normalizeOriginUrl(url) {
   return `${url.protocol}//${url.host}`.toLowerCase();
 }
@@ -203,6 +229,70 @@ function applyApiSecurityHeaders(response, isSecureTransport) {
     status: response.status,
     statusText: response.statusText,
     headers,
+  });
+}
+
+// Returns the best-available client IP from Cloudflare or proxy headers.
+// In Cloudflare Workers production deployments, CF-Connecting-IP is always
+// injected by Cloudflare infrastructure and cannot be spoofed or stripped by
+// clients.  The 'unknown' fallback is only reachable in local/non-Cloudflare
+// environments where RATE_LIMIT_ENABLED should be 'false' anyway.
+function getClientIp(request) {
+  const cfIp = request.headers.get('CF-Connecting-IP');
+  if (cfIp) {
+    return cfIp.trim();
+  }
+  const forwarded = request.headers.get('X-Forwarded-For');
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return 'unknown';
+}
+
+// Checks whether a request from `ip` for `routeKey` is within `limit`.
+// Increments the counter on allowed requests and returns a result object.
+// `retryAfterSecs` is pre-computed at check time so callers don't re-derive
+// it from a timestamp (avoiding a theoretical race in long response paths).
+function checkRateLimit(ip, routeKey, limit) {
+  const key = `${ip}:${routeKey}`;
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+
+  if (!entry || now - entry.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    // Periodically evict all expired entries to bound isolate memory usage.
+    _rateLimitCleanupCounter += 1;
+    if (_rateLimitCleanupCounter >= RATE_LIMIT_CLEANUP_EVERY) {
+      _rateLimitCleanupCounter = 0;
+      for (const [k, e] of rateLimitStore) {
+        if (now - e.windowStart >= RATE_LIMIT_WINDOW_MS) {
+          rateLimitStore.delete(k);
+        }
+      }
+    }
+    rateLimitStore.set(key, { count: 1, windowStart: now });
+    return { allowed: true, remaining: limit - 1 };
+  }
+
+  if (entry.count >= limit) {
+    const retryAfterSecs = Math.max(1, Math.ceil((entry.windowStart + RATE_LIMIT_WINDOW_MS - now) / 1000));
+    return { allowed: false, remaining: 0, retryAfterSecs };
+  }
+
+  entry.count += 1;
+  return { allowed: true, remaining: limit - entry.count };
+}
+
+// Rate limiting is enabled by default; set RATE_LIMIT_ENABLED='false' to opt out.
+function isRateLimitEnabled(env) {
+  if (env.RATE_LIMIT_ENABLED === undefined || env.RATE_LIMIT_ENABLED === null) {
+    return true;
+  }
+  return isEnabledEnvFlag(env.RATE_LIMIT_ENABLED);
+}
+
+function rateLimitedResponse(retryAfterSecs, origin, env) {
+  return jsonResponse({ error: 'Too many requests' }, 429, origin, env, {
+    'Retry-After': String(retryAfterSecs),
   });
 }
 
@@ -728,6 +818,35 @@ export default {
     }
 
     try {
+      // ── Rate limiting ─────────────────────────────────────────────────────
+      if (isRateLimitEnabled(env)) {
+        const clientIp = getClientIp(request);
+        let routeKey;
+
+        if (isGetRoute) {
+          routeKey = 'get';
+        } else if (isHitRoute) {
+          routeKey = 'hit';
+        } else if (pathname === '/auth/session') {
+          routeKey = 'auth_session';
+        } else if (pathname === '/auth/discord/login') {
+          routeKey = 'auth_login';
+        } else if (pathname === '/auth/discord/callback') {
+          routeKey = 'auth_callback';
+        } else if (pathname === '/auth/logout') {
+          routeKey = 'auth_logout';
+        } else if (isGoRoute) {
+          routeKey = 'go';
+        }
+
+        if (routeKey) {
+          const rl = checkRateLimit(clientIp, routeKey, RATE_LIMITS[routeKey]);
+          if (!rl.allowed) {
+            return withApiSecurityHeaders(rateLimitedResponse(rl.retryAfterSecs, origin, env));
+          }
+        }
+      }
+
       // ── Counter routes (GET only) ─────────────────────────────────────────
       if (request.method === 'GET' && isGetRoute) {
         const value = await getCount(env.DB);
