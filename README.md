@@ -406,6 +406,17 @@ Public API: `NaimeanDiag.log(msg)`, `NaimeanDiag.set(key, value)`, `NaimeanDiag.
 
 ---
 
+## Release Checklist
+
+- [ ] Cross-browser smoke test (latest Chrome, Firefox, Safari, Edge)
+- [ ] Mobile verification (iOS Safari + Android Chrome)
+- [ ] Accessibility pass (keyboard navigation, focus visibility, ARIA/live regions, contrast)
+- [ ] Core regression pass (`power` boot flow, `/get`, `POST /hit`, `POST /increment`, `/auth/session`, `/go/*`)
+- [ ] CI status green (`lint-and-check`, worker tests, route alignment checks)
+- [ ] Deployment sanity check (GitHub Pages site load + Cloudflare worker endpoint response)
+
+---
+
 ## Security Backlog
 
 ### P0 — Immediate
@@ -420,7 +431,7 @@ Public API: `NaimeanDiag.log(msg)`, `NaimeanDiag.set(key, value)`, `NaimeanDiag.
 - [ ] Add Cloudflare-focused CI checks: wrangler config validation, route smoke tests, endpoint contract checks on PRs
 - [ ] Add automated integration/e2e test coverage for core flows (boot, overlays, auth, shoutbox)
 - [ ] Add error logging and performance monitoring (client + edge) with alerting and SLOs
-- [ ] Define a release checklist (cross-browser, mobile, accessibility, regression)
+- [x] Define a release checklist (cross-browser, mobile, accessibility, regression)
 - [ ] Implement server-side shoutbox: Discord-authenticated users post messages; persisted in D1 or R2; moderated; requires sanitization and escaping of all user-generated content
 - [ ] Move role-visibility config (`BOOT_ROLE_VISIBILITY_BY_USER`) out of public client JS — it currently leaks internal usernames; serve it from a session-authenticated API endpoint instead
 
@@ -449,6 +460,7 @@ Public API: `NaimeanDiag.log(msg)`, `NaimeanDiag.set(key, value)`, `NaimeanDiag.
 - [x] `hardcoded tool URLs removed from client JS; `/go/*` routes with session-auth gate handle redirects server-side
 - [x] Immutable cache headers on versioned media/font assets; `no-cache` on HTML
 - [x] Automated `wrangler deploy` for both workers in GitHub Actions CI (`deploy-workers` job using `cloudflare/wrangler-action@v3.15.0`; requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secret/variable)
+- [x] Defined release checklist for cross-browser, mobile, accessibility, regression, CI, and deployment sanity checks
 
 ---
 

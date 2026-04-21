@@ -137,7 +137,7 @@
 - Add automated test coverage for core flows (boot, overlays, auth, shoutbox posting). ✅ (method enforcement, Discord OAuth redirect, counter increment, /go route auth all covered in worker.test.js)
 - Set up linting/formatting checks for HTML/CSS/JS in pull requests.
 - Add error logging and performance monitoring (client + edge) with alerting.
-- Use a defined release checklist (cross-browser, mobile, accessibility, regression checks).
+- Use a defined release checklist (cross-browser, mobile, accessibility, regression checks). ✅
 - Add clear ownership and issue templates for bug reporting/triage.
 
 ## P2 — Planned Priority (Performance + Product Quality)
