@@ -7,7 +7,7 @@ export class NaimeanAgent extends Agent {
     if (this.#schemaReady) {
       return;
     }
-    this.sql`
+    await this.sql`
       CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         role TEXT NOT NULL,
@@ -40,9 +40,9 @@ export class NaimeanAgent extends Agent {
           return Response.json({ error: "message is required" }, { status: 400 });
         }
 
-        this.sql`INSERT INTO messages (role, content) VALUES ('user', ${message})`;
+        await this.sql`INSERT INTO messages (role, content) VALUES ('user', ${message})`;
         const reply = `Echo: ${message}`;
-        this.sql`INSERT INTO messages (role, content) VALUES ('assistant', ${reply})`;
+        await this.sql`INSERT INTO messages (role, content) VALUES ('assistant', ${reply})`;
 
         return Response.json({ reply, instance: this.name });
       } catch (err) {
@@ -51,7 +51,7 @@ export class NaimeanAgent extends Agent {
     }
 
     if (url.pathname === "/history") {
-      const messages = this.sql`SELECT * FROM messages ORDER BY created_at ASC`;
+      const messages = await this.sql`SELECT * FROM messages ORDER BY created_at ASC`;
       return Response.json({ messages, instance: this.name });
     }
 
@@ -76,9 +76,9 @@ export class NaimeanAgent extends Agent {
     try {
       const data = JSON.parse(message);
       if (data.type === "chat" && data.message) {
-        this.sql`INSERT INTO messages (role, content) VALUES ('user', ${data.message})`;
+        await this.sql`INSERT INTO messages (role, content) VALUES ('user', ${data.message})`;
         const reply = `Echo: ${data.message}`;
-        this.sql`INSERT INTO messages (role, content) VALUES ('assistant', ${reply})`;
+        await this.sql`INSERT INTO messages (role, content) VALUES ('assistant', ${reply})`;
         ws.send(JSON.stringify({ type: "reply", reply, instance: this.name }));
       }
     } catch (err) {
@@ -103,13 +103,28 @@ function unauthorized() {
   return jsonResponse({ error: "Unauthorized — provide Authorization: Bearer <token>" }, 401);
 }
 
+function constantTimeEqual(a, b) {
+  const left = String(a);
+  const right = String(b);
+  const maxLength = Math.max(left.length, right.length);
+  let diff = left.length ^ right.length;
+
+  for (let i = 0; i < maxLength; i += 1) {
+    const l = i < left.length ? left.charCodeAt(i) : 0;
+    const r = i < right.length ? right.charCodeAt(i) : 0;
+    diff |= l ^ r;
+  }
+
+  return diff === 0;
+}
+
 function isAuthorized(request, env) {
   const expected = env.API_TOKEN;
   if (!expected) {
     return true;
   }
   const auth = request.headers.get("Authorization") || "";
-  return auth === `Bearer ${expected}`;
+  return constantTimeEqual(auth, `Bearer ${expected}`);
 }
 
 export default {
