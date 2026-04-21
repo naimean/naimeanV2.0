@@ -52,6 +52,7 @@
 # Update Log
 
 ## 2026-04-21 (P0: worker-side rate limiting)
+- Started next achievable recommendation task by defining a release checklist in `README.md` covering cross-browser, mobile, accessibility, regression, CI, and deployment sanity checks.
 - Added IP-keyed sliding-window rate limiting to `cloudflare-worker/worker.js` for all API routes: 10 req/min on POST `/hit`+`/increment` (shared bucket), 5 req/min on `/auth/discord/login` and `/auth/discord/callback`, 10 req/min on `/auth/logout`, 30 req/min on `/auth/session` and `/go/*`, 60 req/min on GET `/get`.
 - Rate limiter returns 429 with a `Retry-After` header computed at check time (no timestamp race).
 - `CF-Connecting-IP` is used as the client key (Cloudflare-injected, not spoofable); falls back to `X-Forwarded-For` for non-Cloudflare environments.
