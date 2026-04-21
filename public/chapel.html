@@ -693,7 +693,7 @@
         return;
       }
       sauceDrip.classList.remove('is-dripping');
-      // Reading offsetWidth forces layout/reflow so removing+readding the class restarts the CSS animation.
+      // Reading offsetWidth forces layout/reflow so removing+re-adding the class restarts the CSS animation.
       void sauceDrip.offsetWidth;
       sauceDrip.classList.add('is-dripping');
       window.setTimeout(function () {
