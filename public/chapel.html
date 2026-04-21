@@ -519,7 +519,7 @@
       <button class="invisible-hotspot-btn congregation-btn" id="morty-button" aria-label="Play Morty aw jeez"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="rick-button" aria-label="Play Rick nope"></button>
       <div class="sauce-drip-lane" aria-hidden="true">
-        <span class="sauce-drip" id="sauce-drip"></span>
+        <div class="sauce-drip" id="sauce-drip"></div>
       </div>
       <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move invisible hotspot tool">
         <h2 class="hotspot-tool-title">Move Tool</h2>
@@ -703,8 +703,6 @@
         selector.value = nextTargetId;
       });
     }
-
-    scheduleNextSauceDrip();
 
     function setHotspotVisibility(targetId, visible) {
       const target = getHotspotTargetById(targetId);
@@ -1621,6 +1619,7 @@
     document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
     setupHotspotTools();
     loadLayoutOverrides();
+    scheduleNextSauceDrip();
 
     function playHotspotAudio(audioElement) {
       if (!audioElement) {
