@@ -547,3 +547,121 @@ test('rate limit: GET /get allows 60 requests then returns 429', async () => {
   const throttled = await makeRlRequest('GET', '/get', ip);
   assert.strictEqual(throttled.status, 429);
 });
+
+// ─── /layout endpoint tests ───────────────────────────────────────────────────
+
+function makeLayoutDbCapture() {
+  const store = {};
+  return {
+    prepare(sql) {
+      const sqlU = sql.trim().toUpperCase();
+      return {
+        bind(...args) {
+          return {
+            async all() {
+              if (sqlU.startsWith('SELECT')) {
+                const page = args[0];
+                const rows = Object.entries(store)
+                  .filter(([k]) => k.startsWith(page + ':'))
+                  .map(([k, v]) => ({ element_id: k.slice(page.length + 1), ...v }));
+                return { results: rows };
+              }
+              return { results: [] };
+            },
+            async first() { return null; },
+            _args: args,
+            _sql: sql,
+          };
+        },
+      };
+    },
+    async batch(stmts) {
+      for (const stmt of stmts) {
+        if (stmt._sql && stmt._sql.includes('layout_overrides') && stmt._args) {
+          const [page, elementId, top, left, width, height] = stmt._args;
+          store[`${page}:${elementId}`] = { top_pct: top, left_pct: left, width_pct: width, height_pct: height };
+        }
+      }
+    },
+  };
+}
+
+test('contract: GET /layout returns 400 when page param is missing', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('GET', '/layout'),
+    makeContractEnv({ DB: makeLayoutDbCapture() }),
+  );
+  assert.strictEqual(res.status, 400);
+  const body = await res.json();
+  assert.ok(typeof body.error === 'string');
+});
+
+test('contract: GET /layout returns 400 for an invalid page param', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('GET', '/layout?page=../../etc/passwd'),
+    makeContractEnv({ DB: makeLayoutDbCapture() }),
+  );
+  assert.strictEqual(res.status, 400);
+});
+
+test('contract: GET /layout returns 200 with empty overrides for a valid page', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('GET', '/layout?page=chapel'),
+    makeContractEnv({ DB: makeLayoutDbCapture() }),
+  );
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.ok(body.overrides !== undefined, 'body.overrides must be present');
+  assert.strictEqual(typeof body.overrides, 'object');
+});
+
+test('contract: POST /layout returns 401 without an auth session', async () => {
+  const req = new Request('http://localhost/layout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ page: 'chapel', overrides: {} }),
+  });
+  const res = await worker.fetch(req, makeContractEnv({ DB: makeLayoutDbCapture() }));
+  assert.strictEqual(res.status, 401);
+  const body = await res.json();
+  assert.strictEqual(body.error, 'Unauthorized');
+});
+
+test('contract: OPTIONS preflight on /layout returns 204', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('OPTIONS', '/layout', { Origin: 'http://localhost' }),
+    makeContractEnv({ DB: makeLayoutDbCapture() }),
+  );
+  assert.strictEqual(res.status, 204);
+});
+
+test('contract: DELETE /layout is rejected with 405', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('DELETE', '/layout'),
+    makeContractEnv({ DB: makeLayoutDbCapture() }),
+  );
+  assert.strictEqual(res.status, 405);
+});
+
+test('rate limit: GET /layout allows 60 requests then returns 429', async () => {
+  const ip = '198.51.100.8';
+  const db = makeLayoutDbCapture();
+  for (let i = 0; i < 60; i++) {
+    const res = await worker.fetch(
+      new Request('http://localhost/layout?page=chapel', {
+        method: 'GET',
+        headers: { 'CF-Connecting-IP': ip },
+      }),
+      makeContractEnv({ DB: db, RATE_LIMIT_ENABLED: 'true' }),
+    );
+    assert.strictEqual(res.status, 200, `request ${i + 1} should succeed`);
+  }
+  const throttled = await worker.fetch(
+    new Request('http://localhost/layout?page=chapel', {
+      method: 'GET',
+      headers: { 'CF-Connecting-IP': ip },
+    }),
+    makeContractEnv({ DB: db, RATE_LIMIT_ENABLED: 'true' }),
+  );
+  assert.strictEqual(throttled.status, 429);
+});

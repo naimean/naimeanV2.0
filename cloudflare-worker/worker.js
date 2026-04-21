@@ -15,8 +15,12 @@
  *   GET  /auth/discord/login
  *   GET  /auth/discord/callback
  *   POST /auth/logout
+ *   GET  /layout?page=<page>  – return saved hotspot layout overrides for a page
+ *   POST /layout              – save hotspot layout overrides (requires auth session)
  *
  * Counter endpoints return JSON: { "value": <integer> }
+ * Layout GET returns JSON: { "overrides": { "<elementId>": { top, left, width, height }, … } }
+ * Layout POST accepts JSON: { "page": "<page>", "overrides": { "<elementId>": { top, left, width, height }, … } }
  */
 
 const COUNTER_ID = 'rickrolls';
@@ -56,6 +60,8 @@ const RATE_LIMITS = {
   auth_callback: 5,   // GET  /auth/discord/callback – code exchange
   auth_logout: 10,    // POST /auth/logout   – session teardown
   go: 30,             // GET  /go/*          – authenticated redirects
+  layout_read: 60,    // GET  /layout        – read layout overrides
+  layout_write: 10,   // POST /layout        – save layout overrides (auth required)
 };
 
 // Key format: `${ip}:${routeKey}` → { count, windowStart }
@@ -518,6 +524,117 @@ async function incrementCount(db) {
   return row ? row.value : 0;
 }
 
+// ── Layout override helpers ─────────────────────────────────────────────────────
+
+const LAYOUT_PAGE_MAX_LENGTH = 64;
+const LAYOUT_ELEMENT_ID_MAX_LENGTH = 64;
+const LAYOUT_OVERRIDES_MAX_ELEMENTS = 20;
+
+function isValidLayoutPage(page) {
+  if (typeof page !== 'string' || !page || page.length > LAYOUT_PAGE_MAX_LENGTH) {
+    return false;
+  }
+  return /^[a-zA-Z0-9_\-]+$/.test(page);
+}
+
+function isValidElementId(id) {
+  if (typeof id !== 'string' || !id || id.length > LAYOUT_ELEMENT_ID_MAX_LENGTH) {
+    return false;
+  }
+  return /^[a-zA-Z0-9_\-.]+$/.test(id);
+}
+
+function sanitizeLayoutNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function handleGetLayout(request, env, origin) {
+  const page = new URL(request.url).searchParams.get('page') || '';
+  if (!isValidLayoutPage(page)) {
+    return jsonResponse({ error: 'Missing or invalid page parameter' }, 400, origin, env);
+  }
+
+  const rows = await env.DB
+    .prepare('SELECT element_id, top_pct, left_pct, width_pct, height_pct FROM layout_overrides WHERE page = ?')
+    .bind(page)
+    .all();
+
+  const overrides = {};
+  for (const row of (rows.results || [])) {
+    overrides[row.element_id] = {
+      top: row.top_pct,
+      left: row.left_pct,
+      width: row.width_pct,
+      height: row.height_pct,
+    };
+  }
+
+  return jsonResponse({ overrides }, 200, origin, env);
+}
+
+async function handlePostLayout(request, env, origin) {
+  // Require a valid Discord auth session to save layout changes.
+  const session = await getSessionFromRequest(request, env);
+  if (!session) {
+    return jsonResponse({ error: 'Unauthorized' }, 401, origin, env);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return jsonResponse({ error: 'Invalid JSON body' }, 400, origin, env);
+  }
+
+  const { page, overrides } = body || {};
+  if (!isValidLayoutPage(page)) {
+    return jsonResponse({ error: 'Missing or invalid page field' }, 400, origin, env);
+  }
+
+  if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides)) {
+    return jsonResponse({ error: 'Missing or invalid overrides field' }, 400, origin, env);
+  }
+
+  const elementIds = Object.keys(overrides);
+  if (elementIds.length > LAYOUT_OVERRIDES_MAX_ELEMENTS) {
+    return jsonResponse({ error: 'Too many overrides' }, 400, origin, env);
+  }
+
+  const now = Date.now();
+  const statements = [];
+  for (const elementId of elementIds) {
+    if (!isValidElementId(elementId)) {
+      return jsonResponse({ error: `Invalid element id: ${elementId}` }, 400, origin, env);
+    }
+
+    const dims = overrides[elementId] || {};
+    const top = sanitizeLayoutNumber(dims.top);
+    const left = sanitizeLayoutNumber(dims.left);
+    const width = sanitizeLayoutNumber(dims.width);
+    const height = sanitizeLayoutNumber(dims.height);
+
+    statements.push(
+      env.DB.prepare(
+        `INSERT INTO layout_overrides (page, element_id, top_pct, left_pct, width_pct, height_pct, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(page, element_id) DO UPDATE SET
+           top_pct = excluded.top_pct,
+           left_pct = excluded.left_pct,
+           width_pct = excluded.width_pct,
+           height_pct = excluded.height_pct,
+           updated_at = excluded.updated_at`
+      ).bind(page, elementId, top, left, width, height, now)
+    );
+  }
+
+  if (statements.length > 0) {
+    await env.DB.batch(statements);
+  }
+
+  return jsonResponse({ saved: statements.length }, 200, origin, env);
+}
+
 async function getSessionFromRequest(request, env) {
   const config = getAuthConfig(env);
   if (!config.sessionSecret) {
@@ -804,15 +921,16 @@ export default {
     const isCounterRoute = isGetRoute || isHitRoute;
     const isAuthRoute = pathname.startsWith('/auth/');
     const isGoRoute = pathname.startsWith('/go/');
+    const isLayoutRoute = pathname === '/layout';
     const withApiSecurityHeaders = (response) => applyApiSecurityHeaders(response, isSecureTransport);
 
-    // Serve static assets for all non-counter/non-auth/non-go paths.
-    if (!isCounterRoute && !isAuthRoute && !isGoRoute) {
+    // Serve static assets for all non-counter/non-auth/non-go/non-layout paths.
+    if (!isCounterRoute && !isAuthRoute && !isGoRoute && !isLayoutRoute) {
       return env.ASSETS.fetch(request);
     }
 
     // Handle CORS pre-flight for API routes.
-    if ((isCounterRoute || isAuthRoute || isGoRoute) && request.method === 'OPTIONS') {
+    if ((isCounterRoute || isAuthRoute || isGoRoute || isLayoutRoute) && request.method === 'OPTIONS') {
       return withApiSecurityHeaders(new Response(null, { status: 204, headers: corsHeaders(origin, env) }));
     }
 
@@ -836,6 +954,8 @@ export default {
           routeKey = 'auth_logout';
         } else if (isGoRoute) {
           routeKey = 'go';
+        } else if (isLayoutRoute) {
+          routeKey = request.method === 'POST' ? 'layout_write' : 'layout_read';
         }
 
         if (routeKey) {
@@ -877,6 +997,15 @@ export default {
       // ── Go routes (authenticated server-side redirects) ────────────────────
       if (request.method === 'GET' && isGoRoute) {
         return withApiSecurityHeaders(await handleGoRedirect(pathname, request, env, origin));
+      }
+
+      // ── Layout routes ───────────────────────────────────────────────────────
+      if (request.method === 'GET' && isLayoutRoute) {
+        return withApiSecurityHeaders(await handleGetLayout(request, env, origin));
+      }
+
+      if (request.method === 'POST' && isLayoutRoute) {
+        return withApiSecurityHeaders(await handlePostLayout(request, env, origin));
       }
 
       return withApiSecurityHeaders(jsonResponse({ error: 'Method not allowed' }, 405, origin, env));

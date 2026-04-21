@@ -1,4 +1,4 @@
-const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go"];
+const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"];
 
 const DOCUMENT_CSP = [
   "default-src 'self'",
