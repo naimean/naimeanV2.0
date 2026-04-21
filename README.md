@@ -260,7 +260,7 @@ A standalone Cloudflare Worker deployed separately from this repo. Route: `naime
 |---|---|---|---|
 | `GET` | `/api/health` | Worker health check | — |
 | `GET` | `/api/status` | Worker + DO status info | — |
-| `GET` | `/api/status` (Agent route) | Increment and return instance request count | — |
+| `GET` | `/api/:instance/status` | Increment and return per-instance request count | — |
 | `POST` | `/api/chat` | Echo chat message and persist history | `{ "message": "..." }` |
 | `GET` | `/api/history` | Return persisted chat history for the instance | — |
 

@@ -99,31 +99,53 @@ export class NaimeanAgent extends Agent {
   }
 }
 
-function jsonResponse(data, status = 200) {
+function getAllowedOrigin(request, env) {
+  const origin = request.headers.get("Origin");
+  const configured = (env.CORS_ALLOWED_ORIGINS || "https://naimean.com,https://www.naimean.com")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (origin && configured.includes(origin)) {
+    return origin;
+  }
+
+  return configured[0] || "https://naimean.com";
+}
+
+function jsonResponse(request, env, data, status = 200) {
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": getAllowedOrigin(request, env),
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    Vary: "Origin",
+  };
+
+  if (status === 204) {
+    return new Response(null, { status, headers });
+  }
+
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    },
+    headers,
   });
 }
 
-function unauthorized() {
-  return jsonResponse({ error: "Unauthorized — provide Authorization: Bearer <token>" }, 401);
+function unauthorized(request, env) {
+  return jsonResponse(request, env, { error: "Unauthorized — provide Authorization: Bearer <token>" }, 401);
 }
 
 function constantTimeEqual(a, b) {
-  const left = String(a);
-  const right = String(b);
+  const encoder = new TextEncoder();
+  const left = encoder.encode(String(a));
+  const right = encoder.encode(String(b));
   const maxLength = Math.max(left.length, right.length);
   let diff = left.length ^ right.length;
 
   for (let i = 0; i < maxLength; i += 1) {
-    const l = i < left.length ? left.charCodeAt(i) : 0;
-    const r = i < right.length ? right.charCodeAt(i) : 0;
+    const l = i < left.length ? left[i] : 0;
+    const r = i < right.length ? right[i] : 0;
     diff |= l ^ r;
   }
 
@@ -145,11 +167,11 @@ export default {
     const path = url.pathname.replace(/^\/api/, "");
 
     if (request.method === "OPTIONS") {
-      return jsonResponse({ ok: true }, 204);
+      return jsonResponse(request, env, null, 204);
     }
 
     if (path === "/health" || path === "/status") {
-      return jsonResponse({
+      return jsonResponse(request, env, {
         ok: true,
         service: "naimean-api",
         durableObject: "NaimeanAgent",
@@ -157,10 +179,12 @@ export default {
     }
 
     if (!isAuthorized(request, env)) {
-      return unauthorized();
+      return unauthorized(request, env);
     }
 
-    const routedRequest = new Request(`https://agent${path || "/"}`, request);
+    const targetUrl = new URL(request.url);
+    targetUrl.pathname = path || "/";
+    const routedRequest = new Request(targetUrl, request);
     return routeAgentRequest(routedRequest, env);
   },
 };
