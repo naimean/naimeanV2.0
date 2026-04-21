@@ -464,6 +464,7 @@
       <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move invisible hotspot tool">
         <h2 class="hotspot-tool-title">Move Tool</h2>
         <select id="move-tool-target" data-hotspot-target>
+          <option value="__none__">no hotspot</option>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
           <option value="crusty-button">crusty hotspot</option>
@@ -489,6 +490,7 @@
       <section class="hotspot-tool" id="hotspot-size-tool" aria-label="Resize invisible hotspot tool">
         <h2 class="hotspot-tool-title">Size Tool</h2>
         <select id="size-tool-target" data-hotspot-target>
+          <option value="__none__">no hotspot</option>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
           <option value="crusty-button">crusty hotspot</option>
@@ -574,7 +576,8 @@
     const BLOOM_MIN_INTENSITY = 0.16;
     const BLOOM_MAX_INTENSITY = 0.9;
     const BLOOM_RESIZE_DEBOUNCE_MS = 120;
-    const HOTSPOT_TOOL_DEFAULT_TARGET = 'chapel-return-btn';
+    const HOTSPOT_TOOL_NONE_TARGET = '__none__';
+    const HOTSPOT_TOOL_DEFAULT_TARGET = HOTSPOT_TOOL_NONE_TARGET;
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
@@ -591,6 +594,9 @@
     }
 
     function getHotspotTargetById(targetId) {
+      if (!targetId || targetId === HOTSPOT_TOOL_NONE_TARGET) {
+        return null;
+      }
       return document.getElementById(targetId);
     }
 
@@ -637,7 +643,12 @@
       const target = getHotspotTargetById(getSelectedHotspotId());
       const moveMeta = document.getElementById('move-tool-meta');
       const sizeMeta = document.getElementById('size-tool-meta');
-      if (!target || !moveMeta || !sizeMeta) {
+      if (!moveMeta || !sizeMeta) {
+        return;
+      }
+      if (!target) {
+        moveMeta.textContent = 'No hotspot selected.';
+        sizeMeta.textContent = 'No hotspot selected.';
         return;
       }
 
