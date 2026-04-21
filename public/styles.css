@@ -565,7 +565,7 @@ body {
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 4;
+  z-index: 5;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
@@ -767,6 +767,8 @@ body {
 }
 
 
+
+.shoutbox-messages {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
