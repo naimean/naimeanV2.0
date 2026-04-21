@@ -1228,12 +1228,15 @@
       }, 500);
     });
 
+    const TRAPDOOR_RETURN_PATH = '/bedroom_antechamber.html';
+
     function navigateToSite() {
       if (isNavigatingFromChapel) {
         return;
       }
       isNavigatingFromChapel = true;
 
+      const discordAuthGateUrl = '/auth/discord/login?returnTo=' + encodeURIComponent(TRAPDOOR_RETURN_PATH);
       playDoorOpeningSound();
       congregationAudio.pause();
       if (rockRollContinuationMedia) {
@@ -1241,9 +1244,33 @@
       }
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
-      setTimeout(function () {
-        window.location.assign('bedroom_antechamber.html');
-      }, 900);
+      fetch('/auth/session', {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error('Auth check failed');
+          }
+          return response.json();
+        })
+        .then(function (payload) {
+          const nextLocation = payload && payload.authenticated === true
+            ? 'bedroom_antechamber.html'
+            : discordAuthGateUrl;
+          setTimeout(function () {
+            window.location.assign(nextLocation);
+          }, 900);
+        })
+        .catch(function () {
+          setTimeout(function () {
+            window.location.assign(discordAuthGateUrl);
+          }, 900);
+        });
     }
 
     function navigateBackToIndex() {

@@ -70,6 +70,7 @@
    - Play `assets/wrong.mp3`
    - `console.log` dropdown + textarea values
 6. Support desktop and mobile
+7. Build notes must account for each screen layout explicitly (solve each screen independently across the supported layouts)
 
 ### Visual/Interaction Direction
 - Dark cave/fantasy tone
