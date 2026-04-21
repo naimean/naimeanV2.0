@@ -77,7 +77,7 @@
             </button>
           </div>
           <div class="boot-input-row">
-            <input id="boot-input" class="boot-input" type="text" maxlength="24" value="C:\Naimean\User\Admin" aria-label="Boot command input" />
+            <input id="boot-input" class="boot-input" type="text" maxlength="32" value="C:\Naimean\User\Admin" aria-label="Boot command input" />
             <button id="boot-inline-submit" class="boot-submit boot-inline-submit" type="submit" aria-label="Submit boot command">submit</button>
           </div>
         </form>
@@ -99,6 +99,28 @@
       <div class="c64-screen">
         <div class="prank-video-overlay" id="prank-video-overlay" aria-hidden="true">
           <video id="prank-video" src="assets/notarickroll.mp4" playsinline preload="auto"></video>
+        </div>
+        <div class="email-auth-overlay" id="email-auth-overlay" role="dialog" aria-modal="true" aria-labelledby="email-auth-title">
+          <form id="email-auth-form" autocomplete="off" class="email-auth-form">
+            <div class="email-auth-title" id="email-auth-title">REGISTER</div>
+            <div class="email-auth-field">
+              <label class="email-auth-label" for="email-auth-email">EMAIL:</label>
+              <input class="email-auth-input" id="email-auth-email" type="email" maxlength="254" autocomplete="email" spellcheck="false" />
+            </div>
+            <div class="email-auth-field" id="email-auth-username-field">
+              <label class="email-auth-label" for="email-auth-username">USERNAME:</label>
+              <input class="email-auth-input" id="email-auth-username" type="text" maxlength="16" autocomplete="username" spellcheck="false" />
+            </div>
+            <div class="email-auth-field">
+              <label class="email-auth-label" for="email-auth-password">PASSWORD:</label>
+              <input class="email-auth-input" id="email-auth-password" type="password" maxlength="1024" autocomplete="current-password" />
+            </div>
+            <div class="email-auth-error" id="email-auth-error" aria-live="polite"></div>
+            <div class="email-auth-actions">
+              <button type="submit" class="email-auth-btn" id="email-auth-submit">SUBMIT</button>
+              <button type="button" class="email-auth-btn email-auth-btn--cancel" id="email-auth-cancel">CANCEL</button>
+            </div>
+          </form>
         </div>
         <div class="shoutbox-messages" id="messages" role="log" aria-live="polite" aria-label="System messages"></div>
         <div class="shoutbox-bottom">

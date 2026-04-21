@@ -582,7 +582,118 @@ body {
   background: #000;
 }
 
-.shoutbox-messages {
+.email-auth-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 52%, rgba(150, 255, 186, 0.18) 0%, rgba(92, 202, 122, 0.16) 20%, rgba(41, 96, 52, 0.32) 52%, rgba(7, 19, 10, 0.9) 100%),
+    linear-gradient(180deg, rgba(20, 44, 27, 0.98) 0%, rgba(9, 20, 12, 0.98) 100%);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+  border-radius: inherit;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.email-auth-overlay.visible {
+  display: flex;
+}
+
+.email-auth-form {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--mint);
+  font-family: 'VT323', monospace;
+  font-size: 1.1em;
+}
+
+.email-auth-title {
+  font-size: 1.3em;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  color: var(--mint-bright);
+  text-shadow: 0 0 6px rgba(140, 240, 178, 0.5);
+}
+
+.email-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.email-auth-label {
+  font-size: 0.9em;
+  opacity: 0.8;
+  letter-spacing: 0.04em;
+}
+
+.email-auth-input {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(142, 240, 178, 0.45);
+  border-radius: 3px;
+  color: var(--mint);
+  font-family: 'VT323', monospace;
+  font-size: 1.05em;
+  padding: 4px 8px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  caret-color: var(--mint);
+}
+
+.email-auth-input:focus {
+  border-color: var(--mint-bright);
+  box-shadow: 0 0 4px rgba(140, 240, 178, 0.3);
+}
+
+.email-auth-error {
+  color: #ff8080;
+  font-size: 0.9em;
+  min-height: 1.2em;
+}
+
+.email-auth-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.email-auth-btn {
+  background: transparent;
+  border: 1px solid rgba(142, 240, 178, 0.5);
+  border-radius: 3px;
+  color: var(--mint);
+  font-family: 'VT323', monospace;
+  font-size: 1em;
+  padding: 4px 14px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.15s, color 0.15s;
+}
+
+.email-auth-btn:hover,
+.email-auth-btn:focus-visible {
+  background: rgba(142, 240, 178, 0.15);
+  color: var(--mint-bright);
+  outline: none;
+}
+
+.email-auth-btn--cancel {
+  border-color: rgba(142, 240, 178, 0.25);
+  opacity: 0.7;
+}
+
+.email-auth-btn[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;

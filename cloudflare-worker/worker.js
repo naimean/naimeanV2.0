@@ -12,6 +12,8 @@
  *   POST /hit  – increment the counter by 1, return the new value
  *   POST /increment  – alias of /hit for backward compatibility
  *   GET  /auth/session
+ *   POST /auth/register
+ *   POST /auth/emaillogin
  *   GET  /auth/discord/login
  *   GET  /auth/discord/callback
  *   POST /auth/logout
@@ -52,6 +54,8 @@ const RATE_LIMITS = {
   get: 60,            // GET /get           – read-only counter
   hit: 10,            // POST /hit, /increment – state-changing writes
   auth_session: 30,   // GET  /auth/session  – session validation
+  auth_register: 3,   // POST /auth/register – email account creation
+  auth_email_login: 5, // POST /auth/emaillogin – email sign-in
   auth_login: 5,      // GET  /auth/discord/login   – OAuth flow start
   auth_callback: 5,   // GET  /auth/discord/callback – code exchange
   auth_logout: 10,    // POST /auth/logout   – session teardown
@@ -485,6 +489,91 @@ function sanitizeReturnPath(rawValue) {
   return trimmed;
 }
 
+// ─── PBKDF2 password hashing ───────────────────────────────────────────────────
+// Salt is prepended to the derived key and stored together as a single base64url
+// string so the schema stays simple (one column per user).
+
+const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_HASH = 'SHA-256';
+const PBKDF2_KEY_LENGTH_BITS = 256;
+const PBKDF2_SALT_BYTES = 16;
+// Dummy hash used in login's constant-time path when an email is not found.
+// Its length matches a real encoded hash (16 salt + 32 key = 48 bytes → 64 base64url chars).
+const PBKDF2_DUMMY_HASH = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(PBKDF2_SALT_BYTES));
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    textEncoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: PBKDF2_HASH },
+    keyMaterial,
+    PBKDF2_KEY_LENGTH_BITS,
+  );
+  const hashBytes = new Uint8Array(bits);
+  const combined = new Uint8Array(PBKDF2_SALT_BYTES + hashBytes.length);
+  combined.set(salt);
+  combined.set(hashBytes, PBKDF2_SALT_BYTES);
+  return encodeBase64UrlFromBytes(combined);
+}
+
+async function verifyPassword(password, storedHash) {
+  let combined;
+  try {
+    combined = decodeBase64UrlToBytes(storedHash);
+  } catch (_) {
+    return false;
+  }
+  if (combined.length < PBKDF2_SALT_BYTES + 1) {
+    return false;
+  }
+  const salt = combined.slice(0, PBKDF2_SALT_BYTES);
+  const expectedHashBytes = combined.slice(PBKDF2_SALT_BYTES);
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    textEncoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: PBKDF2_HASH },
+    keyMaterial,
+    PBKDF2_KEY_LENGTH_BITS,
+  );
+  const hashBytes = new Uint8Array(bits);
+  if (hashBytes.length !== expectedHashBytes.length) {
+    return false;
+  }
+  // Constant-time comparison to prevent timing attacks.
+  let diff = 0;
+  for (let i = 0; i < hashBytes.length; i += 1) {
+    diff |= hashBytes[i] ^ expectedHashBytes[i];
+  }
+  return diff === 0;
+}
+
+function isValidEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return false;
+  }
+  const trimmed = email.trim();
+  return trimmed.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+}
+
+// Usernames: 1–16 alphanumeric characters, hyphens, or underscores.
+function isValidUsername(username) {
+  if (!username || typeof username !== 'string') {
+    return false;
+  }
+  return /^[a-zA-Z0-9_-]{1,16}$/.test(username.trim());
+}
+
 function getAuthConfig(env) {
   const clientId = typeof env.DISCORD_CLIENT_ID === 'string' ? env.DISCORD_CLIENT_ID.trim() : '';
   const clientSecret = typeof env.DISCORD_CLIENT_SECRET === 'string' ? env.DISCORD_CLIENT_SECRET.trim() : '';
@@ -556,6 +645,7 @@ async function handleAuthSession(request, env, origin) {
       username: session.username || '',
       displayName: session.displayName || '',
       avatar: session.avatar || '',
+      provider: session.provider || 'discord',
     },
   }, 200, origin, env);
 }
@@ -581,6 +671,139 @@ async function handleAuthLogout(request, env, origin, url) {
     env,
     { 'Set-Cookie': clearSessionCookie },
   );
+}
+
+async function handleRegister(request, env, origin, url) {
+  if (origin && !isAllowedOrigin(origin, env)) {
+    return jsonResponse({ error: 'Forbidden' }, 403, origin, env);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return jsonResponse({ error: 'Invalid request body' }, 400, origin, env);
+  }
+
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const username = typeof body.username === 'string' ? body.username.trim() : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+
+  if (!isValidEmail(email)) {
+    return jsonResponse({ error: 'Invalid email address' }, 400, origin, env);
+  }
+  if (!isValidUsername(username)) {
+    return jsonResponse({ error: 'Username must be 1–16 characters: letters, numbers, hyphens, or underscores' }, 400, origin, env);
+  }
+  if (!password || password.length < 8 || password.length > 1024) {
+    return jsonResponse({ error: 'Password must be at least 8 characters' }, 400, origin, env);
+  }
+
+  const config = getAuthConfig(env);
+  if (!config.sessionSecret) {
+    return jsonResponse({ error: 'Service not configured' }, 503, origin, env);
+  }
+
+  let existingRow;
+  try {
+    existingRow = await env.DB
+      .prepare('SELECT id FROM registered_users WHERE email = ?')
+      .bind(email)
+      .first();
+  } catch (_) {
+    return jsonResponse({ error: 'Internal server error' }, 500, origin, env);
+  }
+  if (existingRow) {
+    return jsonResponse({ error: 'An account with this email already exists' }, 409, origin, env);
+  }
+
+  const passwordHash = await hashPassword(password);
+  const userId = randomBase64Url(16);
+
+  try {
+    await env.DB
+      .prepare('INSERT INTO registered_users (id, email, username, password_hash, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(userId, email, username, passwordHash, Date.now())
+      .run();
+  } catch (_) {
+    return jsonResponse({ error: 'Internal server error' }, 500, origin, env);
+  }
+
+  const sessionPayload = {
+    sub: userId,
+    username,
+    displayName: username,
+    avatar: '',
+    provider: 'email',
+    exp: Date.now() + (SESSION_TTL_SECONDS * 1000),
+  };
+  const sessionToken = await createSignedToken(sessionPayload, config.sessionSecret);
+  const sessionCookie = serializeCookie(SESSION_COOKIE_NAME, sessionToken, {
+    maxAge: SESSION_TTL_SECONDS,
+    secure: shouldUseSecureCookie(url),
+  });
+
+  return jsonResponse({ ok: true, username }, 200, origin, env, { 'Set-Cookie': sessionCookie });
+}
+
+async function handleEmailLogin(request, env, origin, url) {
+  if (origin && !isAllowedOrigin(origin, env)) {
+    return jsonResponse({ error: 'Forbidden' }, 403, origin, env);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return jsonResponse({ error: 'Invalid request body' }, 400, origin, env);
+  }
+
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+
+  if (!email || !password) {
+    return jsonResponse({ error: 'Email and password are required' }, 400, origin, env);
+  }
+
+  const config = getAuthConfig(env);
+  if (!config.sessionSecret) {
+    return jsonResponse({ error: 'Service not configured' }, 503, origin, env);
+  }
+
+  let userRow;
+  try {
+    userRow = await env.DB
+      .prepare('SELECT id, username, password_hash FROM registered_users WHERE email = ?')
+      .bind(email)
+      .first();
+  } catch (_) {
+    return jsonResponse({ error: 'Internal server error' }, 500, origin, env);
+  }
+
+  // Always run verifyPassword even when the user is not found to prevent
+  // timing-based email enumeration attacks.
+  const hashToVerify = userRow ? userRow.password_hash : PBKDF2_DUMMY_HASH;
+  const passwordValid = await verifyPassword(password, hashToVerify);
+
+  if (!userRow || !passwordValid) {
+    return jsonResponse({ error: 'Invalid email or password' }, 401, origin, env);
+  }
+
+  const sessionPayload = {
+    sub: userRow.id,
+    username: userRow.username,
+    displayName: userRow.username,
+    avatar: '',
+    provider: 'email',
+    exp: Date.now() + (SESSION_TTL_SECONDS * 1000),
+  };
+  const sessionToken = await createSignedToken(sessionPayload, config.sessionSecret);
+  const sessionCookie = serializeCookie(SESSION_COOKIE_NAME, sessionToken, {
+    maxAge: SESSION_TTL_SECONDS,
+    secure: shouldUseSecureCookie(url),
+  });
+
+  return jsonResponse({ ok: true, username: userRow.username }, 200, origin, env, { 'Set-Cookie': sessionCookie });
 }
 
 async function handleDiscordLogin(request, env, url) {
@@ -828,6 +1051,10 @@ export default {
           routeKey = 'hit';
         } else if (pathname === '/auth/session') {
           routeKey = 'auth_session';
+        } else if (pathname === '/auth/register') {
+          routeKey = 'auth_register';
+        } else if (pathname === '/auth/emaillogin') {
+          routeKey = 'auth_email_login';
         } else if (pathname === '/auth/discord/login') {
           routeKey = 'auth_login';
         } else if (pathname === '/auth/discord/callback') {
@@ -860,6 +1087,14 @@ export default {
       // ── Auth routes ────────────────────────────────────────────────────────
       if (request.method === 'GET' && pathname === '/auth/session') {
         return withApiSecurityHeaders(await handleAuthSession(request, env, origin));
+      }
+
+      if (request.method === 'POST' && pathname === '/auth/register') {
+        return withApiSecurityHeaders(await handleRegister(request, env, origin, url));
+      }
+
+      if (request.method === 'POST' && pathname === '/auth/emaillogin') {
+        return withApiSecurityHeaders(await handleEmailLogin(request, env, origin, url));
       }
 
       if (request.method === 'POST' && pathname === '/auth/logout') {
