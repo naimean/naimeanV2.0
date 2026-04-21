@@ -1,86 +1,139 @@
-/**
- * naimean-api Worker
- *
- * Cloudflare Worker serving the REST API at naimean.com/api/*.
- * Backed by D1 (SQLite at the edge) with KV available for future use.
- *
- * Bindings required (configured in wrangler.toml):
- *   DB  →  naimean-db  (D1 database)
- *   KV  →  naimean-kv  (Workers KV — create namespace first, see wrangler.toml)
- *
- * Endpoints:
- *   GET  /api/health  – health check
- *   GET  /api/data    – list entries (latest 50, ordered by created_at DESC)
- *   POST /api/data    – create a new entry  { "title": "...", "content": "..." }
- *   *    other paths  – 404
- */
+import { Agent, routeAgentRequest } from "agents";
 
-const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+export class NaimeanAgent extends Agent {
+  #schemaReady = false;
 
-const SECURITY_HEADERS = {
-  'Content-Security-Policy': API_CSP,
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-};
+  async ensureSchema() {
+    if (this.#schemaReady) {
+      return;
+    }
+    this.sql`
+      CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    this.#schemaReady = true;
+  }
 
-function jsonResponse(body, status = 200) {
-  return new Response(JSON.stringify(body), {
+  async onRequest(request) {
+    await this.ensureSchema();
+    const url = new URL(request.url);
+
+    if (url.pathname === "/status") {
+      const count = (await this.state.storage.get("request_count")) || 0;
+      await this.state.storage.put("request_count", count + 1);
+      return Response.json({
+        agent: "naimean-agent",
+        instance: this.name,
+        requestCount: count + 1,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (url.pathname === "/chat" && request.method === "POST") {
+      try {
+        const { message } = await request.json();
+        if (!message || typeof message !== "string") {
+          return Response.json({ error: "message is required" }, { status: 400 });
+        }
+
+        this.sql`INSERT INTO messages (role, content) VALUES ('user', ${message})`;
+        const reply = `Echo: ${message}`;
+        this.sql`INSERT INTO messages (role, content) VALUES ('assistant', ${reply})`;
+
+        return Response.json({ reply, instance: this.name });
+      } catch (err) {
+        return Response.json({ error: err?.message || "internal error" }, { status: 500 });
+      }
+    }
+
+    if (url.pathname === "/history") {
+      const messages = this.sql`SELECT * FROM messages ORDER BY created_at ASC`;
+      return Response.json({ messages, instance: this.name });
+    }
+
+    return Response.json({
+      agent: "naimean-agent",
+      instance: this.name,
+      endpoints: {
+        status: "GET /status",
+        chat: "POST /chat { message: string }",
+        history: "GET /history",
+      },
+    });
+  }
+
+  async onConnect(ws) {
+    await this.ensureSchema();
+    ws.send(JSON.stringify({ type: "connected", instance: this.name }));
+  }
+
+  async onMessage(ws, message) {
+    await this.ensureSchema();
+    try {
+      const data = JSON.parse(message);
+      if (data.type === "chat" && data.message) {
+        this.sql`INSERT INTO messages (role, content) VALUES ('user', ${data.message})`;
+        const reply = `Echo: ${data.message}`;
+        this.sql`INSERT INTO messages (role, content) VALUES ('assistant', ${reply})`;
+        ws.send(JSON.stringify({ type: "reply", reply, instance: this.name }));
+      }
+    } catch (err) {
+      ws.send(JSON.stringify({ type: "error", error: err?.message || "invalid message" }));
+    }
+  }
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
     status,
     headers: {
-      'Content-Type': 'application/json',
-      ...SECURITY_HEADERS,
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
+}
+
+function unauthorized() {
+  return jsonResponse({ error: "Unauthorized — provide Authorization: Bearer <token>" }, 401);
+}
+
+function isAuthorized(request, env) {
+  const expected = env.API_TOKEN;
+  if (!expected) {
+    return true;
+  }
+  const auth = request.headers.get("Authorization") || "";
+  return auth === `Bearer ${expected}`;
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const { pathname } = url;
-    const method = request.method;
+    const path = url.pathname.replace(/^\/api/, "");
 
-    try {
-      // GET /api/health
-      if (pathname === '/api/health' && method === 'GET') {
-        return jsonResponse({ status: 'ok', timestamp: new Date().toISOString() });
-      }
-
-      // GET /api/data — list entries (latest 50)
-      if (pathname === '/api/data' && method === 'GET') {
-        const result = await env.DB.prepare(
-          'SELECT id, title, content, created_at FROM entries ORDER BY created_at DESC LIMIT 50'
-        ).all();
-        return jsonResponse(result.results);
-      }
-
-      // POST /api/data — create a new entry
-      if (pathname === '/api/data' && method === 'POST') {
-        let body;
-        try {
-          body = await request.json();
-        } catch {
-          return jsonResponse({ error: 'invalid JSON body' }, 400);
-        }
-
-        const title = body && typeof body.title === 'string' ? body.title.trim() : '';
-        if (!title) {
-          return jsonResponse({ error: 'title is required' }, 400);
-        }
-
-        const content = body && typeof body.content === 'string' ? body.content : null;
-
-        await env.DB.prepare(
-          'INSERT INTO entries (title, content) VALUES (?, ?)'
-        ).bind(title, content).run();
-
-        return jsonResponse({ success: true }, 201);
-      }
-
-      // Fallback 404
-      return jsonResponse('naimean.com API — use /api/health or /api/data', 404);
-    } catch (err) {
-      return jsonResponse({ error: 'internal server error' }, 500);
+    if (request.method === "OPTIONS") {
+      return jsonResponse({ ok: true }, 204);
     }
+
+    if (path === "/health" || path === "/status") {
+      return jsonResponse({
+        ok: true,
+        service: "naimean-api",
+        durableObject: "NaimeanAgent",
+      });
+    }
+
+    if (!isAuthorized(request, env)) {
+      return unauthorized();
+    }
+
+    const routedRequest = new Request(`https://agent${path || "/"}`, request);
+    return routeAgentRequest(routedRequest, env);
   },
 };
