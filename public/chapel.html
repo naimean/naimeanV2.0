@@ -522,7 +522,7 @@
       <button class="invisible-hotspot-btn congregation-btn" id="goose-button" aria-label="Play Goose honk"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="morty-button" aria-label="Play Morty aw jeez"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="rick-button" aria-label="Play Rick nope"></button>
-      <div class="sauce-drip-lane" aria-hidden="true">
+      <div class="sauce-drip-lane" aria-hidden="true" role="presentation">
         <div class="sauce-drip" id="sauce-drip"></div>
       </div>
       <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move invisible hotspot tool">
@@ -655,6 +655,7 @@
     let torchBloomSampleContext = null;
     let torchBloomIntensityBound = false;
     let sauceDripTimerId = null;
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sauceDrip = document.getElementById('sauce-drip');
 
     function parseNumericValue(value) {
@@ -692,7 +693,7 @@
         return;
       }
       sauceDrip.classList.remove('is-dripping');
-      // Force reflow so the CSS animation can restart each cycle.
+      // Reading offsetWidth forces layout/reflow so removing+readding the class restarts the CSS animation.
       void sauceDrip.offsetWidth;
       sauceDrip.classList.add('is-dripping');
       window.setTimeout(function () {
@@ -701,7 +702,7 @@
     }
 
     function scheduleNextSauceDrip() {
-      if (!sauceDrip || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (!sauceDrip || reducedMotionQuery.matches) {
         return;
       }
       clearSauceDripTimer();
