@@ -413,8 +413,8 @@ test('contract: GET /auth/discord/login redirects to Discord when fully configur
     SESSION_SECRET: 'a-secret-that-is-long-enough-for-hmac',
   });
   const res = await worker.fetch(makeContractRequest('GET', '/auth/discord/login'), oauthEnv);
-  // Redirects: 302 with Location pointing at Discord's OAuth authorize endpoint
-  assert.ok(res.status === 302 || res.status === 303, `expected redirect, got ${res.status}`);
+  // handleDiscordLogin uses createRedirectResponse which returns 302.
+  assert.strictEqual(res.status, 302, `expected 302 redirect, got ${res.status}`);
   const location = res.headers.get('Location') || '';
   assert.ok(location.startsWith('https://discord.com/'), `Location must point to Discord, got: ${location}`);
   assert.ok(location.includes('client_id=test-client-id'), 'Location must include client_id');
@@ -430,6 +430,10 @@ test('contract: POST /increment returns an incremented value from D1', async () 
   // Mock a D1 that simulates a real value of 41 before increment → 42 after.
   const mockDbWithValue = {
     prepare(sql) {
+      // The worker uses an UPDATE … RETURNING statement to atomically increment
+      // and read back the new value, and a SELECT statement to read-only fetch.
+      // We detect which query is in flight by checking for the UPDATE keyword so
+      // the mock can return the correct post-increment value.
       const isUpdate = sql.trim().toUpperCase().startsWith('UPDATE');
       return {
         bind(..._args) {
