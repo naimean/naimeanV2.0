@@ -229,7 +229,7 @@ Chapel scene with stitched PNG layers, warm torch bloom CSS overlays (`mix-blend
 - **Rock-roll continuation** — if `sessionStorage` has a saved video playback position from the prank, the video resumes from that position before congregation audio starts
 - **Discord invite redirect** — if the `naimean-discord-invite-redirect-pending` flag is set in `sessionStorage`, queries the Discord Widget API for a live invite link and opens it (falls back to in-page Discord iframe widget)
 - **Chapel return button** — invisible hotspot over the C64 screen → black fade → `index.html`
-- **Trapdoor button** — invisible hotspot at the bottom → `bedroom_antechamber.html`
+- **Trapdoor button** — invisible hotspot at the bottom → Discord auth gate (`/auth/discord/login?returnTo=/bedroom_antechamber.html`) when unauthenticated, otherwise enters `bedroom_antechamber.html`
 - **Congregation audio** (`assets/congregation.mp3`) plays on arrival
 
 ---

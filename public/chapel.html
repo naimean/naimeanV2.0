@@ -243,8 +243,10 @@
       height: max(calc(16% - 390px), 24px);
     }
 
+    #chapel-return-btn,
     #crusty-button,
     #goose-button,
+    #rick-button,
     #morty-button {
       border: none;
       outline: none;
@@ -1443,6 +1445,10 @@
       }, 500);
     });
 
+    const TRAPDOOR_DESTINATION_PATH = '/bedroom_antechamber.html';
+    const DISCORD_AUTH_GATE_URL = '/auth/discord/login?returnTo=' + encodeURIComponent(TRAPDOOR_DESTINATION_PATH);
+    const FADE_TRANSITION_DURATION_MS = 900;
+
     function navigateToSite() {
       if (isNavigatingFromChapel) {
         return;
@@ -1456,9 +1462,34 @@
       }
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
-      setTimeout(function () {
-        window.location.assign('bedroom_antechamber.html');
-      }, 900);
+      fetch('/auth/session', {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error('Auth check failed with status ' + response.status);
+          }
+          return response.json();
+        })
+        .then(function (payload) {
+          const nextLocation = payload.authenticated === true
+            ? TRAPDOOR_DESTINATION_PATH
+            : DISCORD_AUTH_GATE_URL;
+          setTimeout(function () {
+            window.location.assign(nextLocation);
+          }, FADE_TRANSITION_DURATION_MS);
+        })
+        .catch(function (error) {
+          console.warn('Trapdoor auth check failed, redirecting to Discord auth gate.', error);
+          setTimeout(function () {
+            window.location.assign(DISCORD_AUTH_GATE_URL);
+          }, FADE_TRANSITION_DURATION_MS);
+        });
     }
 
     function navigateBackToIndex() {

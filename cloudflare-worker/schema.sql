@@ -24,3 +24,12 @@ CREATE TABLE IF NOT EXISTS layout_overrides (
   updated_at  INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (page, element_id)
 );
+
+-- Email-registered users for the bedroom switcher.
+CREATE TABLE IF NOT EXISTS registered_users (
+  id            TEXT    PRIMARY KEY,
+  email         TEXT    NOT NULL UNIQUE,
+  username      TEXT    NOT NULL,
+  password_hash TEXT    NOT NULL,
+  created_at    INTEGER NOT NULL
+);

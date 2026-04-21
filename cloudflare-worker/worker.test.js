@@ -665,3 +665,289 @@ test('rate limit: GET /layout allows 60 requests then returns 429', async () => 
   );
   assert.strictEqual(throttled.status, 429);
 });
+
+
+// ─── Email auth mock DB helper ────────────────────────────────────────────────
+// Supports SELECT (first()) and INSERT (run()) on registered_users,
+// and falls back to the rickroll counter mock for other queries.
+
+function makeEmailAuthMockDb(existingUsers = []) {
+  const store = new Map(existingUsers.map((u) => [u.email, u]));
+  return {
+    prepare(sql) {
+      const normalized = sql.trim().toUpperCase();
+      const isRegisteredUsersSelect = normalized.startsWith('SELECT') && sql.includes('registered_users');
+      const isRegisteredUsersInsert = normalized.startsWith('INSERT') && sql.includes('registered_users');
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              if (isRegisteredUsersSelect) {
+                return store.get(args[0]) || null;
+              }
+              return { value: 0 };
+            },
+            async run() {
+              if (isRegisteredUsersInsert) {
+                const [id, email, username, passwordHash, createdAt] = args;
+                store.set(email, { id, email, username, password_hash: passwordHash, created_at: createdAt });
+              }
+              return { success: true };
+            },
+          };
+        },
+      };
+    },
+  };
+}
+
+function makeEmailAuthRequest(method, path, body = null) {
+  const options = {
+    method,
+    headers: { 'Content-Type': 'application/json', Origin: 'http://localhost' },
+  };
+  if (body !== null) {
+    options.body = JSON.stringify(body);
+  }
+  return new Request(`http://localhost${path}`, options);
+}
+
+const EMAIL_AUTH_SESSION_SECRET = 'test-session-secret-long-enough-for-hmac';
+
+// ─── POST /auth/register contract tests ──────────────────────────────────────
+
+test('contract: POST /auth/register creates an account and sets a session cookie', async () => {
+  const db = makeEmailAuthMockDb();
+  const env = makeContractEnv({ DB: db, SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'alice@example.com',
+      username: 'alice',
+      password: 'password123',
+    }),
+    env,
+  );
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(body.ok, true);
+  assert.strictEqual(body.username, 'alice');
+  const setCookie = res.headers.get('Set-Cookie') || '';
+  assert.ok(setCookie.includes('naimean_session='), 'Session cookie must be set on register');
+});
+
+test('contract: POST /auth/register returns 409 for a duplicate email', async () => {
+  const db = makeEmailAuthMockDb([{
+    id: 'existing-id',
+    email: 'taken@example.com',
+    username: 'taken',
+    password_hash: 'fakehash',
+    created_at: Date.now(),
+  }]);
+  const env = makeContractEnv({ DB: db, SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'taken@example.com',
+      username: 'newuser',
+      password: 'password123',
+    }),
+    env,
+  );
+  assert.strictEqual(res.status, 409);
+  const body = await res.json();
+  assert.ok(typeof body.error === 'string');
+});
+
+test('contract: POST /auth/register returns 400 for an invalid email', async () => {
+  const env = makeContractEnv({ SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'not-an-email',
+      username: 'user',
+      password: 'password123',
+    }),
+    env,
+  );
+  assert.strictEqual(res.status, 400);
+});
+
+test('contract: POST /auth/register returns 400 for an invalid username', async () => {
+  const env = makeContractEnv({ SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'user@example.com',
+      username: '',
+      password: 'password123',
+    }),
+    env,
+  );
+  assert.strictEqual(res.status, 400);
+});
+
+test('contract: POST /auth/register returns 400 for a username that is too long', async () => {
+  const env = makeContractEnv({ SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'user@example.com',
+      username: 'this-username-is-way-too-long-for-the-limit',
+      password: 'password123',
+    }),
+    env,
+  );
+  assert.strictEqual(res.status, 400);
+});
+
+test('contract: POST /auth/register returns 400 when password is too short', async () => {
+  const env = makeContractEnv({ SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'user@example.com',
+      username: 'user',
+      password: 'short',
+    }),
+    env,
+  );
+  assert.strictEqual(res.status, 400);
+});
+
+// ─── POST /auth/emaillogin contract tests ─────────────────────────────────────
+
+test('contract: POST /auth/emaillogin returns 200 with correct credentials', async () => {
+  // Use a shared DB so the registered user persists for the login call.
+  const db = makeEmailAuthMockDb();
+  const env = makeContractEnv({ DB: db, SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+
+  // Register first so a real password hash is stored.
+  await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'bob@example.com',
+      username: 'bob',
+      password: 'correct-horse',
+    }),
+    env,
+  );
+
+  const loginRes = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/emaillogin', {
+      email: 'bob@example.com',
+      password: 'correct-horse',
+    }),
+    env,
+  );
+  assert.strictEqual(loginRes.status, 200);
+  const body = await loginRes.json();
+  assert.strictEqual(body.ok, true);
+  assert.strictEqual(body.username, 'bob');
+  const setCookie = loginRes.headers.get('Set-Cookie') || '';
+  assert.ok(setCookie.includes('naimean_session='), 'Session cookie must be set on login');
+});
+
+test('contract: POST /auth/emaillogin returns 401 for a wrong password', async () => {
+  const db = makeEmailAuthMockDb();
+  const env = makeContractEnv({ DB: db, SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+
+  await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'carol@example.com',
+      username: 'carol',
+      password: 'correct-password',
+    }),
+    env,
+  );
+
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/emaillogin', {
+      email: 'carol@example.com',
+      password: 'wrong-password',
+    }),
+    env,
+  );
+  assert.strictEqual(res.status, 401);
+});
+
+test('contract: POST /auth/emaillogin returns 401 for an unknown email', async () => {
+  const env = makeContractEnv({
+    DB: makeEmailAuthMockDb(),
+    SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET,
+  });
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/emaillogin', {
+      email: 'nobody@example.com',
+      password: 'somepassword',
+    }),
+    env,
+  );
+  assert.strictEqual(res.status, 401);
+});
+
+test('contract: POST /auth/emaillogin returns 400 when body is missing required fields', async () => {
+  const env = makeContractEnv({ SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/emaillogin', { email: '' }),
+    env,
+  );
+  assert.strictEqual(res.status, 400);
+});
+
+// ─── Session provider field ───────────────────────────────────────────────────
+
+test('contract: GET /auth/session returns provider=email for an email-registered user', async () => {
+  const db = makeEmailAuthMockDb();
+  const env = makeContractEnv({ DB: db, SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET });
+
+  const regRes = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'dave@example.com',
+      username: 'dave',
+      password: 'password123',
+    }),
+    env,
+  );
+  const setCookie = regRes.headers.get('Set-Cookie') || '';
+  const match = setCookie.match(/naimean_session=([^;]+)/);
+  assert.ok(match, 'Session cookie must be present after register');
+
+  const sessionRes = await worker.fetch(
+    new Request('http://localhost/auth/session', {
+      method: 'GET',
+      headers: { Cookie: `naimean_session=${match[1]}` },
+    }),
+    env,
+  );
+  assert.strictEqual(sessionRes.status, 200);
+  const body = await sessionRes.json();
+  assert.strictEqual(body.authenticated, true);
+  assert.strictEqual(body.user.username, 'dave');
+  assert.strictEqual(body.user.provider, 'email');
+});
+
+test('contract: POST /auth/register requires POST method (GET returns 405)', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/auth/register'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+test('contract: POST /auth/emaillogin requires POST method (GET returns 405)', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/auth/emaillogin'), makeContractEnv());
+  assert.strictEqual(res.status, 405);
+});
+
+// ─── Email auth rate limit tests ──────────────────────────────────────────────
+
+test('rate limit: POST /auth/register is capped at 3 requests per minute', async () => {
+  const ip = '198.51.100.20';
+  for (let i = 0; i < 3; i++) {
+    const res = await makeRlRequest('POST', '/auth/register', ip);
+    assert.notStrictEqual(res.status, 429, `request ${i + 1} must not be throttled`);
+  }
+  const throttled = await makeRlRequest('POST', '/auth/register', ip);
+  assert.strictEqual(throttled.status, 429);
+});
+
+test('rate limit: POST /auth/emaillogin is capped at 5 requests per minute', async () => {
+  const ip = '198.51.100.21';
+  for (let i = 0; i < 5; i++) {
+    const res = await makeRlRequest('POST', '/auth/emaillogin', ip);
+    assert.notStrictEqual(res.status, 429, `request ${i + 1} must not be throttled`);
+  }
+  const throttled = await makeRlRequest('POST', '/auth/emaillogin', ip);
+  assert.strictEqual(throttled.status, 429);
+});
