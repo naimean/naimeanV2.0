@@ -70,6 +70,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const emailAuthError = document.getElementById('email-auth-error');
   const emailAuthSubmit = document.getElementById('email-auth-submit');
   const emailAuthCancel = document.getElementById('email-auth-cancel');
+  const discordAuthLoginBtn = document.getElementById('discord-auth-login');
+  const discordAuthUser = document.getElementById('discord-auth-user');
+  const discordAuthName = document.getElementById('discord-auth-name');
+  const discordAuthAvatar = document.getElementById('discord-auth-avatar');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
   const BOOT_DEFAULT_SUFFIX = 'Admin';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
@@ -680,6 +684,54 @@ document.addEventListener('DOMContentLoaded', function() {
     window.location.assign(`${AUTH_DISCORD_LOGIN_PATH}?returnTo=${returnTo}`);
   }
 
+  function getSessionDisplayName(user) {
+    if (!user) {
+      return '';
+    }
+    return (user.displayName || user.username || user.id || 'user').trim();
+  }
+
+  function getDiscordAvatarUrl(user) {
+    if (!user || user.provider !== 'discord') {
+      return '';
+    }
+    const userId = typeof user.id === 'string' ? user.id.trim() : '';
+    const avatarHash = typeof user.avatar === 'string' ? user.avatar.trim() : '';
+    if (!userId || !avatarHash) {
+      return '';
+    }
+    const extension = avatarHash.startsWith('a_') ? 'gif' : 'png';
+    return `https://cdn.discordapp.com/avatars/${encodeURIComponent(userId)}/${encodeURIComponent(avatarHash)}.${extension}?size=64`;
+  }
+
+  function renderDiscordAuthChip() {
+    if (!discordAuthLoginBtn || !discordAuthUser || !discordAuthName || !discordAuthAvatar) {
+      return;
+    }
+
+    if (!authSession || !authSession.authenticated || !authSession.user) {
+      discordAuthLoginBtn.hidden = false;
+      discordAuthUser.hidden = true;
+      discordAuthName.textContent = '';
+      discordAuthAvatar.textContent = '';
+      discordAuthAvatar.style.backgroundImage = '';
+      return;
+    }
+
+    const displayName = getSessionDisplayName(authSession.user);
+    const avatarUrl = getDiscordAvatarUrl(authSession.user);
+    discordAuthName.textContent = displayName || 'user';
+    discordAuthLoginBtn.hidden = true;
+    discordAuthUser.hidden = false;
+    if (avatarUrl) {
+      discordAuthAvatar.style.backgroundImage = `url("${avatarUrl}")`;
+      discordAuthAvatar.textContent = '';
+    } else {
+      discordAuthAvatar.style.backgroundImage = '';
+      discordAuthAvatar.textContent = (displayName || 'U').charAt(0);
+    }
+  }
+
   async function refreshAuthSession() {
     try {
       const response = await fetch(AUTH_SESSION_API_URL, {
@@ -689,6 +741,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       if (!response.ok) {
         authSession = createUnauthenticatedSession();
+        renderDiscordAuthChip();
         return authSession;
       }
       const payload = await response.json();
@@ -696,9 +749,11 @@ document.addEventListener('DOMContentLoaded', function() {
         authenticated: Boolean(payload && payload.authenticated),
         user: payload && payload.user ? payload.user : null,
       };
+      renderDiscordAuthChip();
       return authSession;
     } catch (_) {
       authSession = createUnauthenticatedSession();
+      renderDiscordAuthChip();
       return authSession;
     }
   }
@@ -719,9 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function appendAuthStatusMessage() {
     const user = authSession && authSession.user;
-    const displayName = user
-      ? (user.displayName || user.username || user.id || 'user')
-      : '';
+    const displayName = getSessionDisplayName(user);
     if (authSession && authSession.authenticated) {
       appendShoutboxMessage(`AUTH> Signed in as ${displayName}.`);
       appendShoutboxMessage('AUTH> Type C:\\Naimean\\logout to sign out.');
@@ -852,6 +905,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hideEmailAuthForm();
         await refreshAuthSession();
         applySessionToBootInput();
+        renderDiscordAuthChip();
         const action = emailAuthMode === 'register' ? 'Account created.' : 'Signed in.';
         appendShoutboxMessage(`AUTH> ${action} Welcome, ${payload.username}.`);
         appendShoutboxMessage('AUTH> Your username has been loaded into the boot switcher.');
@@ -897,6 +951,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       } catch (_) {}
       authSession = createUnauthenticatedSession();
+      renderDiscordAuthChip();
       appendShoutboxMessage('AUTH> Signed out.');
       appendShoutboxMessage('AUTH> Type C:\\Naimean\\login to sign back in.');
       return true;
@@ -1382,8 +1437,19 @@ document.addEventListener('DOMContentLoaded', function() {
     updateBootQuickLinkVisibility();
     // Eagerly refresh the session so the boot input is pre-populated if the
     // user is already signed in from a previous visit.
-    refreshAuthSession().then(applySessionToBootInput).catch(function () {});
+    refreshAuthSession().then(function () {
+      applySessionToBootInput();
+      renderDiscordAuthChip();
+    }).catch(function () {});
   }
+
+  if (discordAuthLoginBtn) {
+    discordAuthLoginBtn.addEventListener('click', function () {
+      beginDiscordLogin();
+    });
+  }
+
+  renderDiscordAuthChip();
 
   if (shoutboxInput) {
     shoutboxInput.addEventListener('focus', placeFinalCursorAtEnd);
