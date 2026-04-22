@@ -743,6 +743,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderDiscordAuthChip() {
     if (window.NaimeanAuth && typeof window.NaimeanAuth.renderAuthState === 'function') {
       window.NaimeanAuth.renderAuthState(authSession);
+      return;
     }
     if (!discordAuthLoginBtn || !discordAuthUser || !discordAuthName || !discordAuthAvatar || !discordAuthAvatarImage) {
       return;
@@ -870,9 +871,16 @@ document.addEventListener('DOMContentLoaded', function() {
       ? returnToPath
       : getReturnToPath();
     if (window.NaimeanAuth && typeof window.NaimeanAuth.requireDiscordAuth === 'function') {
-      const result = await window.NaimeanAuth.requireDiscordAuth({ returnToPath: targetPath });
-      if (result && result.session) {
-        authSession = result.session;
+      try {
+        const result = await window.NaimeanAuth.requireDiscordAuth({ returnToPath: targetPath });
+        if (result && result.session) {
+          authSession = result.session;
+        } else {
+          authSession = await refreshAuthSession();
+        }
+      } catch (_) {
+        beginDiscordLogin();
+        return false;
       }
       renderDiscordAuthChip();
       return isDiscordSession(authSession);
