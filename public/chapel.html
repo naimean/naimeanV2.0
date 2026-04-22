@@ -578,6 +578,16 @@
       z-index: var(--chapel-selected-element-z-index) !important;
     }
 
+    body.hotspot-tools-active .hotspot-selected {
+      pointer-events: auto !important;
+      cursor: grab !important;
+      touch-action: none;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-dragging {
+      cursor: grabbing !important;
+    }
+
     /* Viewport simulator: constrains chapel-outer to mimic a narrow device. */
     body.viewport-simulated .chapel-outer {
       max-width: var(--simulated-viewport-width, 820px);
@@ -603,7 +613,7 @@
       <div class="chapel-wrapper">
         <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
         <img src="assets/trans_rick.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" hidden aria-hidden="true" />
-        <div class="chapel-power-btn" aria-hidden="true">
+        <div class="chapel-power-btn" id="chapel-power-btn" aria-hidden="true">
           <span class="chapel-power-light"></span>
         </div>
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
@@ -627,6 +637,8 @@
           <option value="morty-button">morty hotspot</option>
           <option value="rick-button">rick hotspot</option>
           <option value="chapel-tv-counter">tv counter</option>
+          <option value="chapel-power-btn">power button</option>
+          <option value="chapel-trans-rick">trans rick</option>
           <option value="sauce-drip-lane">sauce drip lane</option>
           <option value="chapel-seam-bloom-left-upper">seam light 1</option>
           <option value="chapel-seam-bloom-right-upper">seam light 2</option>
@@ -661,6 +673,8 @@
           <option value="morty-button">morty hotspot</option>
           <option value="rick-button">rick hotspot</option>
           <option value="chapel-tv-counter">tv counter</option>
+          <option value="chapel-power-btn">power button</option>
+          <option value="chapel-trans-rick">trans rick</option>
           <option value="sauce-drip-lane">sauce drip lane</option>
           <option value="chapel-seam-bloom-left-upper">seam light 1</option>
           <option value="chapel-seam-bloom-right-upper">seam light 2</option>
@@ -774,6 +788,46 @@
       return Number.isFinite(numericValue) ? numericValue : 0;
     }
 
+    function getTargetLayoutMetrics(target) {
+      if (!target || !chapelWrapper) {
+        return null;
+      }
+
+      const computed = window.getComputedStyle(target);
+      const wrapperRect = chapelWrapper.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const leftValue = Number.parseFloat(computed.left);
+      const topValue = Number.parseFloat(computed.top);
+      const widthValue = Number.parseFloat(computed.width);
+      const heightValue = Number.parseFloat(computed.height);
+
+      return {
+        left: Number.isFinite(leftValue) ? leftValue : targetRect.left - wrapperRect.left,
+        top: Number.isFinite(topValue) ? topValue : targetRect.top - wrapperRect.top,
+        width: Number.isFinite(widthValue) && widthValue > 0 ? widthValue : targetRect.width,
+        height: Number.isFinite(heightValue) && heightValue > 0 ? heightValue : targetRect.height,
+        hasExplicitLeft: Number.isFinite(leftValue),
+        hasExplicitTop: Number.isFinite(topValue),
+      };
+    }
+
+    function normalizeTargetLayoutPosition(target) {
+      const metrics = getTargetLayoutMetrics(target);
+      if (!metrics) {
+        return null;
+      }
+
+      target.style.left = `${metrics.left}px`;
+      target.style.top = `${metrics.top}px`;
+      if (!metrics.hasExplicitLeft) {
+        target.style.right = 'auto';
+      }
+      if (!metrics.hasExplicitTop) {
+        target.style.bottom = 'auto';
+      }
+      return metrics;
+    }
+
     function getHotspotTargetById(targetId) {
       if (!targetId || targetId === HOTSPOT_TOOL_NONE_TARGET) {
         return null;
@@ -851,7 +905,16 @@
         return;
       }
 
-      const currentPx = parseNumericValue(window.getComputedStyle(target)[property]);
+      const metrics = (property === 'left' || property === 'top')
+        ? normalizeTargetLayoutPosition(target)
+        : getTargetLayoutMetrics(target);
+      if (!metrics) {
+        return;
+      }
+
+      const currentPx = property === 'left' || property === 'top'
+        ? metrics[property]
+        : parseNumericValue(window.getComputedStyle(target)[property]);
       const nextPx = property === 'width' || property === 'height'
         ? Math.max(1, currentPx + deltaPx)
         : currentPx + deltaPx;
@@ -871,8 +934,14 @@
         return;
       }
 
-      const computed = window.getComputedStyle(target);
-      const metaText = `left ${Math.round(parseNumericValue(computed.left))} | top ${Math.round(parseNumericValue(computed.top))} | w ${Math.round(parseNumericValue(computed.width))} | h ${Math.round(parseNumericValue(computed.height))}`;
+      const metrics = getTargetLayoutMetrics(target);
+      if (!metrics) {
+        moveMeta.textContent = 'No element selected.';
+        sizeMeta.textContent = 'No element selected.';
+        return;
+      }
+
+      const metaText = `left ${Math.round(metrics.left)} | top ${Math.round(metrics.top)} | w ${Math.round(metrics.width)} | h ${Math.round(metrics.height)} | drag on page to move`;
       moveMeta.textContent = metaText;
       sizeMeta.textContent = metaText;
     }
@@ -909,7 +978,10 @@
       function updateSelectionHighlight(nextId) {
         if (lastHighlightedId && lastHighlightedId !== nextId) {
           const prev = document.getElementById(lastHighlightedId);
-          if (prev) { prev.classList.remove('hotspot-selected'); }
+          if (prev) {
+            prev.classList.remove('hotspot-selected');
+            prev.classList.remove('hotspot-dragging');
+          }
         }
         if (nextId) {
           const next = document.getElementById(nextId);
@@ -918,17 +990,114 @@
         lastHighlightedId = nextId;
       }
 
+      let activeDrag = null;
+
+      function stopSelectedTargetDrag() {
+        if (!activeDrag) {
+          return;
+        }
+
+        if (activeDrag.target && typeof activeDrag.target.releasePointerCapture === 'function') {
+          try {
+            activeDrag.target.releasePointerCapture(activeDrag.pointerId);
+          } catch (_) {}
+          activeDrag.target.classList.remove('hotspot-dragging');
+        }
+        activeDrag = null;
+        renderHotspotToolMeta();
+      }
+
       syncHotspotTargetSelection(HOTSPOT_TOOL_DEFAULT_TARGET);
       updateSelectionHighlight(HOTSPOT_TOOL_DEFAULT_TARGET);
       renderHotspotToolMeta();
 
       document.querySelectorAll('[data-hotspot-target]').forEach(function (selector) {
         selector.addEventListener('change', function () {
+          stopSelectedTargetDrag();
           syncHotspotTargetSelection(selector.value);
           updateSelectionHighlight(selector.value);
           renderHotspotToolMeta();
         });
       });
+
+      document.addEventListener('pointerdown', function (event) {
+        if (!document.body.classList.contains('hotspot-tools-active') || !event.isPrimary) {
+          return;
+        }
+        if (event.pointerType === 'mouse' && event.button !== 0) {
+          return;
+        }
+        if (event.target.closest('.hotspot-tool')) {
+          return;
+        }
+
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        if (!selectedTarget || !selectedTarget.contains(event.target)) {
+          return;
+        }
+
+        const metrics = normalizeTargetLayoutPosition(selectedTarget);
+        if (!metrics) {
+          return;
+        }
+
+        activeDrag = {
+          pointerId: event.pointerId,
+          startClientX: event.clientX,
+          startClientY: event.clientY,
+          startLeft: metrics.left,
+          startTop: metrics.top,
+          target: selectedTarget,
+        };
+
+        selectedTarget.classList.add('hotspot-dragging');
+        if (typeof selectedTarget.setPointerCapture === 'function') {
+          try { selectedTarget.setPointerCapture(event.pointerId); } catch (_) {}
+        }
+        event.preventDefault();
+      }, true);
+
+      document.addEventListener('pointermove', function (event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) {
+          return;
+        }
+
+        const deltaX = event.clientX - activeDrag.startClientX;
+        const deltaY = event.clientY - activeDrag.startClientY;
+        activeDrag.target.style.left = `${activeDrag.startLeft + deltaX}px`;
+        activeDrag.target.style.top = `${activeDrag.startTop + deltaY}px`;
+        renderHotspotToolMeta();
+        event.preventDefault();
+      }, true);
+
+      document.addEventListener('pointerup', function (event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) {
+          return;
+        }
+        event.preventDefault();
+        stopSelectedTargetDrag();
+      }, true);
+
+      document.addEventListener('pointercancel', function (event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) {
+          return;
+        }
+        stopSelectedTargetDrag();
+      }, true);
+
+      document.addEventListener('click', function (event) {
+        if (!document.body.classList.contains('hotspot-tools-active')) {
+          return;
+        }
+
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        if (!selectedTarget || !selectedTarget.contains(event.target)) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+      }, true);
 
       moveTool.querySelectorAll('[data-move-prop]').forEach(function (button) {
         button.addEventListener('click', function () {
@@ -995,6 +1164,8 @@
         'morty-button',
         'rick-button',
         'chapel-tv-counter',
+        'chapel-power-btn',
+        'chapel-trans-rick',
         'sauce-drip-lane',
         'chapel-seam-bloom-left-upper',
         'chapel-seam-bloom-right-upper',
@@ -1017,12 +1188,13 @@
           HOTSPOT_IDS.forEach(function (id) {
             const el = document.getElementById(id);
             if (!el) { return; }
-            const cs = window.getComputedStyle(el);
+            const metrics = getTargetLayoutMetrics(el);
+            if (!metrics) { return; }
             overrides[id] = {
-              top: parseNumericValue(cs.top) / wh * 100,
-              left: parseNumericValue(cs.left) / ww * 100,
-              width: parseNumericValue(cs.width) / ww * 100,
-              height: parseNumericValue(cs.height) / wh * 100,
+              top: metrics.top / wh * 100,
+              left: metrics.left / ww * 100,
+              width: metrics.width / ww * 100,
+              height: metrics.height / wh * 100,
             };
           });
 
