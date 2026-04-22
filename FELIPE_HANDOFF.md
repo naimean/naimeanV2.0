@@ -31,7 +31,7 @@ Go to **Workers & Pages** in the Cloudflare dashboard and confirm these three wo
 |---|---|
 | `naimeanv2` | Edge router — serves static assets and proxies API routes |
 | `barrelrollcounter-worker` | Counter + Discord OAuth + session + tool-launcher backend |
-| `naimean-api` | AI agent API (`/api/*` routes on naimean.com) |
+| `naimean-api` | D1-backed REST API (`/api/*` routes on naimean.com) |
 
 > **Why this matters:** `naimeanv2` calls `barrelrollcounter-worker` via a **service binding** named `COUNTER`. If that binding is absent or the target worker name is wrong the entire site's API layer (counter, auth, `/go/*` redirects) will return errors. The three worker names must exactly match what is in the `wrangler.toml` files.
 
@@ -57,7 +57,7 @@ wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
 ```
 
 #### `naimean-db`
-Used by `naimean-api` for the AI agent entries table.
+Used by `naimean-api` for the REST API entries table.
 
 ```bash
 # Create the database (one time)
@@ -119,18 +119,7 @@ wrangler secret put TOOL_URL_SNOW --name barrelrollcounter-worker
 
 ---
 
-### 6. Set Worker secrets for `naimean-api`
-
-```bash
-# Bearer token required for all protected /api/* endpoints — generate with: openssl rand -hex 32
-wrangler secret put API_TOKEN --name naimean-api
-```
-
-> **Why this matters:** Without `API_TOKEN` configured, the worker returns `503 — API_TOKEN is not configured` on every request to protected routes.
-
----
-
-### 7. Verify custom domain routing
+### 6. Verify custom domain routing
 
 In the Cloudflare dashboard under **Workers & Pages → naimeanv2 → Settings → Domains & Routes**, confirm:
 
@@ -217,7 +206,6 @@ In the Cloudflare dashboard under **Workers & Pages → naimeanv2 (or barrelroll
 | `barrelrollcounter-worker` | `TOOL_URL_WHITEBOARD` | Internal whiteboard tool URL |
 | `barrelrollcounter-worker` | `TOOL_URL_CAPEX` | Internal CapEx tool URL |
 | `barrelrollcounter-worker` | `TOOL_URL_SNOW` | ServiceNow URL |
-| `naimean-api` | `API_TOKEN` | Bearer token for protected `/api/*` routes; `openssl rand -hex 32` |
 | GitHub Actions | `CLOUDFLARE_API_TOKEN` | Wrangler deploy permissions |
 | GitHub Actions | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 

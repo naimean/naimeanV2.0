@@ -259,11 +259,10 @@ A standalone Cloudflare Worker deployed separately from this repo. Route: `naime
 | Method | Path | Description | Body |
 |---|---|---|---|
 | `GET` | `/api/health` | Worker health check | — |
-| `GET` | `/api/status` | Increment and return per-instance request count | — |
-| `POST` | `/api/chat` | Echo chat message and persist history | `{ "message": "..." }` |
-| `GET` | `/api/history` | Return persisted chat history for the instance | — |
+| `GET` | `/api/data` | List the latest 50 D1-backed entries | — |
+| `POST` | `/api/data` | Create a new D1-backed entry | `{ "title": "...", "content": "..." }` |
 
-`/api/health` is public; all other `naimean-api` endpoints require `Authorization: Bearer <API_TOKEN>`.
+All `naimean-api` responses are JSON and the worker applies restrictive API security headers.
 
 ### Database
 
@@ -278,7 +277,6 @@ A standalone Cloudflare Worker deployed separately from this repo. Route: `naime
 | Worker | `naimean-api` | — |
 | D1 Database | `naimean-db` | `0871f90d-f7e3-467a-a1f9-4e74ac8aef42` |
 | KV Namespace | `KV` | `dff7175059ce478eab8c910949ca330f` |
-| Durable Object Binding | `NAIMEAN_AGENT` | class `NaimeanAgent` |
 | Zone | `naimean.com` | `dc46eab0761d2ce7e372ea996e8735ea` |
 | Workers Route | `naimean.com/api/*` | `8be1b1b6388944e4910a6def585e4f15` |
 
@@ -291,6 +289,7 @@ name = "naimean-api"
 main = "src/worker.js"
 compatibility_date = "2026-04-14"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [[d1_databases]]
 binding = "DB"
@@ -300,10 +299,6 @@ database_id = "0871f90d-f7e3-467a-a1f9-4e74ac8aef42"
 [[kv_namespaces]]
 binding = "KV"
 id = "dff7175059ce478eab8c910949ca330f"
-
-[[durable_objects.bindings]]
-name = "NAIMEAN_AGENT"
-class_name = "NaimeanAgent"
 ```
 
 ### API Token Permissions (naimean-api CI/CD)
