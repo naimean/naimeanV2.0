@@ -333,7 +333,7 @@
       return queryEntries.length === 1
         && queryEntries[0][0] === 'size'
         && queryEntries[0][1] === '64';
-    } catch (_) {
+    } catch (_error) {
       return false;
     }
   }

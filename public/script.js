@@ -1535,6 +1535,9 @@ document.addEventListener('DOMContentLoaded', function() {
         : createUnauthenticatedSession();
       if (authSession.authenticated) {
         applySessionToBootInput();
+      } else {
+        resetBootInput();
+        updateBootQuickLinkVisibility();
       }
       renderDiscordAuthChip();
     });
