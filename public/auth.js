@@ -159,7 +159,6 @@
     avatar.className = 'discord-auth-avatar';
 
     const avatarFallback = document.createElement('span');
-    avatarFallback.className = 'discord-auth-avatar-fallback';
     avatarFallback.textContent = '';
 
     const avatarImg = document.createElement('img');

@@ -649,7 +649,11 @@ function parseLayoutNumber(value) {
 }
 
 async function ensureLayoutOverridesTable(db) {
-  await db.prepare(LAYOUT_OVERRIDES_TABLE_SCHEMA_SQL).run();
+  try {
+    await db.prepare(LAYOUT_OVERRIDES_TABLE_SCHEMA_SQL).run();
+  } catch (error) {
+    throw new Error('Failed to initialize layout_overrides table', { cause: error });
+  }
 }
 
 async function handleGetLayout(request, env, origin) {
