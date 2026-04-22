@@ -569,11 +569,11 @@ function makeLayoutDbCapture() {
         bind(...args) {
           return {
             async all() {
-                if (sqlU.startsWith('SELECT')) {
-                  const page = args[0];
-                  const rows = Object.entries(store)
-                    .filter(([k]) => k.startsWith(page + ':'))
-                    .map(([k, v]) => ({ element_id: k.slice(page.length + 1), ...v }));
+              if (sqlU.startsWith('SELECT')) {
+                const page = args[0];
+                const rows = Object.entries(store)
+                  .filter(([k]) => k.startsWith(page + ':'))
+                  .map(([k, v]) => ({ element_id: k.slice(page.length + 1), ...v }));
                 return { results: rows };
               }
               return { results: [] };
@@ -582,6 +582,23 @@ function makeLayoutDbCapture() {
             _args: args,
             _sql: sql,
           };
+        },
+        async all() {
+          if (sqlU.startsWith('PRAGMA TABLE_INFO')) {
+            return {
+              results: [
+                { name: 'page' },
+                { name: 'element_id' },
+                { name: 'top_pct' },
+                { name: 'left_pct' },
+                { name: 'width_pct' },
+                { name: 'height_pct' },
+                { name: 'font_size_pct' },
+                { name: 'updated_at' },
+              ],
+            };
+          }
+          return { results: [] };
         },
       };
     },
@@ -792,6 +809,47 @@ test('contract: POST /layout stores fontSizePct and GET /layout returns it', asy
     width: 2.1,
     height: 1.8,
     fontSizePct: 1.25,
+  });
+});
+
+test('contract: POST /layout without fontSizePct returns null for that field on GET', async () => {
+  const cookie = await createTestSessionCookie('anyone');
+  const db = makeLayoutDbCapture();
+  const saveReq = new Request('http://localhost/layout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: JSON.stringify({
+      page: 'chapel--vp-768',
+      overrides: {
+        'chapel-return-btn': {
+          top: 50,
+          left: 40,
+          width: 10,
+          height: 5,
+        },
+      },
+    }),
+  });
+  const env = makeContractEnv({
+    DB: db,
+    SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET,
+  });
+
+  const saveRes = await worker.fetch(saveReq, env);
+  assert.strictEqual(saveRes.status, 200);
+
+  const loadRes = await worker.fetch(
+    makeContractRequest('GET', '/layout?page=chapel--vp-768'),
+    makeContractEnv({ DB: db }),
+  );
+  assert.strictEqual(loadRes.status, 200);
+  const body = await loadRes.json();
+  assert.deepEqual(body.overrides['chapel-return-btn'], {
+    top: 50,
+    left: 40,
+    width: 10,
+    height: 5,
+    fontSizePct: null,
   });
 });
 

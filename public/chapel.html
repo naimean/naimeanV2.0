@@ -789,7 +789,7 @@
     const HOTSPOT_VIEWPORT_WIDTHS = [375, 390, 430, 768, 1024, 1280, 1440];
     const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
     const HOTSPOT_COUNTER_FONT_SIZE_MIN_PX = 4;
-    const HOTSPOT_INLINE_STYLE_PROPERTIES = ['top', 'left', 'width', 'height', 'fontSize'];
+    const HOTSPOT_STYLE_PROPERTY_NAMES = ['top', 'left', 'width', 'height', 'fontSize'];
     const HOTSPOT_IDS = [
       'chapel-return-btn',
       'trapdoor-btn',
@@ -889,16 +889,22 @@
           return;
         }
 
-        HOTSPOT_INLINE_STYLE_PROPERTIES.forEach(function (property) {
+        HOTSPOT_STYLE_PROPERTY_NAMES.forEach(function (property) {
           const value = defaults[property];
           if (value) {
             target.style[property] = value;
           } else {
-            target.style.removeProperty(property === 'fontSize' ? 'font-size' : property);
+            target.style.removeProperty(resolveHotspotCssPropertyName(property));
           }
         });
 
         delete target.dataset.layoutFontSizePct;
+      });
+    }
+
+    function resolveHotspotCssPropertyName(property) {
+      return property.replace(/[A-Z]/g, function (match) {
+        return '-' + match.toLowerCase();
       });
     }
 
@@ -1470,9 +1476,12 @@
     function loadLayoutOverrides() {
       const requestId = ++activeLayoutLoadRequestId;
       const primaryPageKey = getCurrentHotspotLayoutPageKey();
-      const fallbackPageKeys = primaryPageKey === HOTSPOT_LAYOUT_PAGE
-        ? [primaryPageKey]
-        : [primaryPageKey, HOTSPOT_LAYOUT_PAGE];
+      const fallbackPageKeys = [primaryPageKey];
+      // Preserve legacy saved layouts by falling back to the unscoped page key
+      // when no viewport-specific slot has been saved yet.
+      if (primaryPageKey !== HOTSPOT_LAYOUT_PAGE) {
+        fallbackPageKeys.push(HOTSPOT_LAYOUT_PAGE);
+      }
 
       Promise.all(fallbackPageKeys.map(function (pageKey) {
         return fetch('/layout?page=' + encodeURIComponent(pageKey), { credentials: 'same-origin' })
