@@ -596,6 +596,32 @@ function makeLayoutDbCapture() {
   };
 }
 
+function makeFailingLayoutInitDb() {
+  return {
+    prepare(sql) {
+      const sqlU = sql.trim().toUpperCase();
+      if (sqlU.startsWith('CREATE TABLE')) {
+        return {
+          async run() {
+            throw new Error('db unavailable');
+          },
+        };
+      }
+      return {
+        bind() {
+          return {
+            async all() { return { results: [] }; },
+            async first() { return null; },
+            _sql: sql,
+            _args: [],
+          };
+        },
+      };
+    },
+    async batch() {},
+  };
+}
+
 test('contract: GET /layout returns 400 when page param is missing', async () => {
   const res = await worker.fetch(
     makeContractRequest('GET', '/layout'),
@@ -625,6 +651,16 @@ test('contract: GET /layout returns 200 with empty overrides for a valid page', 
   assert.ok(body.overrides !== undefined, 'body.overrides must be present');
   assert.strictEqual(typeof body.overrides, 'object');
   assert.ok(db.executedSql.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS layout_overrides')));
+});
+
+test('contract: GET /layout returns 500 when layout table initialization fails', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('GET', '/layout?page=chapel'),
+    makeContractEnv({ DB: makeFailingLayoutInitDb() }),
+  );
+  assert.strictEqual(res.status, 500);
+  const body = await res.json();
+  assert.strictEqual(body.error, 'Internal server error');
 });
 
 test('contract: POST /layout returns 401 without an auth session', async () => {

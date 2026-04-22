@@ -46,6 +46,7 @@
       --chapel-light-intensity-scale: 1.07;
       --chapel-light-global-offset-x: 0px;
       --chapel-light-global-offset-y: 0px;
+      --chapel-selected-element-z-index: 121;
     }
 
     .chapel-stitch {
@@ -574,7 +575,7 @@
     .hotspot-selected {
       outline: 2px dashed rgba(255, 220, 0, 0.9) !important;
       outline-offset: 2px !important;
-      z-index: 121 !important;
+      z-index: var(--chapel-selected-element-z-index) !important;
     }
 
     /* Viewport simulator: constrains chapel-outer to mimic a narrow device. */
