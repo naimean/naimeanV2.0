@@ -2472,9 +2472,6 @@
     }
 
     function startRockRollContinuation(playbackState) {
-      rockRollContinuationActive = Boolean(playbackState);
-      syncTransRickPresentation();
-
       if (!playbackState || !rockRollContinuationMedia) {
         rockRollContinuationActive = false;
         syncTransRickPresentation();
@@ -2484,6 +2481,8 @@
 
       rockRollContinuationPending = true;
       rockRollContinuationPlaybackState = playbackState;
+      rockRollContinuationActive = true;
+      syncTransRickPresentation();
       const startVolume = getRockRollContinuationStartVolume(playbackState);
       rockRollContinuationMedia.pause();
       rockRollContinuationMedia.preload = 'auto';
