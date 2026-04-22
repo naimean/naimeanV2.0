@@ -811,6 +811,7 @@
     const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
     const HOTSPOT_COUNTER_FONT_SIZE_MIN_PX = 4;
     const HOTSPOT_COUNTER_FONT_SIZE_MAX_PX = 120;
+    const HOTSPOT_MIN_RESIZE_PX = 1;
     const HOTSPOT_STYLE_PROPERTY_NAMES = ['top', 'left', 'width', 'height', 'fontSize'];
     const HOTSPOT_IDS = [
       'chapel-return-btn',
@@ -1077,7 +1078,7 @@
       }
 
       if (visible) {
-        if (target.hasAttribute('hidden') || target.hidden) {
+        if (target.hidden) {
           target.hidden = false;
         }
         target.style.visibility = 'visible';
@@ -1218,6 +1219,7 @@
       let activeDrag = null;
 
       function resolveResizeAxis(edgeStart, edgeEnd, size) {
+        // Adaptive resize grip: 6-18px or about 35% of the element size, whichever lands in that range.
         const edgeThreshold = Math.max(6, Math.min(18, size * 0.35));
         if (edgeStart > edgeThreshold && edgeEnd > edgeThreshold) {
           return '';
@@ -1367,19 +1369,18 @@
           let nextTop = activeDrag.startTop;
           let nextWidth = activeDrag.startWidth;
           let nextHeight = activeDrag.startHeight;
-          const minSizePx = 1;
 
           if (activeDrag.edges.right) {
-            nextWidth = Math.max(minSizePx, activeDrag.startWidth + deltaX);
+            nextWidth = Math.max(HOTSPOT_MIN_RESIZE_PX, activeDrag.startWidth + deltaX);
           } else if (activeDrag.edges.left) {
-            nextWidth = Math.max(minSizePx, activeDrag.startWidth - deltaX);
+            nextWidth = Math.max(HOTSPOT_MIN_RESIZE_PX, activeDrag.startWidth - deltaX);
             nextLeft = activeDrag.startLeft + (activeDrag.startWidth - nextWidth);
           }
 
           if (activeDrag.edges.bottom) {
-            nextHeight = Math.max(minSizePx, activeDrag.startHeight + deltaY);
+            nextHeight = Math.max(HOTSPOT_MIN_RESIZE_PX, activeDrag.startHeight + deltaY);
           } else if (activeDrag.edges.top) {
-            nextHeight = Math.max(minSizePx, activeDrag.startHeight - deltaY);
+            nextHeight = Math.max(HOTSPOT_MIN_RESIZE_PX, activeDrag.startHeight - deltaY);
             nextTop = activeDrag.startTop + (activeDrag.startHeight - nextHeight);
           }
 
