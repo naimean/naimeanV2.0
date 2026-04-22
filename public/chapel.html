@@ -879,6 +879,8 @@
     const HOTSPOT_LAYOUT_PAGE = 'chapel';
     const HOTSPOT_VIEWPORT_WIDTHS = [375, 390, 430, 768, 1024, 1280, 1440];
     const HOTSPOT_LAYOUT_PROBE_QUERY_PARAM = 'layoutProbe';
+    const HOTSPOT_PREVIEW_SHELL_PADDING_PX = 12;
+    const HOTSPOT_PROBE_REMEASURE_DELAYS_MS = [120, 400, 900];
     const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
     const HOTSPOT_COUNTER_FONT_SIZE_MIN_PX = 4;
     const HOTSPOT_COUNTER_FONT_SIZE_MAX_PX = 120;
@@ -1296,7 +1298,40 @@
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function isFiniteProbeNumber(value) {
+      return typeof value === 'number' && Number.isFinite(value);
+    }
+
+    function isValidViewportProbePayload(payload) {
+      if (!payload || payload.type !== 'naimean-layout-probe' || payload.page !== HOTSPOT_LAYOUT_PAGE) {
+        return false;
+      }
+      if (!isFiniteProbeNumber(payload.viewportWidth) || !isFiniteProbeNumber(payload.documentHeight)) {
+        return false;
+      }
+      if (!payload.measurements || typeof payload.measurements !== 'object' || Array.isArray(payload.measurements)) {
+        return false;
+      }
+
+      return Object.keys(payload.measurements).every(function (id) {
+        const measurement = payload.measurements[id];
+        return measurement
+          && isFiniteProbeNumber(measurement.left)
+          && isFiniteProbeNumber(measurement.top)
+          && isFiniteProbeNumber(measurement.width)
+          && isFiniteProbeNumber(measurement.height);
+      });
+    }
+
+    function createViewportProbeToken() {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+      }
+      return `probe-${Math.random().toString(36).slice(2)}-${Date.now()}`;
     }
 
     function updateViewportProbePreview() {
@@ -1324,7 +1359,7 @@
         return;
       }
 
-      const probeToken = `${activeSimulatedViewportWidth}-${Date.now()}`;
+      const probeToken = createViewportProbeToken();
       const probeUrl = new URL(window.location.href);
       probeUrl.searchParams.set(HOTSPOT_LAYOUT_PROBE_QUERY_PARAM, '1');
       probeUrl.searchParams.set('viewportProbeToken', probeToken);
@@ -1359,7 +1394,7 @@
         return;
       }
 
-      const availableWidth = Math.max(1, previewShell.clientWidth - 12);
+      const availableWidth = Math.max(1, previewShell.clientWidth - HOTSPOT_PREVIEW_SHELL_PADDING_PX);
       const scale = Math.min(1, availableWidth / viewportWidth);
       previewCanvas.style.width = `${Math.max(1, viewportWidth * scale)}px`;
       previewCanvas.style.height = `${Math.max(1, documentHeight * scale)}px`;
@@ -1380,7 +1415,7 @@
         if (event.origin !== window.location.origin) {
           return;
         }
-        if (!payload || payload.type !== 'naimean-layout-probe' || payload.page !== HOTSPOT_LAYOUT_PAGE) {
+        if (!isValidViewportProbePayload(payload)) {
           return;
         }
         if (payload.token !== activeViewportProbeToken) {
@@ -1409,6 +1444,14 @@
       chapelWrapper.appendChild(overlay);
 
       let measureFrame = 0;
+
+      function isTrustedParentOrigin() {
+        try {
+          return new URL(document.referrer).origin === window.location.origin;
+        } catch (_) {
+          return false;
+        }
+      }
 
       function getSafeAreaInsets() {
         const computed = window.getComputedStyle(safeAreaProbe);
@@ -1443,6 +1486,9 @@
             width: rect.width,
             height: rect.height,
           };
+          if (!isFiniteProbeNumber(measurement.left) || !isFiniteProbeNumber(measurement.top) || !isFiniteProbeNumber(measurement.width) || !isFiniteProbeNumber(measurement.height)) {
+            return;
+          }
           measurements[id] = measurement;
           overlayHtml += `<div class="hotspot-viewport-probe-box" data-hotspot-id="${escapeHtml(id)}" style="left:${measurement.left}px;top:${measurement.top}px;width:${measurement.width}px;height:${measurement.height}px"><span class="hotspot-viewport-probe-label">${escapeHtml(id)}</span></div>`;
         });
@@ -1480,7 +1526,7 @@
           measurements: measurements,
         };
 
-        if (window.parent && window.parent !== window) {
+        if (window.parent && window.parent !== window && isTrustedParentOrigin()) {
           window.parent.postMessage(payload, window.location.origin);
         }
       }
@@ -1498,12 +1544,12 @@
       window.addEventListener('orientationchange', scheduleMeasurement);
       window.addEventListener('scroll', scheduleMeasurement, { passive: true });
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', scheduleMeasurement);
-        window.visualViewport.addEventListener('scroll', scheduleMeasurement);
+        window.visualViewport.addEventListener('resize', scheduleMeasurement, { passive: true });
+        window.visualViewport.addEventListener('scroll', scheduleMeasurement, { passive: true });
       }
-      window.setTimeout(scheduleMeasurement, 120);
-      window.setTimeout(scheduleMeasurement, 400);
-      window.setTimeout(scheduleMeasurement, 900);
+      HOTSPOT_PROBE_REMEASURE_DELAYS_MS.forEach(function (delayMs) {
+        window.setTimeout(scheduleMeasurement, delayMs);
+      });
     }
 
     function renderCounterFontToolMeta() {
