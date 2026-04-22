@@ -46,6 +46,7 @@
       --chapel-light-intensity-scale: 1.07;
       --chapel-light-global-offset-x: 0px;
       --chapel-light-global-offset-y: 0px;
+      --chapel-selected-element-z-index: 121;
     }
 
     .chapel-stitch {
@@ -574,6 +575,7 @@
     .hotspot-selected {
       outline: 2px dashed rgba(255, 220, 0, 0.9) !important;
       outline-offset: 2px !important;
+      z-index: var(--chapel-selected-element-z-index) !important;
     }
 
     /* Viewport simulator: constrains chapel-outer to mimic a narrow device. */
@@ -611,7 +613,7 @@
       <button class="invisible-hotspot-btn congregation-btn" id="goose-button" aria-label="Play Goose honk"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="morty-button" aria-label="Play Morty aw jeez"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="rick-button" aria-label="Play Rick nope"></button>
-      <div class="sauce-drip-lane" aria-hidden="true">
+      <div class="sauce-drip-lane" id="sauce-drip-lane" aria-hidden="true">
         <div class="sauce-drip" id="sauce-drip"></div>
       </div>
       <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move invisible hotspot tool">
@@ -624,6 +626,14 @@
           <option value="goose-button">goose hotspot</option>
           <option value="morty-button">morty hotspot</option>
           <option value="rick-button">rick hotspot</option>
+          <option value="chapel-tv-counter">tv counter</option>
+          <option value="sauce-drip-lane">sauce drip lane</option>
+          <option value="chapel-seam-bloom-left-upper">seam light 1</option>
+          <option value="chapel-seam-bloom-right-upper">seam light 2</option>
+          <option value="chapel-seam-bloom-center-upper">seam light 3</option>
+          <option value="chapel-seam-bloom-left-lower">seam light 4</option>
+          <option value="chapel-seam-bloom-right-lower">seam light 5</option>
+          <option value="chapel-seam-bloom-center-lower">seam light 6</option>
         </select>
         <div class="hotspot-tool-grid">
           <button type="button" data-move-prop="top" data-move-step="-2">up</button>
@@ -638,7 +648,7 @@
         <div class="hotspot-tool-grid">
           <button type="button" class="hotspot-tool-save" id="hotspot-save-btn">💾 Save all</button>
         </div>
-        <div class="hotspot-tool-meta" id="move-tool-meta" aria-live="polite">Select a hotspot to view dimensions.</div>
+        <div class="hotspot-tool-meta" id="move-tool-meta" aria-live="polite">Select an element to view dimensions.</div>
       </section>
       <section class="hotspot-tool" id="hotspot-size-tool" aria-label="Resize invisible hotspot tool">
         <h2 class="hotspot-tool-title">Size Tool</h2>
@@ -650,6 +660,14 @@
           <option value="goose-button">goose hotspot</option>
           <option value="morty-button">morty hotspot</option>
           <option value="rick-button">rick hotspot</option>
+          <option value="chapel-tv-counter">tv counter</option>
+          <option value="sauce-drip-lane">sauce drip lane</option>
+          <option value="chapel-seam-bloom-left-upper">seam light 1</option>
+          <option value="chapel-seam-bloom-right-upper">seam light 2</option>
+          <option value="chapel-seam-bloom-center-upper">seam light 3</option>
+          <option value="chapel-seam-bloom-left-lower">seam light 4</option>
+          <option value="chapel-seam-bloom-right-lower">seam light 5</option>
+          <option value="chapel-seam-bloom-center-lower">seam light 6</option>
         </select>
         <div class="hotspot-tool-grid">
           <button type="button" data-size-prop="width" data-size-step="2">w +</button>
@@ -661,7 +679,7 @@
           <button type="button" data-hotspot-action="show">show</button>
           <button type="button" data-hotspot-action="hide">hide</button>
         </div>
-        <div class="hotspot-tool-meta" id="size-tool-meta" aria-live="polite">Select a hotspot to view dimensions.</div>
+        <div class="hotspot-tool-meta" id="size-tool-meta" aria-live="polite">Select an element to view dimensions.</div>
       </section>
       <section class="hotspot-tool" id="hotspot-viewport-tool" aria-label="Viewport simulator tool">
         <h2 class="hotspot-tool-title">Viewport</h2>
@@ -678,15 +696,15 @@
         <div class="hotspot-tool-meta" id="viewport-tool-meta" aria-live="polite">No simulation active.</div>
       </section>
       <!-- Seam bloom glows around the darkest stitched regions -->
-      <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
-      <div class="torch-bloom" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
+      <div class="torch-bloom" id="chapel-seam-bloom-left-upper" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
+      <div class="torch-bloom" id="chapel-seam-bloom-right-upper" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~54.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% - var(--chapel-medial-bloom-center-offset));top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift) - var(--chapel-light-elements-upshift));width:52%;height:6%"></div>
+      <div class="torch-bloom" id="chapel-seam-bloom-center-upper" aria-hidden="true" style="left:calc(50% - var(--chapel-medial-bloom-center-offset));top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift) - var(--chapel-light-elements-upshift));width:52%;height:6%"></div>
       <!-- Secondary seam bloom glows at lower stitched dark spots -->
-      <div class="torch-bloom" aria-hidden="true" style="left:15.8%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
-      <div class="torch-bloom" aria-hidden="true" style="left:76.5%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
+      <div class="torch-bloom" id="chapel-seam-bloom-left-lower" aria-hidden="true" style="left:15.8%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
+      <div class="torch-bloom" id="chapel-seam-bloom-right-lower" aria-hidden="true" style="left:76.5%;top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <!-- Wide center fill at seam ~58.5% to cover the middle stretch of the stitch line -->
-      <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-center-offset));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift) - var(--chapel-light-elements-upshift));width:52%;height:6%"></div>
+      <div class="torch-bloom" id="chapel-seam-bloom-center-lower" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-center-offset));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift) - var(--chapel-light-elements-upshift));width:52%;height:6%"></div>
     </div>
   </div>
   <script src="auth.js"></script>
@@ -848,8 +866,8 @@
         return;
       }
       if (!target) {
-        moveMeta.textContent = 'No hotspot selected.';
-        sizeMeta.textContent = 'No hotspot selected.';
+        moveMeta.textContent = 'No element selected.';
+        sizeMeta.textContent = 'No element selected.';
         return;
       }
 
@@ -969,7 +987,22 @@
       }
 
       // ── Save button ──────────────────────────────────────────────────────────
-      const HOTSPOT_IDS = ['chapel-return-btn', 'trapdoor-btn', 'crusty-button', 'goose-button', 'morty-button', 'rick-button'];
+      const HOTSPOT_IDS = [
+        'chapel-return-btn',
+        'trapdoor-btn',
+        'crusty-button',
+        'goose-button',
+        'morty-button',
+        'rick-button',
+        'chapel-tv-counter',
+        'sauce-drip-lane',
+        'chapel-seam-bloom-left-upper',
+        'chapel-seam-bloom-right-upper',
+        'chapel-seam-bloom-center-upper',
+        'chapel-seam-bloom-left-lower',
+        'chapel-seam-bloom-right-lower',
+        'chapel-seam-bloom-center-lower',
+      ];
       const saveBtn = document.getElementById('hotspot-save-btn');
       const moveMeta = document.getElementById('move-tool-meta');
       if (saveBtn) {

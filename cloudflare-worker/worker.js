@@ -618,6 +618,16 @@ async function incrementCount(db) {
 const LAYOUT_PAGE_MAX_LENGTH = 64;
 const LAYOUT_ELEMENT_ID_MAX_LENGTH = 64;
 const LAYOUT_OVERRIDES_MAX_ELEMENTS = 20;
+const LAYOUT_OVERRIDES_TABLE_SCHEMA_SQL = `CREATE TABLE IF NOT EXISTS layout_overrides (
+  page        TEXT    NOT NULL,
+  element_id  TEXT    NOT NULL,
+  top_pct     REAL,
+  left_pct    REAL,
+  width_pct   REAL,
+  height_pct  REAL,
+  updated_at  INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (page, element_id)
+)`;
 
 function isValidLayoutPage(page) {
   if (typeof page !== 'string' || !page || page.length > LAYOUT_PAGE_MAX_LENGTH) {
@@ -638,12 +648,21 @@ function parseLayoutNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+async function ensureLayoutOverridesTable(db) {
+  try {
+    await db.prepare(LAYOUT_OVERRIDES_TABLE_SCHEMA_SQL).run();
+  } catch (error) {
+    throw new Error('Failed to initialize layout_overrides table', { cause: error });
+  }
+}
+
 async function handleGetLayout(request, env, origin) {
   const page = new URL(request.url).searchParams.get('page') || '';
   if (!isValidLayoutPage(page)) {
     return jsonResponse({ error: 'Missing or invalid page parameter' }, 400, origin, env);
   }
 
+  await ensureLayoutOverridesTable(env.DB);
   const rows = await env.DB
     .prepare('SELECT element_id, top_pct, left_pct, width_pct, height_pct FROM layout_overrides WHERE page = ?')
     .bind(page)
@@ -691,6 +710,7 @@ async function handlePostLayout(request, env, origin) {
     return jsonResponse({ error: 'Missing or invalid overrides field' }, 400, origin, env);
   }
 
+  await ensureLayoutOverridesTable(env.DB);
   const elementIds = Object.keys(overrides);
   if (elementIds.length > LAYOUT_OVERRIDES_MAX_ELEMENTS) {
     return jsonResponse({ error: 'Too many overrides' }, 400, origin, env);
