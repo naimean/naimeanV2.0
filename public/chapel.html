@@ -811,6 +811,9 @@
     const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
     const HOTSPOT_COUNTER_FONT_SIZE_MIN_PX = 4;
     const HOTSPOT_COUNTER_FONT_SIZE_MAX_PX = 120;
+    const HOTSPOT_RESIZE_EDGE_MIN_PX = 6;
+    const HOTSPOT_RESIZE_EDGE_MAX_PX = 18;
+    const HOTSPOT_RESIZE_EDGE_SIZE_RATIO = 0.35;
     const HOTSPOT_MIN_RESIZE_PX = 1;
     const HOTSPOT_STYLE_PROPERTY_NAMES = ['top', 'left', 'width', 'height', 'fontSize'];
     const HOTSPOT_IDS = [
@@ -1227,8 +1230,8 @@
       let activeDrag = null;
 
       function resolveResizeEdge(edgeStart, edgeEnd, size) {
-        // Adaptive resize grip: 6-18px or about 35% of the element size, whichever lands in that range.
-        const edgeThreshold = Math.max(6, Math.min(18, size * 0.35));
+        // Adaptive resize grip: clamp a proportional edge grab area so tiny targets remain draggable without oversized handles.
+        const edgeThreshold = Math.max(HOTSPOT_RESIZE_EDGE_MIN_PX, Math.min(HOTSPOT_RESIZE_EDGE_MAX_PX, size * HOTSPOT_RESIZE_EDGE_SIZE_RATIO));
         if (edgeStart > edgeThreshold && edgeEnd > edgeThreshold) {
           return '';
         }
