@@ -20,6 +20,7 @@
     body {
       background: #000;
       min-height: 100vh;
+      min-height: 100dvh;
       opacity: 0;
       transition: opacity 1s ease;
     }
@@ -604,6 +605,78 @@
       border-color: #4a8a4a !important;
     }
 
+    .hotspot-viewport-probe-shell {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.04);
+      min-height: 92px;
+      max-height: 260px;
+      overflow: auto;
+      padding: 6px;
+    }
+
+    .hotspot-viewport-probe-empty {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .hotspot-viewport-probe-canvas {
+      position: relative;
+      display: none;
+      min-width: 100%;
+    }
+
+    .hotspot-viewport-probe-canvas.is-ready {
+      display: block;
+    }
+
+    .hotspot-viewport-probe-frame {
+      border: 0;
+      display: block;
+      transform-origin: top left;
+      background: #000;
+      pointer-events: none;
+    }
+
+    .layout-probe-body .hotspot-tool {
+      display: none !important;
+    }
+
+    .layout-probe-body .hotspot-viewport-probe-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 130;
+    }
+
+    .layout-probe-body .hotspot-viewport-probe-box {
+      position: absolute;
+      border: 1px solid rgba(255, 230, 120, 0.95);
+      background: rgba(255, 230, 120, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.58);
+    }
+
+    .layout-probe-body .hotspot-viewport-probe-box[data-hotspot-id="chapel-return-btn"] {
+      border-color: rgba(0, 220, 255, 0.95);
+      background: rgba(0, 220, 255, 0.08);
+    }
+
+    .layout-probe-body .hotspot-viewport-probe-box[data-hotspot-id="trapdoor-btn"] {
+      border-color: rgba(255, 120, 120, 0.95);
+      background: rgba(255, 120, 120, 0.08);
+    }
+
+    .layout-probe-body .hotspot-viewport-probe-label {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform: translateY(-100%);
+      padding: 1px 4px;
+      background: rgba(0, 0, 0, 0.86);
+      color: #fff;
+      font: 10px/1.2 'IBM Plex Mono', 'Courier New', monospace;
+      white-space: nowrap;
+    }
+
   </style>
 </head>
 <body>
@@ -716,6 +789,19 @@
           <button type="button" data-viewport-reset title="Reset">↺</button>
         </div>
         <div class="hotspot-tool-meta" id="viewport-tool-meta" aria-live="polite">No simulation active.</div>
+        <div class="hotspot-tool-meta" id="viewport-tool-live-meta" aria-live="polite">Select a viewport to load an accurate live preview.</div>
+        <div class="hotspot-viewport-probe-shell" id="hotspot-viewport-probe-shell">
+          <div class="hotspot-viewport-probe-empty" id="hotspot-viewport-probe-empty">No accurate preview loaded.</div>
+          <div class="hotspot-viewport-probe-canvas" id="hotspot-viewport-probe-canvas">
+            <iframe
+              class="hotspot-viewport-probe-frame"
+              id="hotspot-viewport-probe-frame"
+              loading="lazy"
+              referrerpolicy="same-origin"
+              sandbox="allow-same-origin allow-scripts"
+              title="Accurate loaded viewport preview"></iframe>
+          </div>
+        </div>
       </section>
       <section class="hotspot-tool" id="hotspot-font-tool" aria-label="Counter font size tool">
         <h2 class="hotspot-tool-title">Counter Font</h2>
@@ -788,6 +874,7 @@
     const HOTSPOT_TOOL_DRAG_HELP_TEXT = 'drag on page to move';
     const HOTSPOT_LAYOUT_PAGE = 'chapel';
     const HOTSPOT_VIEWPORT_WIDTHS = [375, 390, 430, 768, 1024, 1280, 1440];
+    const HOTSPOT_LAYOUT_PROBE_QUERY_PARAM = 'layoutProbe';
     const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
     const HOTSPOT_COUNTER_FONT_SIZE_MIN_PX = 4;
     const HOTSPOT_COUNTER_FONT_SIZE_MAX_PX = 120;
@@ -825,12 +912,15 @@
     let sauceDripTimerId = null;
     let activeSimulatedViewportWidth = null;
     let activeLayoutLoadRequestId = 0;
+    let activeViewportProbeMessage = null;
+    let activeViewportProbeToken = '';
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sauceDrip = document.getElementById('sauce-drip');
     const wrongAudio = new Audio('assets/wrong.mp3');
     wrongAudio.preload = 'auto';
     wrongAudio.load();
     const defaultLayoutInlineStyles = new Map();
+    const isLayoutProbeMode = new URLSearchParams(window.location.search).get(HOTSPOT_LAYOUT_PROBE_QUERY_PARAM) === '1';
 
     function parseNumericValue(value) {
       const numericValue = Number.parseFloat(value);
@@ -860,6 +950,27 @@
 
     function getCurrentHotspotLayoutPageKey() {
       return `${HOTSPOT_LAYOUT_PAGE}--vp-${getCurrentHotspotViewportWidth()}`;
+    }
+
+    function createSafeAreaProbe() {
+      const safeAreaProbe = document.createElement('div');
+      safeAreaProbe.setAttribute('aria-hidden', 'true');
+      safeAreaProbe.style.cssText = [
+        'position:fixed',
+        'left:0',
+        'top:0',
+        'width:0',
+        'height:0',
+        'overflow:hidden',
+        'visibility:hidden',
+        'pointer-events:none',
+        'padding-top:env(safe-area-inset-top, 0px)',
+        'padding-right:env(safe-area-inset-right, 0px)',
+        'padding-bottom:env(safe-area-inset-bottom, 0px)',
+        'padding-left:env(safe-area-inset-left, 0px)',
+      ].join(';');
+      document.body.appendChild(safeAreaProbe);
+      return safeAreaProbe;
     }
 
     function captureDefaultLayoutInlineStyles() {
@@ -1127,6 +1238,250 @@
       viewportMeta.textContent = `Using ${activeWidth}px viewport slot for current window (${window.innerWidth}px).`;
     }
 
+    function getViewportProbeDisplayName(targetId) {
+      const option = document.querySelector(`[data-hotspot-target] option[value="${targetId}"]`);
+      return option ? option.textContent : targetId;
+    }
+
+    function renderViewportProbeMeta() {
+      const viewportLiveMeta = document.getElementById('viewport-tool-live-meta');
+      if (!viewportLiveMeta) {
+        return;
+      }
+
+      if (!Number.isFinite(activeSimulatedViewportWidth) || activeSimulatedViewportWidth <= 0) {
+        viewportLiveMeta.textContent = 'Select a viewport to load an accurate live preview.';
+        return;
+      }
+
+      if (!activeViewportProbeMessage || activeViewportProbeMessage.viewportWidth !== activeSimulatedViewportWidth) {
+        viewportLiveMeta.textContent = `Loading real ${activeSimulatedViewportWidth}px viewport metrics…`;
+        return;
+      }
+
+      const payload = activeViewportProbeMessage;
+      const layoutViewport = payload.layoutViewport || {};
+      const visualViewport = payload.visualViewport || {};
+      const safeArea = payload.safeArea || {};
+      const selectedId = getSelectedHotspotId();
+      const selectedMeasurement = selectedId && payload.measurements ? payload.measurements[selectedId] : null;
+      const selectedSummary = selectedMeasurement
+        ? `${getViewportProbeDisplayName(selectedId)} @ ${selectedMeasurement.left.toFixed(1)},${selectedMeasurement.top.toFixed(1)} | ${selectedMeasurement.width.toFixed(1)}×${selectedMeasurement.height.toFixed(1)}`
+        : 'no element selected';
+
+      viewportLiveMeta.textContent = [
+        `real ${layoutViewport.width || '?'}×${layoutViewport.height || '?'} layout`,
+        `vv ${visualViewport.width || '?'}×${visualViewport.height || '?'}`,
+        `dpr ${payload.devicePixelRatio || '?'}`,
+        payload.orientation || 'unknown',
+        `safe ${safeArea.top || 0}/${safeArea.right || 0}/${safeArea.bottom || 0}/${safeArea.left || 0}`,
+        selectedSummary,
+      ].join(' | ');
+    }
+
+    function updateViewportProbePreview() {
+      const previewShell = document.getElementById('hotspot-viewport-probe-shell');
+      const previewEmpty = document.getElementById('hotspot-viewport-probe-empty');
+      const previewCanvas = document.getElementById('hotspot-viewport-probe-canvas');
+      const previewFrame = document.getElementById('hotspot-viewport-probe-frame');
+      if (!previewShell || !previewEmpty || !previewCanvas || !previewFrame) {
+        return;
+      }
+
+      if (!Number.isFinite(activeSimulatedViewportWidth) || activeSimulatedViewportWidth <= 0) {
+        activeViewportProbeMessage = null;
+        activeViewportProbeToken = '';
+        previewCanvas.classList.remove('is-ready');
+        previewCanvas.style.width = '';
+        previewCanvas.style.height = '';
+        previewFrame.removeAttribute('src');
+        previewFrame.style.transform = '';
+        previewFrame.style.width = '';
+        previewFrame.style.height = '';
+        previewEmpty.hidden = false;
+        previewEmpty.textContent = 'No accurate preview loaded.';
+        renderViewportProbeMeta();
+        return;
+      }
+
+      const probeToken = `${activeSimulatedViewportWidth}-${Date.now()}`;
+      const probeUrl = new URL(window.location.href);
+      probeUrl.searchParams.set(HOTSPOT_LAYOUT_PROBE_QUERY_PARAM, '1');
+      probeUrl.searchParams.set('viewportProbeWidth', String(activeSimulatedViewportWidth));
+      probeUrl.searchParams.set('viewportProbeToken', probeToken);
+      probeUrl.hash = '';
+
+      activeViewportProbeMessage = null;
+      activeViewportProbeToken = probeToken;
+      previewCanvas.classList.remove('is-ready');
+      previewCanvas.style.width = '';
+      previewCanvas.style.height = '';
+      previewFrame.style.transform = '';
+      previewFrame.style.width = `${activeSimulatedViewportWidth}px`;
+      previewFrame.style.height = '640px';
+      previewFrame.setAttribute('src', probeUrl.toString());
+      previewEmpty.hidden = false;
+      previewEmpty.textContent = `Loading accurate ${activeSimulatedViewportWidth}px preview…`;
+      renderViewportProbeMeta();
+    }
+
+    function syncViewportProbePreviewScale() {
+      const previewShell = document.getElementById('hotspot-viewport-probe-shell');
+      const previewEmpty = document.getElementById('hotspot-viewport-probe-empty');
+      const previewCanvas = document.getElementById('hotspot-viewport-probe-canvas');
+      const previewFrame = document.getElementById('hotspot-viewport-probe-frame');
+      if (!previewShell || !previewEmpty || !previewCanvas || !previewFrame || !activeViewportProbeMessage) {
+        return;
+      }
+
+      const viewportWidth = activeViewportProbeMessage.viewportWidth;
+      const documentHeight = activeViewportProbeMessage.documentHeight;
+      if (!Number.isFinite(viewportWidth) || viewportWidth <= 0 || !Number.isFinite(documentHeight) || documentHeight <= 0) {
+        return;
+      }
+
+      const availableWidth = Math.max(1, previewShell.clientWidth - 12);
+      const scale = Math.min(1, availableWidth / viewportWidth);
+      previewCanvas.style.width = `${Math.max(1, viewportWidth * scale)}px`;
+      previewCanvas.style.height = `${Math.max(1, documentHeight * scale)}px`;
+      previewFrame.style.width = `${viewportWidth}px`;
+      previewFrame.style.height = `${documentHeight}px`;
+      previewFrame.style.transform = `scale(${scale})`;
+      previewCanvas.classList.add('is-ready');
+      previewEmpty.hidden = true;
+    }
+
+    function setupViewportProbeMessaging() {
+      if (isLayoutProbeMode) {
+        return;
+      }
+
+      window.addEventListener('message', function (event) {
+        const payload = event.data;
+        if (!payload || payload.type !== 'naimean-layout-probe' || payload.page !== HOTSPOT_LAYOUT_PAGE) {
+          return;
+        }
+        if (payload.token !== activeViewportProbeToken) {
+          return;
+        }
+
+        activeViewportProbeMessage = payload;
+        syncViewportProbePreviewScale();
+        renderViewportProbeMeta();
+      });
+
+      window.addEventListener('resize', function () {
+        syncViewportProbePreviewScale();
+      });
+    }
+
+    function setupLayoutProbeMode() {
+      if (!isLayoutProbeMode || !chapelWrapper) {
+        return;
+      }
+
+      document.body.classList.add('layout-probe-body');
+      const safeAreaProbe = createSafeAreaProbe();
+      const overlay = document.createElement('div');
+      overlay.className = 'hotspot-viewport-probe-overlay';
+      chapelWrapper.appendChild(overlay);
+
+      let measureFrame = 0;
+
+      function getSafeAreaInsets() {
+        const computed = window.getComputedStyle(safeAreaProbe);
+        return {
+          top: parseNumericValue(computed.paddingTop),
+          right: parseNumericValue(computed.paddingRight),
+          bottom: parseNumericValue(computed.paddingBottom),
+          left: parseNumericValue(computed.paddingLeft),
+        };
+      }
+
+      function measureHotspots() {
+        measureFrame = 0;
+        const wrapperRect = chapelWrapper.getBoundingClientRect();
+        const measurements = {};
+        let overlayHtml = '';
+
+        HOTSPOT_IDS.forEach(function (id) {
+          const target = document.getElementById(id);
+          if (!target) {
+            return;
+          }
+
+          const rect = target.getBoundingClientRect();
+          if (!rect.width && !rect.height) {
+            return;
+          }
+
+          const measurement = {
+            left: rect.left - wrapperRect.left,
+            top: rect.top - wrapperRect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+          measurements[id] = measurement;
+          overlayHtml += `<div class="hotspot-viewport-probe-box" data-hotspot-id="${id}" style="left:${measurement.left}px;top:${measurement.top}px;width:${measurement.width}px;height:${measurement.height}px"><span class="hotspot-viewport-probe-label">${id}</span></div>`;
+        });
+
+        overlay.innerHTML = overlayHtml;
+        const visualViewport = window.visualViewport;
+        const payload = {
+          type: 'naimean-layout-probe',
+          page: HOTSPOT_LAYOUT_PAGE,
+          token: new URLSearchParams(window.location.search).get('viewportProbeToken') || '',
+          viewportWidth: window.innerWidth || document.documentElement.clientWidth || 0,
+          layoutViewport: {
+            width: window.innerWidth || document.documentElement.clientWidth || 0,
+            height: window.innerHeight || document.documentElement.clientHeight || 0,
+          },
+          visualViewport: visualViewport ? {
+            width: Number(visualViewport.width.toFixed(2)),
+            height: Number(visualViewport.height.toFixed(2)),
+            offsetLeft: Number(visualViewport.offsetLeft.toFixed(2)),
+            offsetTop: Number(visualViewport.offsetTop.toFixed(2)),
+            pageLeft: Number(visualViewport.pageLeft.toFixed(2)),
+            pageTop: Number(visualViewport.pageTop.toFixed(2)),
+            scale: Number(visualViewport.scale.toFixed(4)),
+          } : null,
+          devicePixelRatio: window.devicePixelRatio || 1,
+          orientation: (screen.orientation && screen.orientation.type) || (window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'),
+          safeArea: getSafeAreaInsets(),
+          documentHeight: Math.max(
+            document.documentElement.scrollHeight,
+            document.body ? document.body.scrollHeight : 0,
+            chapelWrapper.offsetHeight
+          ),
+          measurements: measurements,
+        };
+
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(payload, window.location.origin);
+        }
+      }
+
+      function scheduleMeasurement() {
+        if (measureFrame) {
+          return;
+        }
+        measureFrame = window.requestAnimationFrame(measureHotspots);
+      }
+
+      scheduleMeasurement();
+      window.addEventListener('load', scheduleMeasurement);
+      window.addEventListener('resize', scheduleMeasurement);
+      window.addEventListener('orientationchange', scheduleMeasurement);
+      window.addEventListener('scroll', scheduleMeasurement, { passive: true });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleMeasurement);
+        window.visualViewport.addEventListener('scroll', scheduleMeasurement);
+      }
+      window.setTimeout(scheduleMeasurement, 120);
+      window.setTimeout(scheduleMeasurement, 400);
+      window.setTimeout(scheduleMeasurement, 900);
+    }
+
     function renderCounterFontToolMeta() {
       const fontMeta = document.getElementById('font-tool-meta');
       if (!fontMeta || !chapelTvCounter) {
@@ -1229,6 +1584,7 @@
           syncHotspotTargetSelection(selector.value);
           updateSelectionHighlight(selector.value);
           renderHotspotToolMeta();
+          renderViewportProbeMeta();
         });
       });
 
@@ -1347,6 +1703,7 @@
             btn.classList.add('hotspot-viewport-active');
             activeViewportBtn = btn;
             renderViewportToolMeta();
+            updateViewportProbePreview();
             loadLayoutOverrides();
           });
         });
@@ -1358,6 +1715,7 @@
             document.body.classList.remove('viewport-simulated');
             if (activeViewportBtn) { activeViewportBtn.classList.remove('hotspot-viewport-active'); activeViewportBtn = null; }
             renderViewportToolMeta();
+            updateViewportProbePreview();
             loadLayoutOverrides();
           });
         }
@@ -1443,9 +1801,11 @@
 
       window.addEventListener('resize', function () {
         if (document.body.classList.contains('viewport-simulated')) {
+          syncViewportProbePreviewScale();
           return;
         }
         renderViewportToolMeta();
+        renderViewportProbeMeta();
         applyResponsiveLayoutFontOverrides();
         renderCounterFontToolMeta();
       });
@@ -1516,6 +1876,7 @@
           }
           renderHotspotToolMeta();
           renderViewportToolMeta();
+          renderViewportProbeMeta();
           renderCounterFontToolMeta();
         })
         .catch(function () {});
@@ -2116,15 +2477,19 @@
     }
 
     window.addEventListener('load', function () {
-      scrollToCurrentStartPoint();
-      // Retry a few times in case layout shifts as images decode on mobile
-      setTimeout(scrollToCurrentStartPoint, 100);
-      setTimeout(scrollToCurrentStartPoint, 300);
-      launchDiscordInviteFromRedirectIfNeeded();
-      setTimeout(function () {
+      if (!isLayoutProbeMode) {
         scrollToCurrentStartPoint();
-        startCongregationAudio();
-        bindCongregationFallback();
+        // Retry a few times in case layout shifts as images decode on mobile
+        setTimeout(scrollToCurrentStartPoint, 100);
+        setTimeout(scrollToCurrentStartPoint, 300);
+        launchDiscordInviteFromRedirectIfNeeded();
+      }
+      setTimeout(function () {
+        if (!isLayoutProbeMode) {
+          scrollToCurrentStartPoint();
+          startCongregationAudio();
+          bindCongregationFallback();
+        }
         revealPage();
       }, 500);
     });
@@ -2256,7 +2621,11 @@
       }, 900);
     }
 
-    document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
+    if (!isLayoutProbeMode) {
+      document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
+    }
+    setupViewportProbeMessaging();
+    setupLayoutProbeMode();
     setupHotspotTools();
     loadLayoutOverrides();
     scheduleNextSauceDrip();

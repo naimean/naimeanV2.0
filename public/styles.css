@@ -27,6 +27,7 @@ body {
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -35,6 +36,7 @@ body {
 .c64-wrapper {
   position: relative;
   width: min(608px, 100vw, calc(100vh * var(--c64-native-aspect-ratio)));
+  width: min(608px, 100vw, calc(100dvh * var(--c64-native-aspect-ratio)));
 }
 
 .c64-wrapper.base-image-missing {
