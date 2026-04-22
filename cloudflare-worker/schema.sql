@@ -14,6 +14,7 @@ INSERT OR IGNORE INTO rickroll_counter (id, value) VALUES ('rickrolls', 0);
 -- are viewport-independent and apply correctly at any window size.
 -- top_pct  / height_pct → % of wrapper height
 -- left_pct / width_pct  → % of wrapper width
+-- font_size_pct         → % of wrapper width (for text elements like the chapel counter)
 CREATE TABLE IF NOT EXISTS layout_overrides (
   page        TEXT    NOT NULL,
   element_id  TEXT    NOT NULL,
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS layout_overrides (
   left_pct    REAL,
   width_pct   REAL,
   height_pct  REAL,
+  font_size_pct REAL,
   updated_at  INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (page, element_id)
 );
