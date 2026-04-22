@@ -508,6 +508,10 @@
       top: 440px;
     }
 
+    #hotspot-font-tool {
+      top: 600px;
+    }
+
     .hotspot-tool-title {
       font-weight: 700;
       letter-spacing: 0.08em;
@@ -712,6 +716,19 @@
         </div>
         <div class="hotspot-tool-meta" id="viewport-tool-meta" aria-live="polite">No simulation active.</div>
       </section>
+      <section class="hotspot-tool" id="hotspot-font-tool" aria-label="Counter font size tool">
+        <h2 class="hotspot-tool-title">Counter Font</h2>
+        <div class="hotspot-tool-grid">
+          <button type="button" data-font-size-step="1">font +</button>
+          <button type="button" data-font-size-step="-1">font -</button>
+          <button type="button" data-font-size-step="2">font ++</button>
+          <button type="button" data-font-size-step="-2">font --</button>
+        </div>
+        <div class="hotspot-tool-grid">
+          <button type="button" data-font-size-reset>reset</button>
+        </div>
+        <div class="hotspot-tool-meta" id="font-tool-meta" aria-live="polite">Counter font size uses the default style.</div>
+      </section>
       <!-- Seam bloom glows around the darkest stitched regions -->
       <div class="torch-bloom" id="chapel-seam-bloom-left-upper" aria-hidden="true" style="--torch-bloom-boost:1.15;left:14.7%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
       <div class="torch-bloom" id="chapel-seam-bloom-right-upper" aria-hidden="true" style="--torch-bloom-boost:1.15;left:83.9%;top:calc(54.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-light-elements-upshift));width:39%;aspect-ratio:1"></div>
@@ -768,6 +785,28 @@
     const HOTSPOT_TOOL_NONE_TARGET = '__none__';
     const HOTSPOT_TOOL_DEFAULT_TARGET = HOTSPOT_TOOL_NONE_TARGET;
     const HOTSPOT_TOOL_DRAG_HELP_TEXT = 'drag on page to move';
+    const HOTSPOT_LAYOUT_PAGE = 'chapel';
+    const HOTSPOT_VIEWPORT_WIDTHS = [375, 390, 430, 768, 1024, 1280, 1440];
+    const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
+    const HOTSPOT_COUNTER_FONT_SIZE_MIN_PX = 4;
+    const HOTSPOT_IDS = [
+      'chapel-return-btn',
+      'trapdoor-btn',
+      'crusty-button',
+      'goose-button',
+      'morty-button',
+      'rick-button',
+      'chapel-trans-rick',
+      HOTSPOT_COUNTER_ID,
+      'chapel-power-btn',
+      'sauce-drip-lane',
+      'chapel-seam-bloom-left-upper',
+      'chapel-seam-bloom-right-upper',
+      'chapel-seam-bloom-center-upper',
+      'chapel-seam-bloom-left-lower',
+      'chapel-seam-bloom-right-lower',
+      'chapel-seam-bloom-center-lower',
+    ];
     const SAUCE_DRIP_MIN_INTERVAL_MS = 10000;
     const SAUCE_DRIP_MAX_INTERVAL_MS = 15000;
     const SAUCE_DRIP_ANIMATION_MS = 1600;
@@ -781,15 +820,128 @@
     let torchBloomSampleContext = null;
     let torchBloomIntensityBound = false;
     let sauceDripTimerId = null;
+    let activeSimulatedViewportWidth = null;
+    let activeLayoutLoadRequestId = 0;
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sauceDrip = document.getElementById('sauce-drip');
     const wrongAudio = new Audio('assets/wrong.mp3');
     wrongAudio.preload = 'auto';
     wrongAudio.load();
+    const defaultLayoutInlineStyles = new Map();
 
     function parseNumericValue(value) {
       const numericValue = Number.parseFloat(value);
       return Number.isFinite(numericValue) ? numericValue : 0;
+    }
+
+    function resolveNearestHotspotViewportWidth(width) {
+      const numericWidth = Number(width);
+      if (!Number.isFinite(numericWidth) || numericWidth <= 0) {
+        return HOTSPOT_VIEWPORT_WIDTHS[HOTSPOT_VIEWPORT_WIDTHS.length - 1];
+      }
+
+      return HOTSPOT_VIEWPORT_WIDTHS.reduce(function (closestWidth, candidateWidth) {
+        return Math.abs(candidateWidth - numericWidth) < Math.abs(closestWidth - numericWidth)
+          ? candidateWidth
+          : closestWidth;
+      }, HOTSPOT_VIEWPORT_WIDTHS[0]);
+    }
+
+    function getCurrentHotspotViewportWidth() {
+      if (Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0) {
+        return activeSimulatedViewportWidth;
+      }
+
+      return resolveNearestHotspotViewportWidth(window.innerWidth || document.documentElement.clientWidth || 0);
+    }
+
+    function getCurrentHotspotLayoutPageKey() {
+      return `${HOTSPOT_LAYOUT_PAGE}--vp-${getCurrentHotspotViewportWidth()}`;
+    }
+
+    function captureDefaultLayoutInlineStyles() {
+      HOTSPOT_IDS.forEach(function (id) {
+        if (defaultLayoutInlineStyles.has(id)) {
+          return;
+        }
+
+        const target = document.getElementById(id);
+        if (!target) {
+          return;
+        }
+
+        defaultLayoutInlineStyles.set(id, {
+          top: target.style.top,
+          left: target.style.left,
+          width: target.style.width,
+          height: target.style.height,
+          fontSize: target.style.fontSize,
+        });
+      });
+    }
+
+    function restoreDefaultLayoutInlineStyles() {
+      HOTSPOT_IDS.forEach(function (id) {
+        const target = document.getElementById(id);
+        const defaults = defaultLayoutInlineStyles.get(id);
+        if (!target || !defaults) {
+          return;
+        }
+
+        [['top', defaults.top], ['left', defaults.left], ['width', defaults.width], ['height', defaults.height], ['fontSize', defaults.fontSize]].forEach(function (entry) {
+          const property = entry[0];
+          const value = entry[1];
+          if (value) {
+            target.style[property] = value;
+          } else {
+            target.style.removeProperty(property === 'fontSize' ? 'font-size' : property);
+          }
+        });
+
+        delete target.dataset.layoutFontSizePct;
+      });
+    }
+
+    function applyResponsiveLayoutFontOverrides() {
+      if (!chapelWrapper || !chapelWrapper.offsetWidth) {
+        return;
+      }
+
+      document.querySelectorAll('[data-layout-font-size-pct]').forEach(function (target) {
+        const fontSizePct = parseNumericValue(target.dataset.layoutFontSizePct);
+        if (fontSizePct <= 0) {
+          return;
+        }
+        target.style.fontSize = `${(chapelWrapper.offsetWidth * fontSizePct) / 100}px`;
+      });
+    }
+
+    function setCounterFontSize(nextFontSizePx) {
+      if (!chapelTvCounter || !Number.isFinite(nextFontSizePx)) {
+        return;
+      }
+
+      const clampedFontSizePx = Math.max(HOTSPOT_COUNTER_FONT_SIZE_MIN_PX, nextFontSizePx);
+      delete chapelTvCounter.dataset.layoutFontSizePct;
+      chapelTvCounter.style.fontSize = `${clampedFontSizePx}px`;
+    }
+
+    function adjustCounterFontSize(deltaPx) {
+      if (!chapelTvCounter) {
+        return;
+      }
+
+      const currentFontSizePx = parseNumericValue(window.getComputedStyle(chapelTvCounter).fontSize);
+      setCounterFontSize(currentFontSizePx + deltaPx);
+    }
+
+    function resetCounterFontSize() {
+      if (!chapelTvCounter) {
+        return;
+      }
+
+      delete chapelTvCounter.dataset.layoutFontSizePct;
+      chapelTvCounter.style.removeProperty('font-size');
     }
 
     function resolveTargetLayoutMetrics(target) {
@@ -952,12 +1104,41 @@
       sizeMeta.textContent = metaText;
     }
 
+    function renderViewportToolMeta() {
+      const viewportMeta = document.getElementById('viewport-tool-meta');
+      if (!viewportMeta) {
+        return;
+      }
+
+      const activeWidth = getCurrentHotspotViewportWidth();
+      if (Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0) {
+        viewportMeta.textContent = `Simulating ${activeWidth}px viewport. Saves load from ${getCurrentHotspotLayoutPageKey()}.`;
+        return;
+      }
+
+      viewportMeta.textContent = `Using ${activeWidth}px viewport slot for current window (${window.innerWidth}px).`;
+    }
+
+    function renderCounterFontToolMeta() {
+      const fontMeta = document.getElementById('font-tool-meta');
+      if (!fontMeta || !chapelTvCounter) {
+        return;
+      }
+
+      const fontSizePx = parseNumericValue(window.getComputedStyle(chapelTvCounter).fontSize);
+      const fontMode = chapelTvCounter.dataset.layoutFontSizePct ? 'saved override' : 'default/live';
+      fontMeta.textContent = `counter ${fontSizePx.toFixed(1)}px | ${fontMode} | viewport ${getCurrentHotspotViewportWidth()}px`;
+    }
+
     function setupHotspotTools() {
       const moveTool = document.getElementById('hotspot-move-tool');
       const sizeTool = document.getElementById('hotspot-size-tool');
+      const fontTool = document.getElementById('hotspot-font-tool');
       if (!moveTool || !sizeTool) {
         return;
       }
+
+      captureDefaultLayoutInlineStyles();
 
       // ── Tool activation ──────────────────────────────────────────────────────
       // Toggle visibility with Ctrl+Shift+H or window.NaimeanLayout.toggle().
@@ -1031,6 +1212,8 @@
       syncHotspotTargetSelection(HOTSPOT_TOOL_DEFAULT_TARGET);
       updateSelectionHighlight(HOTSPOT_TOOL_DEFAULT_TARGET);
       renderHotspotToolMeta();
+      renderViewportToolMeta();
+      renderCounterFontToolMeta();
 
       document.querySelectorAll('[data-hotspot-target]').forEach(function (selector) {
         selector.addEventListener('change', function () {
@@ -1144,51 +1327,52 @@
 
       // ── Viewport simulator ───────────────────────────────────────────────────
       const viewportTool = document.getElementById('hotspot-viewport-tool');
-      const viewportMeta = document.getElementById('viewport-tool-meta');
       if (viewportTool) {
         let activeViewportBtn = null;
         viewportTool.querySelectorAll('[data-viewport-width]').forEach(function (btn) {
           btn.addEventListener('click', function () {
             const width = btn.getAttribute('data-viewport-width');
+            activeSimulatedViewportWidth = parseNumericValue(width);
             document.documentElement.style.setProperty('--simulated-viewport-width', width + 'px');
             document.body.classList.add('viewport-simulated');
             if (activeViewportBtn) { activeViewportBtn.classList.remove('hotspot-viewport-active'); }
             btn.classList.add('hotspot-viewport-active');
             activeViewportBtn = btn;
-            if (viewportMeta) { viewportMeta.textContent = 'Simulating ' + width + 'px viewport.'; }
+            renderViewportToolMeta();
+            loadLayoutOverrides();
           });
         });
         const resetBtn = viewportTool.querySelector('[data-viewport-reset]');
         if (resetBtn) {
           resetBtn.addEventListener('click', function () {
+            activeSimulatedViewportWidth = null;
             document.documentElement.style.removeProperty('--simulated-viewport-width');
             document.body.classList.remove('viewport-simulated');
             if (activeViewportBtn) { activeViewportBtn.classList.remove('hotspot-viewport-active'); activeViewportBtn = null; }
-            if (viewportMeta) { viewportMeta.textContent = 'No simulation active.'; }
+            renderViewportToolMeta();
+            loadLayoutOverrides();
+          });
+        }
+      }
+
+      if (fontTool) {
+        fontTool.querySelectorAll('[data-font-size-step]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            adjustCounterFontSize(parseNumericValue(button.getAttribute('data-font-size-step')));
+            renderCounterFontToolMeta();
+          });
+        });
+
+        const resetFontBtn = fontTool.querySelector('[data-font-size-reset]');
+        if (resetFontBtn) {
+          resetFontBtn.addEventListener('click', function () {
+            resetCounterFontSize();
+            renderCounterFontToolMeta();
           });
         }
       }
 
       // ── Save button ──────────────────────────────────────────────────────────
-      const HOTSPOT_IDS = [
-        'chapel-return-btn',
-        'trapdoor-btn',
-        'crusty-button',
-        'goose-button',
-        'morty-button',
-        'rick-button',
-        'chapel-trans-rick',
-        'chapel-tv-counter',
-        'chapel-power-btn',
-        'chapel-trans-rick',
-        'sauce-drip-lane',
-        'chapel-seam-bloom-left-upper',
-        'chapel-seam-bloom-right-upper',
-        'chapel-seam-bloom-center-upper',
-        'chapel-seam-bloom-left-lower',
-        'chapel-seam-bloom-right-lower',
-        'chapel-seam-bloom-center-lower',
-      ];
       const saveBtn = document.getElementById('hotspot-save-btn');
       const moveMeta = document.getElementById('move-tool-meta');
       if (saveBtn) {
@@ -1211,6 +1395,12 @@
               width: metrics.width / ww * 100,
               height: metrics.height / wh * 100,
             };
+            if (id === HOTSPOT_COUNTER_ID) {
+              const fontSizePx = parseNumericValue(window.getComputedStyle(el).fontSize);
+              if (fontSizePx > 0) {
+                overrides[id].fontSizePct = fontSizePx / ww * 100;
+              }
+            }
           });
 
           saveBtn.disabled = true;
@@ -1219,14 +1409,14 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({ page: 'chapel', overrides: overrides }),
+            body: JSON.stringify({ page: getCurrentHotspotLayoutPageKey(), overrides: overrides }),
           }).then(function (res) {
             return res.json().then(function (data) { return { ok: res.ok, data: data }; });
           }).then(function (result) {
             saveBtn.disabled = false;
             if (result.ok) {
               saveBtn.textContent = '✓ Saved!';
-              if (moveMeta) { moveMeta.textContent = 'Saved ' + (result.data.saved || 0) + ' elements.'; }
+              if (moveMeta) { moveMeta.textContent = 'Saved ' + (result.data.saved || 0) + ' elements for ' + getCurrentHotspotViewportWidth() + 'px viewport.'; }
             } else if (result.data && result.data.error === 'Unauthorized') {
               saveBtn.textContent = '💾 Save all';
               if (moveMeta) { moveMeta.textContent = 'Login required — use C:\\Naimean\\login first.'; }
@@ -1242,6 +1432,15 @@
           });
         });
       }
+
+      window.addEventListener('resize', function () {
+        if (document.body.classList.contains('viewport-simulated')) {
+          return;
+        }
+        renderViewportToolMeta();
+        applyResponsiveLayoutFontOverrides();
+        renderCounterFontToolMeta();
+      });
     }
 
     // ── Load saved layout overrides from server on page init ─────────────────────
@@ -1256,16 +1455,56 @@
         if (typeof dims.left === 'number' && Number.isFinite(dims.left)) { el.style.left = dims.left + '%'; }
         if (typeof dims.width === 'number' && Number.isFinite(dims.width)) { el.style.width = dims.width + '%'; }
         if (typeof dims.height === 'number' && Number.isFinite(dims.height)) { el.style.height = dims.height + '%'; }
+        if (id === HOTSPOT_COUNTER_ID) {
+          if (typeof dims.fontSizePct === 'number' && Number.isFinite(dims.fontSizePct) && dims.fontSizePct > 0) {
+            el.dataset.layoutFontSizePct = String(dims.fontSizePct);
+          } else {
+            delete el.dataset.layoutFontSizePct;
+            el.style.removeProperty('font-size');
+          }
+        }
       });
+      applyResponsiveLayoutFontOverrides();
     }
 
     function loadLayoutOverrides() {
-      fetch('/layout?page=chapel', { credentials: 'same-origin' })
-        .then(function (res) { return res.ok ? res.json() : null; })
-        .then(function (data) {
-          if (data && data.overrides) {
-            applyLayoutOverrides(data.overrides);
+      const requestId = ++activeLayoutLoadRequestId;
+      const primaryPageKey = getCurrentHotspotLayoutPageKey();
+      const fallbackPageKeys = primaryPageKey === HOTSPOT_LAYOUT_PAGE
+        ? [primaryPageKey]
+        : [primaryPageKey, HOTSPOT_LAYOUT_PAGE];
+
+      Promise.all(fallbackPageKeys.map(function (pageKey) {
+        return fetch('/layout?page=' + encodeURIComponent(pageKey), { credentials: 'same-origin' })
+          .then(function (res) { return res.ok ? res.json() : null; })
+          .then(function (data) {
+            return {
+              pageKey: pageKey,
+              overrides: data && data.overrides ? data.overrides : null,
+            };
+          })
+          .catch(function () {
+            return {
+              pageKey: pageKey,
+              overrides: null,
+            };
+          });
+      }))
+        .then(function (responses) {
+          if (requestId !== activeLayoutLoadRequestId) {
+            return;
           }
+
+          restoreDefaultLayoutInlineStyles();
+          const match = responses.find(function (response) {
+            return response.overrides && Object.keys(response.overrides).length > 0;
+          });
+          if (match) {
+            applyLayoutOverrides(match.overrides);
+          }
+          renderHotspotToolMeta();
+          renderViewportToolMeta();
+          renderCounterFontToolMeta();
         })
         .catch(function () {});
     }

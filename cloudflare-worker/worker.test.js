@@ -558,7 +558,7 @@ function makeLayoutDbCapture() {
     prepare(sql) {
       const sqlU = sql.trim().toUpperCase();
       executedSql.push(sql.trim());
-      if (sqlU.startsWith('CREATE TABLE')) {
+      if (sqlU.startsWith('CREATE TABLE') || sqlU.startsWith('ALTER TABLE')) {
         return {
           async run() {
             return { success: true };
@@ -569,11 +569,11 @@ function makeLayoutDbCapture() {
         bind(...args) {
           return {
             async all() {
-              if (sqlU.startsWith('SELECT')) {
-                const page = args[0];
-                const rows = Object.entries(store)
-                  .filter(([k]) => k.startsWith(page + ':'))
-                  .map(([k, v]) => ({ element_id: k.slice(page.length + 1), ...v }));
+                if (sqlU.startsWith('SELECT')) {
+                  const page = args[0];
+                  const rows = Object.entries(store)
+                    .filter(([k]) => k.startsWith(page + ':'))
+                    .map(([k, v]) => ({ element_id: k.slice(page.length + 1), ...v }));
                 return { results: rows };
               }
               return { results: [] };
@@ -588,8 +588,14 @@ function makeLayoutDbCapture() {
     async batch(stmts) {
       for (const stmt of stmts) {
         if (stmt._sql && stmt._sql.includes('layout_overrides') && stmt._args) {
-          const [page, elementId, top, left, width, height] = stmt._args;
-          store[`${page}:${elementId}`] = { top_pct: top, left_pct: left, width_pct: width, height_pct: height };
+          const [page, elementId, top, left, width, height, fontSizePct] = stmt._args;
+          store[`${page}:${elementId}`] = {
+            top_pct: top,
+            left_pct: left,
+            width_pct: width,
+            height_pct: height,
+            font_size_pct: fontSizePct,
+          };
         }
       }
     },
@@ -745,6 +751,48 @@ test('contract: POST /layout with valid session and no OWNER_DISCORD_ID set retu
   const res = await worker.fetch(req, env);
   assert.strictEqual(res.status, 200);
   assert.ok(db.executedSql.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS layout_overrides')));
+});
+
+test('contract: POST /layout stores fontSizePct and GET /layout returns it', async () => {
+  const cookie = await createTestSessionCookie('anyone');
+  const db = makeLayoutDbCapture();
+  const saveReq = new Request('http://localhost/layout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: JSON.stringify({
+      page: 'chapel--vp-390',
+      overrides: {
+        'chapel-tv-counter': {
+          top: 53.5,
+          left: 44.2,
+          width: 2.1,
+          height: 1.8,
+          fontSizePct: 1.25,
+        },
+      },
+    }),
+  });
+  const env = makeContractEnv({
+    DB: db,
+    SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET,
+  });
+
+  const saveRes = await worker.fetch(saveReq, env);
+  assert.strictEqual(saveRes.status, 200);
+
+  const loadRes = await worker.fetch(
+    makeContractRequest('GET', '/layout?page=chapel--vp-390'),
+    makeContractEnv({ DB: db }),
+  );
+  assert.strictEqual(loadRes.status, 200);
+  const body = await loadRes.json();
+  assert.deepEqual(body.overrides['chapel-tv-counter'], {
+    top: 53.5,
+    left: 44.2,
+    width: 2.1,
+    height: 1.8,
+    fontSizePct: 1.25,
+  });
 });
 
 test('contract: OPTIONS preflight on /layout returns 204', async () => {

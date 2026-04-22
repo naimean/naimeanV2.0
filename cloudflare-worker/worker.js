@@ -21,8 +21,8 @@
  *   POST /layout              – save hotspot layout overrides (requires auth session)
  *
  * Counter endpoints return JSON: { "value": <integer> }
- * Layout GET returns JSON: { "overrides": { "<elementId>": { top, left, width, height }, … } }
- * Layout POST accepts JSON: { "page": "<page>", "overrides": { "<elementId>": { top, left, width, height }, … } }
+ * Layout GET returns JSON: { "overrides": { "<elementId>": { top, left, width, height, fontSizePct? }, … } }
+ * Layout POST accepts JSON: { "page": "<page>", "overrides": { "<elementId>": { top, left, width, height, fontSizePct? }, … } }
  */
 
 const COUNTER_ID = 'rickrolls';
@@ -625,6 +625,7 @@ const LAYOUT_OVERRIDES_TABLE_SCHEMA_SQL = `CREATE TABLE IF NOT EXISTS layout_ove
   left_pct    REAL,
   width_pct   REAL,
   height_pct  REAL,
+  font_size_pct REAL,
   updated_at  INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (page, element_id)
 )`;
@@ -654,6 +655,15 @@ async function ensureLayoutOverridesTable(db) {
   } catch (error) {
     throw new Error('Failed to initialize layout_overrides table', { cause: error });
   }
+
+  try {
+    await db.prepare('ALTER TABLE layout_overrides ADD COLUMN font_size_pct REAL').run();
+  } catch (error) {
+    const errorMessage = error && error.message ? String(error.message).toLowerCase() : '';
+    if (!errorMessage.includes('duplicate column name') && !errorMessage.includes('already exists')) {
+      throw new Error('Failed to migrate layout_overrides table', { cause: error });
+    }
+  }
 }
 
 async function handleGetLayout(request, env, origin) {
@@ -664,7 +674,7 @@ async function handleGetLayout(request, env, origin) {
 
   await ensureLayoutOverridesTable(env.DB);
   const rows = await env.DB
-    .prepare('SELECT element_id, top_pct, left_pct, width_pct, height_pct FROM layout_overrides WHERE page = ?')
+    .prepare('SELECT element_id, top_pct, left_pct, width_pct, height_pct, font_size_pct FROM layout_overrides WHERE page = ?')
     .bind(page)
     .all();
 
@@ -675,6 +685,7 @@ async function handleGetLayout(request, env, origin) {
       left: row.left_pct,
       width: row.width_pct,
       height: row.height_pct,
+      fontSizePct: row.font_size_pct,
     };
   }
 
@@ -728,11 +739,12 @@ async function handlePostLayout(request, env, origin) {
     const left = parseLayoutNumber(dims.left);
     const width = parseLayoutNumber(dims.width);
     const height = parseLayoutNumber(dims.height);
+    const fontSizePct = parseLayoutNumber(dims.fontSizePct);
 
     // Reject clearly out-of-range percentages (allow some slack beyond 100% for
     // elements that intentionally bleed outside the wrapper).
     const MAX_PCT = 200;
-    for (const [name, val] of [['top', top], ['left', left], ['width', width], ['height', height]]) {
+    for (const [name, val] of [['top', top], ['left', left], ['width', width], ['height', height], ['fontSizePct', fontSizePct]]) {
       if (val !== null && (val < -MAX_PCT || val > MAX_PCT)) {
         return jsonResponse({ error: `Value out of range for ${elementId}.${name}` }, 400, origin, env);
       }
@@ -740,15 +752,16 @@ async function handlePostLayout(request, env, origin) {
 
     statements.push(
       env.DB.prepare(
-        `INSERT INTO layout_overrides (page, element_id, top_pct, left_pct, width_pct, height_pct, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO layout_overrides (page, element_id, top_pct, left_pct, width_pct, height_pct, font_size_pct, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(page, element_id) DO UPDATE SET
-           top_pct = excluded.top_pct,
-           left_pct = excluded.left_pct,
-           width_pct = excluded.width_pct,
-           height_pct = excluded.height_pct,
-           updated_at = excluded.updated_at`
-      ).bind(page, elementId, top, left, width, height, now)
+            top_pct = excluded.top_pct,
+            left_pct = excluded.left_pct,
+            width_pct = excluded.width_pct,
+            height_pct = excluded.height_pct,
+            font_size_pct = excluded.font_size_pct,
+            updated_at = excluded.updated_at`
+      ).bind(page, elementId, top, left, width, height, fontSizePct, now)
     );
   }
 
