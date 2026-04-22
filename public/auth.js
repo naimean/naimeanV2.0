@@ -58,6 +58,10 @@
   padding: 6px 14px 6px 16px;
 }
 
+.discord-auth-chip [hidden] {
+  display: none !important;
+}
+
 .discord-auth-login-btn {
   border: none;
   background: transparent;
