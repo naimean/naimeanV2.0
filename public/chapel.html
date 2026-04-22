@@ -1639,7 +1639,7 @@
 
       let mobileTripleTapCount = 0;
       let mobileTripleTapLastAt = 0;
-      function isMobileOwnerSession(session) {
+      function isOwnerDiscordSession(session) {
         if (!session || !session.authenticated || !session.user || session.user.provider !== 'discord') {
           return false;
         }
@@ -1647,14 +1647,14 @@
         const displayName = typeof session.user.displayName === 'string' ? session.user.displayName.trim().toLowerCase() : '';
         return HOTSPOT_OWNER_DISCORD_ALIASES.has(username) || HOTSPOT_OWNER_DISCORD_ALIASES.has(displayName);
       }
-      function isTouchLikeMobileEnvironment() {
+      function hasTouchCapability() {
         if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
           return true;
         }
         return Number(navigator.maxTouchPoints) > 0;
       }
       document.addEventListener('touchend', function (event) {
-        if (!isTouchLikeMobileEnvironment() || isToolsActive()) {
+        if (!hasTouchCapability() || isToolsActive()) {
           return;
         }
         const target = event.target instanceof Element ? event.target : null;
@@ -1674,7 +1674,7 @@
         mobileTripleTapCount = 0;
         getLatestAuthSession()
           .then(function (session) {
-            if (isMobileOwnerSession(session)) {
+            if (isOwnerDiscordSession(session)) {
               setToolsActive(true);
             }
           })
