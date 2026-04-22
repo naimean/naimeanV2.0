@@ -37,6 +37,16 @@ body {
   width: min(608px, 100vw, calc(100vh * var(--c64-native-aspect-ratio)));
 }
 
+@supports (min-height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
+
+  .c64-wrapper {
+    width: min(608px, 100vw, calc(100dvh * var(--c64-native-aspect-ratio)));
+  }
+}
+
 .c64-wrapper.base-image-missing {
   aspect-ratio: var(--c64-native-aspect-ratio);
   border-radius: 12px;
