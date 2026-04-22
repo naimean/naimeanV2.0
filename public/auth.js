@@ -14,7 +14,6 @@
   const DISCORD_USER_ID_PATTERN = /^\d{5,30}$/;
   const DISCORD_AVATAR_HASH_PATTERN = /^(a_)?[a-f0-9]{32}$/i;
   const WRONG_ORIGIN = 'cross-origin-auth';
-  const CLOSE_FALLBACK_MS = 9000;
 
   let authState = { authenticated: false, user: null };
   let popupWindow = null;
