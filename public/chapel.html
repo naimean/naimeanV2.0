@@ -2061,12 +2061,12 @@
     function loadLayoutOverrides() {
       const requestId = ++activeLayoutLoadRequestId;
       const primaryPageKey = getCurrentHotspotLayoutPageKey();
-      const useViewportOnlyLayout = isLayoutProbeMode
+      const shouldSkipLegacyLayoutFallback = isLayoutProbeMode
         || (Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0);
       // Preserve legacy saved layouts during normal page use, but keep simulated
       // and probe viewports on their true viewport-specific/default positions so
       // the editor does not snap back to a generic saved layout after resizing.
-      const fallbackPageKeys = useViewportOnlyLayout
+      const fallbackPageKeys = shouldSkipLegacyLayoutFallback
         ? [primaryPageKey]
         : [primaryPageKey, HOTSPOT_LAYOUT_PAGE];
 
