@@ -481,7 +481,7 @@
     .hotspot-tool {
       position: fixed;
       right: 12px;
-      top: var(--hotspot-tool-top, 12px);
+      top: calc(var(--hotspot-tool-top, 12px) * var(--hotspot-tool-scale, 1));
       z-index: 120;
       width: min(260px, calc(100vw - 24px));
       background: rgba(0, 0, 0, 0.88);
@@ -494,6 +494,8 @@
       gap: 6px;
       visibility: hidden;
       pointer-events: none;
+      transform: scale(var(--hotspot-tool-scale, 1));
+      transform-origin: top right;
     }
 
     /* Tools are shown when body has the .hotspot-tools-active class.
@@ -517,6 +519,12 @@
 
     #hotspot-font-tool {
       --hotspot-tool-top: 600px;
+    }
+
+    @media (max-width: 768px) {
+      .hotspot-tool {
+        --hotspot-tool-scale: 0.5;
+      }
     }
 
     .hotspot-tool-title {
