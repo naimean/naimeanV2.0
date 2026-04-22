@@ -93,6 +93,10 @@
       -webkit-user-drag: none;
     }
 
+    .chapel-trans-rick.is-visible {
+      z-index: 20;
+    }
+
     /* Pulsing power button — positioned over the C64's power button on the altar */
     .chapel-power-btn {
       position: absolute;
@@ -427,6 +431,11 @@
     }
 
     @media (max-width: 899px) {
+      .chapel-trans-rick {
+        left: calc((46.1% + 20px) - 5px);
+        top: calc((54.8% + 200px) - 75px);
+      }
+
       .sauce-drip-lane {
         left: calc(50% + 50px - 40px + 8px);
       }
@@ -1040,6 +1049,7 @@
       }
 
       chapelTransRick.hidden = !isVisible;
+      chapelTransRick.classList.toggle('is-visible', isVisible);
     }
 
     function clampValue(value, min, max) {
