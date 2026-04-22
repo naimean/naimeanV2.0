@@ -716,7 +716,7 @@
     <div class="chapel-outer">
       <div class="chapel-wrapper">
         <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
-        <img src="assets/trans_rick.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" aria-hidden="true" />
+        <img src="assets/trans_rick.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" hidden aria-hidden="true" />
         <div class="chapel-power-btn" id="chapel-power-btn" aria-hidden="true">
           <span class="chapel-power-light"></span>
         </div>
@@ -1625,10 +1625,9 @@
       function setToolsActive(on) {
         try { on ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
         document.body.classList.toggle('hotspot-tools-active', on);
+        syncTransRickPresentation();
       }
-      if (isToolsActive()) {
-        document.body.classList.add('hotspot-tools-active');
-      }
+      setToolsActive(isToolsActive());
       document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.shiftKey && !e.altKey && e.key === 'H') {
           e.preventDefault();
@@ -2109,16 +2108,17 @@
     window.NaimeanLayout = {
       toggle: function () {
         const isActive = document.body.classList.contains('hotspot-tools-active');
-        document.body.classList.toggle('hotspot-tools-active', !isActive);
-        try { !isActive ? localStorage.setItem('naimean-hotspot-tools', '1') : localStorage.removeItem('naimean-hotspot-tools'); } catch (_) {}
+        setToolsActive(!isActive);
       },
     };
 
-    function setTransRickHighlightState(isHighlighted) {
+    function syncTransRickPresentation() {
       if (!chapelTransRick) {
         return;
       }
-      chapelTransRick.classList.toggle('is-visible', Boolean(isHighlighted));
+      const shouldReveal = rockRollContinuationActive || document.body.classList.contains('hotspot-tools-active');
+      applyHotspotElementVisibility(chapelTransRick, shouldReveal);
+      chapelTransRick.classList.toggle('is-visible', Boolean(rockRollContinuationActive));
     }
 
     function clampValue(value, min, max) {
@@ -2461,7 +2461,7 @@
 
     function finishRockRollContinuation() {
       rockRollContinuationActive = false;
-      setTransRickHighlightState(false);
+      syncTransRickPresentation();
       clearRockRollContinuationState();
 
       if (isNavigatingFromChapel) {
@@ -2472,16 +2472,18 @@
     }
 
     function startRockRollContinuation(playbackState) {
-      setTransRickHighlightState(Boolean(playbackState));
+      rockRollContinuationActive = Boolean(playbackState);
+      syncTransRickPresentation();
 
       if (!playbackState || !rockRollContinuationMedia) {
+        rockRollContinuationActive = false;
+        syncTransRickPresentation();
         clearRockRollContinuationState();
         return;
       }
 
       rockRollContinuationPending = true;
       rockRollContinuationPlaybackState = playbackState;
-      rockRollContinuationActive = true;
       const startVolume = getRockRollContinuationStartVolume(playbackState);
       rockRollContinuationMedia.pause();
       rockRollContinuationMedia.preload = 'auto';
