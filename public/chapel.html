@@ -581,6 +581,7 @@
     body.hotspot-tools-active .hotspot-selected {
       pointer-events: auto !important;
       cursor: grab !important;
+      /* Disable browser panning/zoom gestures on the selected element while it is being dragged. */
       touch-action: none;
     }
 
@@ -1009,6 +1010,19 @@
         renderHotspotToolMeta();
       }
 
+      function shouldInitiateDrag(event, selectedTarget) {
+        if (!document.body.classList.contains('hotspot-tools-active') || !event.isPrimary) {
+          return false;
+        }
+        if (event.pointerType === 'mouse' && event.button !== 0) {
+          return false;
+        }
+        if (event.target.closest('.hotspot-tool')) {
+          return false;
+        }
+        return Boolean(selectedTarget && selectedTarget.contains(event.target));
+      }
+
       syncHotspotTargetSelection(HOTSPOT_TOOL_DEFAULT_TARGET);
       updateSelectionHighlight(HOTSPOT_TOOL_DEFAULT_TARGET);
       renderHotspotToolMeta();
@@ -1023,18 +1037,8 @@
       });
 
       document.addEventListener('pointerdown', function (event) {
-        if (!document.body.classList.contains('hotspot-tools-active') || !event.isPrimary) {
-          return;
-        }
-        if (event.pointerType === 'mouse' && event.button !== 0) {
-          return;
-        }
-        if (event.target.closest('.hotspot-tool')) {
-          return;
-        }
-
         const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
-        if (!selectedTarget || !selectedTarget.contains(event.target)) {
+        if (!shouldInitiateDrag(event, selectedTarget)) {
           return;
         }
 
@@ -1054,7 +1058,7 @@
 
         selectedTarget.classList.add('hotspot-dragging');
         if (typeof selectedTarget.setPointerCapture === 'function') {
-          try { selectedTarget.setPointerCapture(event.pointerId); } catch (_) {
+          try { selectedTarget.setPointerCapture(event.pointerId); } catch (captureError) {
             // Some elements/browsers can reject capture after the pointerdown target changes.
           }
         }
@@ -1099,6 +1103,7 @@
           return;
         }
 
+        // Prevent the layout editor from triggering navigation/audio handlers on the selected target.
         event.preventDefault();
         event.stopPropagation();
       }, true);
