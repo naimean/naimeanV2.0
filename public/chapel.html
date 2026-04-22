@@ -1638,7 +1638,7 @@
       });
 
       let mobileTripleTapCount = 0;
-      let mobileTripleTapLastAt = 0;
+      let mobileTripleTapLastTimestamp = 0;
       function isOwnerDiscordSession(session) {
         if (!session || !session.authenticated || !session.user || session.user.provider !== 'discord') {
           return false;
@@ -1653,8 +1653,9 @@
         }
         return Number(navigator.maxTouchPoints) > 0;
       }
+      const hasTouchDevice = hasTouchCapability();
       document.addEventListener('touchend', function (event) {
-        if (!hasTouchCapability() || isToolsActive()) {
+        if (!hasTouchDevice || isToolsActive()) {
           return;
         }
         const target = event.target instanceof Element ? event.target : null;
@@ -1663,10 +1664,10 @@
           return;
         }
         const now = Date.now();
-        if (now - mobileTripleTapLastAt > HOTSPOT_MOBILE_TRIPLE_TAP_WINDOW_MS) {
+        if (now - mobileTripleTapLastTimestamp > HOTSPOT_MOBILE_TRIPLE_TAP_WINDOW_MS) {
           mobileTripleTapCount = 0;
         }
-        mobileTripleTapLastAt = now;
+        mobileTripleTapLastTimestamp = now;
         mobileTripleTapCount += 1;
         if (mobileTripleTapCount < 3) {
           return;
@@ -1678,7 +1679,11 @@
               setToolsActive(true);
             }
           })
-          .catch(function () {});
+          .catch(function (error) {
+            if (window.NaimeanDiag && typeof window.NaimeanDiag.log === 'function') {
+              window.NaimeanDiag.log('owner triple-tap tools auth check failed: ' + ((error && error.message) || 'unknown'));
+            }
+          });
       }, { passive: true });
 
       // ── Selected-element dashed highlight ────────────────────────────────────
