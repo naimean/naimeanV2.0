@@ -609,6 +609,9 @@ function makeLayoutDbCapture(options = {}) {
     async batch(stmts) {
       for (const stmt of stmts) {
         if (stmt._sql && stmt._sql.includes('layout_overrides') && stmt._args) {
+          if (stmt._args.length < 7) {
+            continue;
+          }
           const [page, elementId, top, left, width, height, fontSizePct] = stmt._args;
           store[`${page}:${elementId}`] = {
             top_pct: top,

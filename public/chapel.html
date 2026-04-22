@@ -1478,12 +1478,9 @@
     function loadLayoutOverrides() {
       const requestId = ++activeLayoutLoadRequestId;
       const primaryPageKey = getCurrentHotspotLayoutPageKey();
-      const fallbackPageKeys = [primaryPageKey];
       // Preserve legacy saved layouts by falling back to the unscoped page key
       // when no viewport-specific slot has been saved yet.
-      if (primaryPageKey !== HOTSPOT_LAYOUT_PAGE) {
-        fallbackPageKeys.push(HOTSPOT_LAYOUT_PAGE);
-      }
+      const fallbackPageKeys = [primaryPageKey, HOTSPOT_LAYOUT_PAGE];
 
       fallbackPageKeys.reduce(function (promise, pageKey) {
         return promise.then(function (match) {
