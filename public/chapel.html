@@ -1713,9 +1713,9 @@
 
       function resolveResizeEdge(edgeStart, edgeEnd, size, dragConfig) {
         // Adaptive resize grip: clamp a proportional edge grab area so tiny targets remain draggable without oversized handles.
-        const unconstrainedThreshold = Math.max(dragConfig.edgeMinPx, Math.min(dragConfig.edgeMaxPx, size * dragConfig.edgeSizeRatio));
+        const calculatedEdgeThreshold = Math.max(dragConfig.edgeMinPx, Math.min(dragConfig.edgeMaxPx, size * dragConfig.edgeSizeRatio));
         const maxThresholdForCenterMove = Math.max(0, (size - dragConfig.centerMoveMinPx) / 2);
-        const edgeThreshold = Math.min(unconstrainedThreshold, maxThresholdForCenterMove);
+        const edgeThreshold = Math.min(calculatedEdgeThreshold, maxThresholdForCenterMove);
         if (edgeStart > edgeThreshold && edgeEnd > edgeThreshold) {
           return '';
         }
