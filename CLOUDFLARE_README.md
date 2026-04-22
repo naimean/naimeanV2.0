@@ -197,6 +197,26 @@ Branch behavior:
 - `feature/*` → no auto-deploy (test with `wrangler dev`)
 - PRs → checks/tests only; deploy on merge
 
+### Discord OAuth setup checklist
+
+For `GET /auth/discord/login` and `GET /auth/discord/callback` to work end-to-end:
+
+- Set `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, and `SESSION_SECRET` on `barrelrollcounter-worker`
+- Set the Discord application callback URL to the exact same value as `DISCORD_REDIRECT_URI`
+- Ensure the public domain points at `naimeanv2`, because `/auth/*` is proxied by the router worker
+- Keep `/auth` in both `src/index.js` `PROXY_PATHS` and root `wrangler.toml` `run_worker_first`
+- If sign-in succeeds but the avatar does not render, inspect the HTML CSP for blocked `cdn.discordapp.com` image requests
+
+### Cloudflare workflow optimization recommendations
+
+To make the GitHub ↔ Cloudflare flow smoother:
+
+1. Create a **staging route** or use `workers.dev` for pre-merge auth verification
+2. Put production deploys behind a protected **GitHub environment**
+3. Keep **Pages deploys** and **Workers deploys** isolated so one failure does not hide the other
+4. Add Cloudflare **alerts / WAF / rate limits** specifically for `/auth/*`, `/hit`, and `/increment`
+5. Export D1 before schema/auth changes and treat D1 migrations as a separate release step
+
 ---
 
 ## Local Development

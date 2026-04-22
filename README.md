@@ -44,6 +44,32 @@ Cloudflare zones: `naimean.com`, `madmedia.studio` (both active, nameservers: `f
 
 ---
 
+## Codebase Structure at a Glance
+
+If you are new to the repo, read it in this order:
+
+| Path | What it is | Why it matters |
+|---|---|---|
+| `src/index.js` | Edge router worker | First entrypoint for production traffic; decides proxy vs static asset handling and applies security headers |
+| `cloudflare-worker/worker.js` | Backend worker | Counter API, Discord OAuth, session cookies, layout API, `/go/*` redirects |
+| `public/` | Static site | Main C64 experience, chapel/bedroom/level pages, shared browser JS/CSS/assets |
+| `cloudflare-worker/schema.sql` | D1 schema | Creates the counter/layout/auth tables the backend depends on |
+| `wrangler.toml` | Router deploy config | Binds `ASSETS` and the `COUNTER` service binding |
+| `cloudflare-worker/wrangler.toml` | Backend deploy config | Binds D1 and documents required Cloudflare secrets |
+| `.github/workflows/github-pages.yml` | CI/CD pipeline | Runs syntax checks/tests, deploys Pages, and deploys the Workers |
+| `CLOUDFLARE_README.md` | Infra runbook | Best place for Cloudflare-side setup, deploy, and troubleshooting details |
+
+### How the code is organized
+
+- **Edge layer:** `src/index.js`
+- **Backend/business logic:** `cloudflare-worker/worker.js`
+- **Frontend behavior:** `public/script.js`, `public/auth.js`, `public/diagnostics.js`
+- **Frontend markup/scenes:** `public/*.html`
+- **Styling:** `public/styles.css`
+- **Tests:** `cloudflare-worker/worker.test.js`
+
+---
+
 ## Worker 1 — Edge Router (`src/index.js`)
 
 ~80 lines. One job: route and stamp security headers.
@@ -56,7 +82,7 @@ Cloudflare zones: `naimean.com`, `madmedia.studio` (both active, nameservers: `f
 
 | Header | HTML pages | API / all other |
 |---|---|---|
-| `Content-Security-Policy` | Full `DOCUMENT_CSP` (fonts, Discord iframes, self scripts) | Strict `API_CSP` (`default-src 'none'`) |
+| `Content-Security-Policy` | Full `DOCUMENT_CSP` (fonts, Discord iframes, Discord avatar CDN, self scripts) | Strict `API_CSP` (`default-src 'none'`) |
 | `Cache-Control` | `no-cache, must-revalidate` | `public, max-age=31536000, immutable` for media/fonts |
 | `X-Content-Type-Options` | `nosniff` | `nosniff` |
 | `X-Frame-Options` | `DENY` | `DENY` |
@@ -97,6 +123,19 @@ Homemade signed tokens (no external JWT library). Format: `base64url(JSON payloa
 1. `GET /auth/discord/login` → generates `state` (18-byte random) + `codeVerifier` (48-byte random), derives `codeChallenge = sha256(codeVerifier)`, stores signed `naimean_discord_oauth` cookie, redirects to Discord's `/oauth2/authorize`
 2. Discord redirects back to `GET /auth/discord/callback` with `code` + `state`
 3. Worker validates state, exchanges `code`+`codeVerifier` for access token, fetches `/users/@me`, creates 7-day `naimean_session` cookie, redirects to `/?auth=success`
+
+### Discord OAuth working checklist
+
+To get Discord OAuth fully working in Cloudflare, all of these must be true:
+
+1. `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, and `SESSION_SECRET` are set on `barrelrollcounter-worker`
+2. `DISCORD_REDIRECT_URI` exactly matches the Discord app callback URL, usually `https://naimean.com/auth/discord/callback`
+3. `naimean.com` and `www.naimean.com` route to `naimeanv2`, not directly to GitHub Pages
+4. `naimeanv2` keeps `/auth` in both `PROXY_PATHS` and `wrangler.toml` `run_worker_first`
+5. The Discord app callback in the Discord developer portal uses the same production hostname as Cloudflare
+6. The HTML CSP allows Discord assets needed by the signed-in UI, including Discord avatar images
+
+If login redirects correctly but the signed-in avatar does not render, check the browser CSP console first.
 
 ### CORS
 
@@ -386,6 +425,32 @@ node --check public/diagnostics.js
 | Static files (`public/`) | GitHub Pages via `actions/deploy-pages` | Push to `main` |
 | `naimeanv2` edge worker | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` + Wrangler v4 | Push to `main` |
 | `barrelrollcounter-worker` | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` + Wrangler v4 | Push to `main` |
+
+---
+
+## Cloudflare Workflow Optimization Notes
+
+Recommended next Cloudflare-side improvements:
+
+1. **Use GitHub environments for deploy gates**  
+   Keep `cloudflare-workers` and `github-pages` as separate protected environments so production deploys can require approval if needed.
+
+2. **Keep secrets at the worker that owns them**  
+   Put Discord OAuth secrets only on `barrelrollcounter-worker`; keep router config minimal.
+
+3. **Use preview/staging routes before production**  
+   Test changes on `workers.dev` or a staging hostname before merging to `main`, especially for auth and D1 changes.
+
+4. **Separate deploy validation from production deploy**  
+   Keep fast syntax/tests on PRs; reserve `wrangler deploy` for merge-to-main only.
+
+5. **Monitor auth and counter paths explicitly**  
+   Add Cloudflare alerts and WAF/rate-limit rules for `/auth/*`, `/hit`, and `/increment`.
+
+6. **Back up D1 before schema changes**  
+   Export `barrelroll-counter-db` before auth/layout schema changes so rollback is simple.
+
+For the Cloudflare-specific runbook, see `CLOUDFLARE_README.md`.
 
 ---
 
