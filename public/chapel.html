@@ -1079,21 +1079,23 @@
         return;
       }
 
+      const isTransRick = target.id === 'chapel-trans-rick';
+      if (isTransRick) {
+        target.hidden = !visible;
+      }
+
       if (visible) {
-        if (target.hidden) {
+        if (!isTransRick && target.hidden) {
           target.hidden = false;
         }
         target.style.visibility = 'visible';
         target.style.pointerEvents = 'auto';
       } else {
-        if (target.id === 'chapel-trans-rick') {
-          target.hidden = true;
-        }
         target.style.visibility = 'hidden';
         target.style.pointerEvents = 'none';
       }
 
-      if (target.id === 'chapel-trans-rick') {
+      if (isTransRick) {
         target.classList.toggle('is-visible', visible);
       }
     }
@@ -1217,7 +1219,7 @@
           if (prev) {
             prev.classList.remove('hotspot-selected');
             prev.classList.remove('hotspot-dragging');
-            prev.classList.remove('hotspot-resize-n', 'hotspot-resize-s', 'hotspot-resize-e', 'hotspot-resize-w', 'hotspot-resize-ne', 'hotspot-resize-nw', 'hotspot-resize-se', 'hotspot-resize-sw');
+            clearResizeCursorClasses(prev);
           }
         }
         if (nextId) {
