@@ -20,9 +20,14 @@
     body {
       background: #000;
       min-height: 100vh;
-      min-height: 100dvh;
       opacity: 0;
       transition: opacity 1s ease;
+    }
+
+    @supports (min-height: 100dvh) {
+      body {
+        min-height: 100dvh;
+      }
     }
 
     body.loaded {
@@ -1265,7 +1270,7 @@
       const selectedId = getSelectedHotspotId();
       const selectedMeasurement = selectedId && payload.measurements ? payload.measurements[selectedId] : null;
       const selectedSummary = selectedMeasurement
-        ? `${getViewportProbeDisplayName(selectedId)} @ ${selectedMeasurement.left.toFixed(1)},${selectedMeasurement.top.toFixed(1)} | ${selectedMeasurement.width.toFixed(1)}×${selectedMeasurement.height.toFixed(1)}`
+        ? `${getViewportProbeDisplayName(selectedId)} @ ${formatViewportProbeMeasurement(selectedMeasurement)}`
         : 'no element selected';
 
       viewportLiveMeta.textContent = [
@@ -1276,6 +1281,22 @@
         `safe ${safeArea.top || 0}/${safeArea.right || 0}/${safeArea.bottom || 0}/${safeArea.left || 0}`,
         selectedSummary,
       ].join(' | ');
+    }
+
+    function formatViewportProbeMeasurement(measurement) {
+      if (!measurement) {
+        return 'no element selected';
+      }
+
+      return `${measurement.left.toFixed(1)},${measurement.top.toFixed(1)} | ${measurement.width.toFixed(1)}×${measurement.height.toFixed(1)}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
     function updateViewportProbePreview() {
@@ -1423,7 +1444,7 @@
             height: rect.height,
           };
           measurements[id] = measurement;
-          overlayHtml += `<div class="hotspot-viewport-probe-box" data-hotspot-id="${id}" style="left:${measurement.left}px;top:${measurement.top}px;width:${measurement.width}px;height:${measurement.height}px"><span class="hotspot-viewport-probe-label">${id}</span></div>`;
+          overlayHtml += `<div class="hotspot-viewport-probe-box" data-hotspot-id="${escapeHtml(id)}" style="left:${measurement.left}px;top:${measurement.top}px;width:${measurement.width}px;height:${measurement.height}px"><span class="hotspot-viewport-probe-label">${escapeHtml(id)}</span></div>`;
         });
 
         overlay.innerHTML = overlayHtml;
@@ -1451,7 +1472,9 @@
           safeArea: getSafeAreaInsets(),
           documentHeight: Math.max(
             document.documentElement.scrollHeight,
+            document.documentElement.offsetHeight,
             document.body ? document.body.scrollHeight : 0,
+            document.body ? document.body.offsetHeight : 0,
             chapelWrapper.offsetHeight
           ),
           measurements: measurements,
