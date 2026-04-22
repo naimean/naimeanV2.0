@@ -8,7 +8,7 @@ const DOCUMENT_CSP = [
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net",
   "media-src 'self' data: blob:",
   "connect-src 'self' https://discord.com https://*.discord.com https://*.workers.dev",
   "frame-src 'self' https://discord.com https://*.discord.com",
