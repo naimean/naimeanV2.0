@@ -798,7 +798,6 @@
               id="hotspot-viewport-probe-frame"
               loading="lazy"
               referrerpolicy="same-origin"
-              sandbox="allow-same-origin allow-scripts"
               title="Accurate loaded viewport preview"></iframe>
           </div>
         </div>
@@ -1307,7 +1306,6 @@
       const probeToken = `${activeSimulatedViewportWidth}-${Date.now()}`;
       const probeUrl = new URL(window.location.href);
       probeUrl.searchParams.set(HOTSPOT_LAYOUT_PROBE_QUERY_PARAM, '1');
-      probeUrl.searchParams.set('viewportProbeWidth', String(activeSimulatedViewportWidth));
       probeUrl.searchParams.set('viewportProbeToken', probeToken);
       probeUrl.hash = '';
 
@@ -1358,6 +1356,9 @@
 
       window.addEventListener('message', function (event) {
         const payload = event.data;
+        if (event.origin !== window.location.origin) {
+          return;
+        }
         if (!payload || payload.type !== 'naimean-layout-probe' || payload.page !== HOTSPOT_LAYOUT_PAGE) {
           return;
         }
