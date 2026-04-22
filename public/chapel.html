@@ -765,6 +765,7 @@
     const BLOOM_RESIZE_DEBOUNCE_MS = 120;
     const HOTSPOT_TOOL_NONE_TARGET = '__none__';
     const HOTSPOT_TOOL_DEFAULT_TARGET = HOTSPOT_TOOL_NONE_TARGET;
+    const HOTSPOT_TOOL_DRAG_HELP_TEXT = 'drag on page to move';
     const SAUCE_DRIP_MIN_INTERVAL_MS = 10000;
     const SAUCE_DRIP_MAX_INTERVAL_MS = 15000;
     const SAUCE_DRIP_ANIMATION_MS = 1600;
@@ -944,7 +945,7 @@
         return;
       }
 
-      const metaText = `left ${Math.round(metrics.left)} | top ${Math.round(metrics.top)} | w ${Math.round(metrics.width)} | h ${Math.round(metrics.height)} | drag on page to move`;
+      const metaText = `left ${Math.round(metrics.left)} | top ${Math.round(metrics.top)} | w ${Math.round(metrics.width)} | h ${Math.round(metrics.height)} | ${HOTSPOT_TOOL_DRAG_HELP_TEXT}`;
       moveMeta.textContent = metaText;
       sizeMeta.textContent = metaText;
     }
@@ -1003,7 +1004,9 @@
         if (activeDrag.target && typeof activeDrag.target.releasePointerCapture === 'function') {
           try {
             activeDrag.target.releasePointerCapture(activeDrag.pointerId);
-          } catch (_) {}
+          } catch (_) {
+            // Capture may already be cleared when the browser ends the drag sequence on its own.
+          }
           activeDrag.target.classList.remove('hotspot-dragging');
         }
         activeDrag = null;
@@ -1058,7 +1061,7 @@
 
         selectedTarget.classList.add('hotspot-dragging');
         if (typeof selectedTarget.setPointerCapture === 'function') {
-          try { selectedTarget.setPointerCapture(event.pointerId); } catch (captureError) {
+          try { selectedTarget.setPointerCapture(event.pointerId); } catch (_) {
             // Some elements/browsers can reject capture after the pointerdown target changes.
           }
         }
