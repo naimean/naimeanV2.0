@@ -88,14 +88,14 @@
       width: clamp(42px, 9.2%, 80px);
       height: auto;
       transform: translate(-50%, -100%);
-      z-index: 5;
+      z-index: 11;
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
     }
 
     .chapel-trans-rick.is-visible {
-      z-index: 20;
+      z-index: 21;
     }
 
     /* Pulsing power button — positioned over the C64's power button on the altar */
@@ -594,6 +594,26 @@
       cursor: grabbing !important;
     }
 
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-n,
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-s {
+      cursor: ns-resize !important;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-e,
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-w {
+      cursor: ew-resize !important;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-ne,
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-sw {
+      cursor: nesw-resize !important;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-nw,
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-se {
+      cursor: nwse-resize !important;
+    }
+
     /* Viewport simulator: constrains chapel-outer to mimic a narrow device. */
     body.viewport-simulated .chapel-outer {
       max-width: var(--simulated-viewport-width, 820px);
@@ -785,7 +805,7 @@
     const BLOOM_RESIZE_DEBOUNCE_MS = 120;
     const HOTSPOT_TOOL_NONE_TARGET = '__none__';
     const HOTSPOT_TOOL_DEFAULT_TARGET = HOTSPOT_TOOL_NONE_TARGET;
-    const HOTSPOT_TOOL_DRAG_HELP_TEXT = 'drag on page to move';
+    const HOTSPOT_TOOL_DRAG_HELP_TEXT = 'drag to move • drag border to resize';
     const HOTSPOT_LAYOUT_PAGE = 'chapel';
     const HOTSPOT_VIEWPORT_WIDTHS = [375, 390, 430, 768, 1024, 1280, 1440];
     const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
@@ -1057,11 +1077,20 @@
       }
 
       if (visible) {
+        if (target.hasAttribute('hidden') || target.hidden) {
+          target.hidden = false;
+        }
         target.style.visibility = 'visible';
         target.style.pointerEvents = 'auto';
       } else {
+        if (target.id === 'chapel-trans-rick') {
+          target.hidden = true;
+        }
         target.style.visibility = 'hidden';
         target.style.pointerEvents = 'none';
+      }
+      if (target.id === 'chapel-trans-rick') {
+        target.classList.toggle('is-visible', visible);
       }
     }
 
@@ -1176,6 +1205,7 @@
           if (prev) {
             prev.classList.remove('hotspot-selected');
             prev.classList.remove('hotspot-dragging');
+            prev.classList.remove('hotspot-resize-n', 'hotspot-resize-s', 'hotspot-resize-e', 'hotspot-resize-w', 'hotspot-resize-ne', 'hotspot-resize-nw', 'hotspot-resize-se', 'hotspot-resize-sw');
           }
         }
         if (nextId) {
@@ -1186,6 +1216,61 @@
       }
 
       let activeDrag = null;
+
+      function resolveResizeAxis(edgeStart, edgeEnd, size) {
+        const edgeThreshold = Math.max(6, Math.min(18, size * 0.35));
+        if (edgeStart > edgeThreshold && edgeEnd > edgeThreshold) {
+          return '';
+        }
+        return edgeStart <= edgeEnd ? 'start' : 'end';
+      }
+
+      function getResizeEdges(target, clientX, clientY) {
+        if (!target) {
+          return { left: false, right: false, top: false, bottom: false };
+        }
+
+        const rect = target.getBoundingClientRect();
+        const horizontalEdge = resolveResizeAxis(clientX - rect.left, rect.right - clientX, rect.width);
+        const verticalEdge = resolveResizeAxis(clientY - rect.top, rect.bottom - clientY, rect.height);
+        return {
+          left: horizontalEdge === 'start',
+          right: horizontalEdge === 'end',
+          top: verticalEdge === 'start',
+          bottom: verticalEdge === 'end',
+        };
+      }
+
+      function clearResizeCursorClasses(target) {
+        if (!target) {
+          return;
+        }
+        target.classList.remove('hotspot-resize-n', 'hotspot-resize-s', 'hotspot-resize-e', 'hotspot-resize-w', 'hotspot-resize-ne', 'hotspot-resize-nw', 'hotspot-resize-se', 'hotspot-resize-sw');
+      }
+
+      function applyResizeCursorClass(target, edges) {
+        if (!target) {
+          return;
+        }
+
+        clearResizeCursorClasses(target);
+        if (!edges) {
+          return;
+        }
+
+        const vertical = edges.top ? 'n' : (edges.bottom ? 's' : '');
+        const horizontal = edges.left ? 'w' : (edges.right ? 'e' : '');
+        const cursorClass = vertical && horizontal
+          ? `hotspot-resize-${vertical}${horizontal}`
+          : vertical
+            ? `hotspot-resize-${vertical}`
+            : horizontal
+              ? `hotspot-resize-${horizontal}`
+              : '';
+        if (cursorClass) {
+          target.classList.add(cursorClass);
+        }
+      }
 
       function stopSelectedTargetDrag() {
         if (!activeDrag) {
@@ -1200,6 +1285,7 @@
           }
           activeDrag.target.classList.remove('hotspot-dragging');
         }
+        applyResizeCursorClass(activeDrag.target, null);
         activeDrag = null;
         renderHotspotToolMeta();
       }
@@ -1243,16 +1329,24 @@
           return;
         }
 
+        const resizeEdges = getResizeEdges(selectedTarget, event.clientX, event.clientY);
+        const isResizing = resizeEdges.left || resizeEdges.right || resizeEdges.top || resizeEdges.bottom;
+
         activeDrag = {
+          mode: isResizing ? 'resize' : 'move',
+          edges: resizeEdges,
           pointerId: event.pointerId,
           startClientX: event.clientX,
           startClientY: event.clientY,
           startLeft: metrics.left,
           startTop: metrics.top,
+          startWidth: metrics.width,
+          startHeight: metrics.height,
           target: selectedTarget,
         };
 
         selectedTarget.classList.add('hotspot-dragging');
+        applyResizeCursorClass(selectedTarget, isResizing ? resizeEdges : null);
         if (typeof selectedTarget.setPointerCapture === 'function') {
           try { selectedTarget.setPointerCapture(event.pointerId); } catch (_) {
             // Some elements/browsers can reject capture after the pointerdown target changes.
@@ -1268,8 +1362,35 @@
 
         const deltaX = event.clientX - activeDrag.startClientX;
         const deltaY = event.clientY - activeDrag.startClientY;
-        activeDrag.target.style.left = `${activeDrag.startLeft + deltaX}px`;
-        activeDrag.target.style.top = `${activeDrag.startTop + deltaY}px`;
+        if (activeDrag.mode === 'resize') {
+          let nextLeft = activeDrag.startLeft;
+          let nextTop = activeDrag.startTop;
+          let nextWidth = activeDrag.startWidth;
+          let nextHeight = activeDrag.startHeight;
+          const minSizePx = 1;
+
+          if (activeDrag.edges.right) {
+            nextWidth = Math.max(minSizePx, activeDrag.startWidth + deltaX);
+          } else if (activeDrag.edges.left) {
+            nextWidth = Math.max(minSizePx, activeDrag.startWidth - deltaX);
+            nextLeft = activeDrag.startLeft + (activeDrag.startWidth - nextWidth);
+          }
+
+          if (activeDrag.edges.bottom) {
+            nextHeight = Math.max(minSizePx, activeDrag.startHeight + deltaY);
+          } else if (activeDrag.edges.top) {
+            nextHeight = Math.max(minSizePx, activeDrag.startHeight - deltaY);
+            nextTop = activeDrag.startTop + (activeDrag.startHeight - nextHeight);
+          }
+
+          activeDrag.target.style.left = `${nextLeft}px`;
+          activeDrag.target.style.top = `${nextTop}px`;
+          activeDrag.target.style.width = `${nextWidth}px`;
+          activeDrag.target.style.height = `${nextHeight}px`;
+        } else {
+          activeDrag.target.style.left = `${activeDrag.startLeft + deltaX}px`;
+          activeDrag.target.style.top = `${activeDrag.startTop + deltaY}px`;
+        }
         renderHotspotToolMeta();
         event.preventDefault();
       }, true);
@@ -1287,6 +1408,24 @@
           return;
         }
         stopSelectedTargetDrag();
+      }, true);
+
+      document.addEventListener('pointermove', function (event) {
+        if (activeDrag || !document.body.classList.contains('hotspot-tools-active')) {
+          return;
+        }
+
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        if (!selectedTarget) {
+          return;
+        }
+
+        if (!selectedTarget.contains(event.target)) {
+          applyResizeCursorClass(selectedTarget, null);
+          return;
+        }
+
+        applyResizeCursorClass(selectedTarget, getResizeEdges(selectedTarget, event.clientX, event.clientY));
       }, true);
 
       document.addEventListener('click', function (event) {
@@ -1536,6 +1675,8 @@
       }
 
       chapelTransRick.hidden = !isVisible;
+      chapelTransRick.style.visibility = isVisible ? 'visible' : 'hidden';
+      chapelTransRick.style.pointerEvents = isVisible ? 'auto' : 'none';
       chapelTransRick.classList.toggle('is-visible', isVisible);
     }
 
