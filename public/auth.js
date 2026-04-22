@@ -399,15 +399,13 @@
     });
   }
 
-  function consumeAuthOutcomeFromUrl() {
+  function getAuthOutcomeFromUrl() {
     try {
       const pageUrl = new URL(window.location.href);
       const authOutcome = pageUrl.searchParams.get(AUTH_RESULT_QUERY_PARAM);
       if (!authOutcome) {
         return '';
       }
-      pageUrl.searchParams.delete(AUTH_RESULT_QUERY_PARAM);
-      window.history.replaceState({}, document.title, pageUrl.pathname + pageUrl.search + pageUrl.hash);
       return authOutcome.trim().toLowerCase();
     } catch (_) {
       return '';
@@ -423,7 +421,7 @@
   function init() {
     initAuthChip();
     window.addEventListener('message', handlePopupMessage);
-    const outcome = consumeAuthOutcomeFromUrl();
+    const outcome = getAuthOutcomeFromUrl();
     // If the user landed on the page after an OAuth redirect (fallback),
     // refresh the session so the chip renders the new state immediately.
     if (outcome) {
