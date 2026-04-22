@@ -73,7 +73,8 @@ export default {
       }
 
       return jsonResponse("naimean.com API — use /api/health or /api/data", 404);
-    } catch {
+    } catch (err) {
+      console.error("naimean-api request failed", err);
       return jsonResponse({ error: "internal server error" }, 500);
     }
   },
