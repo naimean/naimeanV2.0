@@ -1071,8 +1071,7 @@
       });
     }
 
-    function setHotspotVisibility(targetId, visible) {
-      const target = getHotspotTargetById(targetId);
+    function applyHotspotElementVisibility(target, visible) {
       if (!target) {
         return;
       }
@@ -1090,9 +1089,18 @@
         target.style.visibility = 'hidden';
         target.style.pointerEvents = 'none';
       }
+
       if (target.id === 'chapel-trans-rick') {
         target.classList.toggle('is-visible', visible);
       }
+    }
+
+    function setHotspotVisibility(targetId, visible) {
+      const target = getHotspotTargetById(targetId);
+      if (!target) {
+        return;
+      }
+      applyHotspotElementVisibility(target, visible);
     }
 
     function adjustHotspotDimension(targetId, property, deltaPx) {
@@ -1218,7 +1226,7 @@
 
       let activeDrag = null;
 
-      function resolveResizeAxis(edgeStart, edgeEnd, size) {
+      function resolveResizeEdge(edgeStart, edgeEnd, size) {
         // Adaptive resize grip: 6-18px or about 35% of the element size, whichever lands in that range.
         const edgeThreshold = Math.max(6, Math.min(18, size * 0.35));
         if (edgeStart > edgeThreshold && edgeEnd > edgeThreshold) {
@@ -1233,8 +1241,8 @@
         }
 
         const rect = target.getBoundingClientRect();
-        const horizontalEdge = resolveResizeAxis(clientX - rect.left, rect.right - clientX, rect.width);
-        const verticalEdge = resolveResizeAxis(clientY - rect.top, rect.bottom - clientY, rect.height);
+        const horizontalEdge = resolveResizeEdge(clientX - rect.left, rect.right - clientX, rect.width);
+        const verticalEdge = resolveResizeEdge(clientY - rect.top, rect.bottom - clientY, rect.height);
         return {
           left: horizontalEdge === 'start',
           right: horizontalEdge === 'end',
@@ -1674,11 +1682,7 @@
       if (!chapelTransRick) {
         return;
       }
-
-      chapelTransRick.hidden = !isVisible;
-      chapelTransRick.style.visibility = isVisible ? 'visible' : 'hidden';
-      chapelTransRick.style.pointerEvents = isVisible ? 'auto' : 'none';
-      chapelTransRick.classList.toggle('is-visible', isVisible);
+      applyHotspotElementVisibility(chapelTransRick, isVisible);
     }
 
     function clampValue(value, min, max) {
