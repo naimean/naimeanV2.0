@@ -788,7 +788,7 @@
       return Number.isFinite(numericValue) ? numericValue : 0;
     }
 
-    function getTargetLayoutMetrics(target) {
+    function resolveTargetLayoutMetrics(target) {
       if (!target || !chapelWrapper) {
         return null;
       }
@@ -812,11 +812,13 @@
     }
 
     function normalizeTargetLayoutPosition(target) {
-      const metrics = getTargetLayoutMetrics(target);
+      const metrics = resolveTargetLayoutMetrics(target);
       if (!metrics) {
         return null;
       }
 
+      // Convert right/bottom-resolved elements to explicit left/top pixels so the
+      // move buttons and direct dragging both update a consistent coordinate system.
       target.style.left = `${metrics.left}px`;
       target.style.top = `${metrics.top}px`;
       if (!metrics.hasExplicitLeft) {
@@ -907,7 +909,7 @@
 
       const metrics = (property === 'left' || property === 'top')
         ? normalizeTargetLayoutPosition(target)
-        : getTargetLayoutMetrics(target);
+        : resolveTargetLayoutMetrics(target);
       if (!metrics) {
         return;
       }
@@ -934,7 +936,7 @@
         return;
       }
 
-      const metrics = getTargetLayoutMetrics(target);
+      const metrics = resolveTargetLayoutMetrics(target);
       if (!metrics) {
         moveMeta.textContent = 'No element selected.';
         sizeMeta.textContent = 'No element selected.';
@@ -1052,7 +1054,9 @@
 
         selectedTarget.classList.add('hotspot-dragging');
         if (typeof selectedTarget.setPointerCapture === 'function') {
-          try { selectedTarget.setPointerCapture(event.pointerId); } catch (_) {}
+          try { selectedTarget.setPointerCapture(event.pointerId); } catch (_) {
+            // Some elements/browsers can reject capture after the pointerdown target changes.
+          }
         }
         event.preventDefault();
       }, true);
@@ -1188,7 +1192,7 @@
           HOTSPOT_IDS.forEach(function (id) {
             const el = document.getElementById(id);
             if (!el) { return; }
-            const metrics = getTargetLayoutMetrics(el);
+            const metrics = resolveTargetLayoutMetrics(el);
             if (!metrics) { return; }
             overrides[id] = {
               top: metrics.top / wh * 100,
