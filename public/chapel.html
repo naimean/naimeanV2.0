@@ -716,7 +716,7 @@
     <div class="chapel-outer">
       <div class="chapel-wrapper">
         <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
-        <img src="assets/trans_rick.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" hidden aria-hidden="true" />
+        <img src="assets/trans_rick.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" aria-hidden="true" />
         <div class="chapel-power-btn" id="chapel-power-btn" aria-hidden="true">
           <span class="chapel-power-light"></span>
         </div>
@@ -2114,11 +2114,11 @@
       },
     };
 
-    function setTransRickVisibility(isVisible) {
+    function setTransRickHighlightState(isHighlighted) {
       if (!chapelTransRick) {
         return;
       }
-      applyHotspotElementVisibility(chapelTransRick, isVisible);
+      chapelTransRick.classList.toggle('is-visible', Boolean(isHighlighted));
     }
 
     function clampValue(value, min, max) {
@@ -2461,6 +2461,7 @@
 
     function finishRockRollContinuation() {
       rockRollContinuationActive = false;
+      setTransRickHighlightState(false);
       clearRockRollContinuationState();
 
       if (isNavigatingFromChapel) {
@@ -2471,7 +2472,7 @@
     }
 
     function startRockRollContinuation(playbackState) {
-      setTransRickVisibility(Boolean(playbackState));
+      setTransRickHighlightState(Boolean(playbackState));
 
       if (!playbackState || !rockRollContinuationMedia) {
         clearRockRollContinuationState();
