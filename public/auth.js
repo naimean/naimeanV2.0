@@ -37,30 +37,44 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
   max-width: min(320px, calc(100vw - 16px));
   pointer-events: auto;
   font-family: 'VT323', 'IBM Plex Mono', 'Courier New', monospace;
+  border: 1px solid rgba(142, 240, 178, 0.9);
+  border-radius: 999px;
+  background: rgba(6, 14, 8, 0.82);
+  padding: 6px 12px;
+  box-shadow: 0 0 14px rgba(142, 240, 178, 0.32);
+  transition: gap 140ms ease, padding 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.discord-auth-chip.is-unauthenticated {
+  gap: 0;
+}
+
+.discord-auth-chip.is-authenticated {
+  gap: 10px;
+  padding: 6px 14px 6px 16px;
 }
 
 .discord-auth-login-btn {
-  border: 1px solid rgba(142, 240, 178, 0.9);
-  border-radius: 999px;
-  background: rgba(6, 14, 8, 0.8);
+  border: none;
+  background: transparent;
   color: #8ef0b2;
   font-size: 1rem;
   line-height: 1;
-  padding: 5px 14px 6px;
+  padding: 4px 0;
   cursor: pointer;
   letter-spacing: 0.05em;
   text-transform: none;
-  box-shadow: 0 0 14px rgba(142, 240, 178, 0.32);
 }
 
 .discord-auth-login-btn:hover,
 .discord-auth-login-btn:focus-visible {
-  background: rgba(28, 68, 38, 0.92);
-  box-shadow: 0 0 0 2px rgba(142, 240, 178, 0.35);
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
   outline: none;
 }
 
@@ -71,24 +85,23 @@
 }
 
 .discord-auth-name {
-  border: 1px solid rgba(142, 240, 178, 0.9);
-  border-radius: 999px;
-  background: rgba(6, 14, 8, 0.82);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: #8ef0b2;
-  padding: 4px 11px 3px;
+  padding: 0;
   max-width: 17ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   letter-spacing: 0.05em;
-  box-shadow: 0 0 12px rgba(142, 240, 178, 0.22);
 }
 
 .discord-auth-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid rgba(142, 240, 178, 0.9);
+  border: none;
   background: rgba(6, 14, 8, 0.82);
   color: #8ef0b2;
   display: inline-flex;
@@ -97,7 +110,6 @@
   font-size: 0.98rem;
   text-transform: uppercase;
   overflow: hidden;
-  box-shadow: 0 0 12px rgba(142, 240, 178, 0.22);
 }
 
 .discord-auth-avatar-image {
@@ -118,6 +130,8 @@
     const container = document.createElement('div');
     container.id = AUTH_CONTAINER_ID;
     container.className = 'discord-auth-chip';
+    container.classList.add('is-unauthenticated');
+    container.setAttribute('data-auth-state', 'unauthenticated');
     container.setAttribute('aria-live', 'polite');
 
     const loginBtn = document.createElement('button');
@@ -251,6 +265,11 @@
     if (!els) return;
     const isAuthed = Boolean(state && state.authenticated && state.user);
     const displayName = getDisplayName(state && state.user);
+    const authStateName = isAuthed ? 'authenticated' : 'unauthenticated';
+
+    els.container.classList.toggle('is-authenticated', isAuthed);
+    els.container.classList.toggle('is-unauthenticated', !isAuthed);
+    els.container.setAttribute('data-auth-state', authStateName);
 
     if (!isAuthed) {
       els.loginBtn.hidden = false;

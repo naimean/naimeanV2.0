@@ -562,25 +562,42 @@ body {
 }
 
 .discord-auth-chip {
-  position: absolute;
+  position: fixed;
   top: 10px;
   right: 10px;
-  z-index: 5;
+  z-index: 200;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  max-width: calc(100% - 20px);
+  gap: 10px;
+  max-width: min(320px, calc(100vw - 16px));
+  pointer-events: auto;
+  font-family: 'VT323', monospace;
+  border: 1px solid rgba(142, 240, 178, 0.9);
+  border-radius: 999px;
+  background: rgba(6, 14, 8, 0.82);
+  padding: 6px 12px;
+  box-shadow: 0 0 14px rgba(142, 240, 178, 0.32);
+  transition: gap 140ms ease, padding 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.discord-auth-chip.is-unauthenticated {
+  gap: 0;
+}
+
+.discord-auth-chip.is-authenticated {
+  gap: 10px;
+  padding: 6px 14px 6px 16px;
 }
 
 .discord-auth-login-btn {
-  border: 1px solid rgba(142, 240, 178, 0.8);
-  border-radius: 999px;
-  background: rgba(6, 14, 8, 0.72);
+  border: none;
+  background: transparent;
   color: #8ef0b2;
-  font-family: 'VT323', monospace;
-  font-size: 1em;
+  font-family: 'VT323', 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 1rem;
   line-height: 1;
-  padding: 4px 12px;
+  padding: 4px 0;
   cursor: pointer;
   letter-spacing: 0.04em;
   text-transform: none;
@@ -588,8 +605,9 @@ body {
 
 .discord-auth-login-btn:hover,
 .discord-auth-login-btn:focus-visible {
-  background: rgba(28, 68, 38, 0.92);
-  box-shadow: 0 0 0 2px rgba(142, 240, 178, 0.25);
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
   outline: none;
 }
 
@@ -600,12 +618,12 @@ body {
 }
 
 .discord-auth-name {
-  border: 1px solid rgba(142, 240, 178, 0.8);
-  border-radius: 999px;
-  background: rgba(6, 14, 8, 0.72);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: #8ef0b2;
-  padding: 3px 9px 2px;
-  max-width: 15ch;
+  padding: 0;
+  max-width: 17ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -613,11 +631,11 @@ body {
 }
 
 .discord-auth-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 1px solid rgba(142, 240, 178, 0.8);
-  background: rgba(6, 14, 8, 0.72);
+  border: none;
+  background: rgba(6, 14, 8, 0.82);
   color: #8ef0b2;
   display: inline-flex;
   align-items: center;
