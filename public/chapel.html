@@ -789,6 +789,7 @@
     const HOTSPOT_VIEWPORT_WIDTHS = [375, 390, 430, 768, 1024, 1280, 1440];
     const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
     const HOTSPOT_COUNTER_FONT_SIZE_MIN_PX = 4;
+    const HOTSPOT_INLINE_STYLE_PROPERTIES = ['top', 'left', 'width', 'height', 'fontSize'];
     const HOTSPOT_IDS = [
       'chapel-return-btn',
       'trapdoor-btn',
@@ -888,9 +889,8 @@
           return;
         }
 
-        [['top', defaults.top], ['left', defaults.left], ['width', defaults.width], ['height', defaults.height], ['fontSize', defaults.fontSize]].forEach(function (entry) {
-          const property = entry[0];
-          const value = entry[1];
+        HOTSPOT_INLINE_STYLE_PROPERTIES.forEach(function (property) {
+          const value = defaults[property];
           if (value) {
             target.style[property] = value;
           } else {

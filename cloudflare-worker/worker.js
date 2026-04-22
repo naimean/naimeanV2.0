@@ -618,6 +618,7 @@ async function incrementCount(db) {
 const LAYOUT_PAGE_MAX_LENGTH = 64;
 const LAYOUT_ELEMENT_ID_MAX_LENGTH = 64;
 const LAYOUT_OVERRIDES_MAX_ELEMENTS = 20;
+const LAYOUT_NUMERIC_FIELDS = ['top', 'left', 'width', 'height', 'fontSizePct'];
 const LAYOUT_OVERRIDES_TABLE_SCHEMA_SQL = `CREATE TABLE IF NOT EXISTS layout_overrides (
   page        TEXT    NOT NULL,
   element_id  TEXT    NOT NULL,
@@ -744,7 +745,9 @@ async function handlePostLayout(request, env, origin) {
     // Reject clearly out-of-range percentages (allow some slack beyond 100% for
     // elements that intentionally bleed outside the wrapper).
     const MAX_PCT = 200;
-    for (const [name, val] of [['top', top], ['left', left], ['width', width], ['height', height], ['fontSizePct', fontSizePct]]) {
+    const numericFieldValues = { top, left, width, height, fontSizePct };
+    for (const name of LAYOUT_NUMERIC_FIELDS) {
+      const val = numericFieldValues[name];
       if (val !== null && (val < -MAX_PCT || val > MAX_PCT)) {
         return jsonResponse({ error: `Value out of range for ${elementId}.${name}` }, 400, origin, env);
       }
