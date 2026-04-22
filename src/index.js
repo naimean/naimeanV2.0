@@ -26,6 +26,10 @@ function isImmutableAsset(pathname) {
   return IMMUTABLE_ASSET_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
+function hasFileExtension(pathname) {
+  return /\.[^/]+$/.test(pathname);
+}
+
 function applyEdgeSecurityHeaders(response, isSecureTransport, pathname) {
   const headers = new Headers(response.headers);
   const contentType = (headers.get('content-type') || '').toLowerCase();
@@ -73,6 +77,17 @@ export default {
       upstreamResponse = await env.COUNTER.fetch(request);
     } else {
       upstreamResponse = await env.ASSETS.fetch(request);
+      if (
+        upstreamResponse.status === 404
+        && request.method === 'GET'
+        && url.pathname !== '/'
+        && !url.pathname.endsWith('/')
+        && !hasFileExtension(url.pathname)
+      ) {
+        const htmlUrl = new URL(request.url);
+        htmlUrl.pathname = `${url.pathname}.html`;
+        upstreamResponse = await env.ASSETS.fetch(new Request(htmlUrl.toString(), request));
+      }
     }
 
     return applyEdgeSecurityHeaders(upstreamResponse, isSecureTransport, url.pathname);
