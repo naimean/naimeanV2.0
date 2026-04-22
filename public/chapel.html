@@ -907,6 +907,11 @@
     const HOTSPOT_RESIZE_EDGE_MIN_PX = 6;
     const HOTSPOT_RESIZE_EDGE_MAX_PX = 18;
     const HOTSPOT_RESIZE_EDGE_SIZE_RATIO = 0.35;
+    const HOTSPOT_TOUCH_RESIZE_EDGE_MIN_PX = 10;
+    const HOTSPOT_TOUCH_RESIZE_EDGE_MAX_PX = 26;
+    const HOTSPOT_TOUCH_RESIZE_EDGE_SIZE_RATIO = 0.4;
+    const HOTSPOT_MOVE_CENTER_MIN_PX = 8;
+    const HOTSPOT_TOUCH_MOVE_CENTER_MIN_PX = 16;
     const HOTSPOT_MIN_RESIZE_PX = 1;
     const HOTSPOT_MOBILE_TRIPLE_TAP_WINDOW_MS = 700;
     const HOTSPOT_OWNER_DISCORD_ALIASES = new Set(['badonka', 'muahdib']);
@@ -1706,23 +1711,36 @@
 
       let activeDrag = null;
 
-      function resolveResizeEdge(edgeStart, edgeEnd, size) {
+      function resolveResizeEdge(edgeStart, edgeEnd, size, dragConfig) {
         // Adaptive resize grip: clamp a proportional edge grab area so tiny targets remain draggable without oversized handles.
-        const edgeThreshold = Math.max(HOTSPOT_RESIZE_EDGE_MIN_PX, Math.min(HOTSPOT_RESIZE_EDGE_MAX_PX, size * HOTSPOT_RESIZE_EDGE_SIZE_RATIO));
+        const unconstrainedThreshold = Math.max(dragConfig.edgeMinPx, Math.min(dragConfig.edgeMaxPx, size * dragConfig.edgeSizeRatio));
+        const maxThresholdForCenterMove = Math.max(0, (size - dragConfig.centerMoveMinPx) / 2);
+        const edgeThreshold = Math.min(unconstrainedThreshold, maxThresholdForCenterMove);
         if (edgeStart > edgeThreshold && edgeEnd > edgeThreshold) {
           return '';
         }
         return edgeStart <= edgeEnd ? 'start' : 'end';
       }
 
-      function getResizeEdges(target, clientX, clientY) {
+      function getResizeDragConfig(pointerType) {
+        const isTouchPointer = pointerType === 'touch';
+        return {
+          edgeMinPx: isTouchPointer ? HOTSPOT_TOUCH_RESIZE_EDGE_MIN_PX : HOTSPOT_RESIZE_EDGE_MIN_PX,
+          edgeMaxPx: isTouchPointer ? HOTSPOT_TOUCH_RESIZE_EDGE_MAX_PX : HOTSPOT_RESIZE_EDGE_MAX_PX,
+          edgeSizeRatio: isTouchPointer ? HOTSPOT_TOUCH_RESIZE_EDGE_SIZE_RATIO : HOTSPOT_RESIZE_EDGE_SIZE_RATIO,
+          centerMoveMinPx: isTouchPointer ? HOTSPOT_TOUCH_MOVE_CENTER_MIN_PX : HOTSPOT_MOVE_CENTER_MIN_PX,
+        };
+      }
+
+      function getResizeEdges(target, clientX, clientY, pointerType) {
         if (!target) {
           return { left: false, right: false, top: false, bottom: false };
         }
 
         const rect = target.getBoundingClientRect();
-        const horizontalEdge = resolveResizeEdge(clientX - rect.left, rect.right - clientX, rect.width);
-        const verticalEdge = resolveResizeEdge(clientY - rect.top, rect.bottom - clientY, rect.height);
+        const dragConfig = getResizeDragConfig(pointerType);
+        const horizontalEdge = resolveResizeEdge(clientX - rect.left, rect.right - clientX, rect.width, dragConfig);
+        const verticalEdge = resolveResizeEdge(clientY - rect.top, rect.bottom - clientY, rect.height, dragConfig);
         return {
           left: horizontalEdge === 'start',
           right: horizontalEdge === 'end',
@@ -1820,7 +1838,7 @@
           return;
         }
 
-        const resizeEdges = getResizeEdges(selectedTarget, event.clientX, event.clientY);
+        const resizeEdges = getResizeEdges(selectedTarget, event.clientX, event.clientY, event.pointerType);
         const isResizing = resizeEdges.left || resizeEdges.right || resizeEdges.top || resizeEdges.bottom;
 
         activeDrag = {
@@ -1915,7 +1933,7 @@
           return;
         }
 
-        applyResizeCursorClass(selectedTarget, getResizeEdges(selectedTarget, event.clientX, event.clientY));
+        applyResizeCursorClass(selectedTarget, getResizeEdges(selectedTarget, event.clientX, event.clientY, event.pointerType));
       }, true);
 
       document.addEventListener('click', function (event) {
