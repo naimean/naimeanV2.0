@@ -550,7 +550,10 @@ test('rate limit: GET /get allows 60 requests then returns 429', async () => {
 
 // ─── /layout endpoint tests ───────────────────────────────────────────────────
 
-function makeLayoutDbCapture() {
+function makeLayoutDbCapture(options = {}) {
+  const {
+    includeFontSizeColumn = true,
+  } = options;
   const store = {};
   const executedSql = [];
   return {
@@ -585,18 +588,19 @@ function makeLayoutDbCapture() {
         },
         async all() {
           if (sqlU.startsWith('PRAGMA TABLE_INFO')) {
-            return {
-              results: [
-                { name: 'page' },
-                { name: 'element_id' },
-                { name: 'top_pct' },
-                { name: 'left_pct' },
-                { name: 'width_pct' },
-                { name: 'height_pct' },
-                { name: 'font_size_pct' },
-                { name: 'updated_at' },
-              ],
-            };
+            const results = [
+              { name: 'page' },
+              { name: 'element_id' },
+              { name: 'top_pct' },
+              { name: 'left_pct' },
+              { name: 'width_pct' },
+              { name: 'height_pct' },
+            ];
+            if (includeFontSizeColumn) {
+              results.push({ name: 'font_size_pct' });
+            }
+            results.push({ name: 'updated_at' });
+            return { results };
           }
           return { results: [] };
         },
@@ -674,6 +678,16 @@ test('contract: GET /layout returns 200 with empty overrides for a valid page', 
   assert.ok(body.overrides !== undefined, 'body.overrides must be present');
   assert.strictEqual(typeof body.overrides, 'object');
   assert.ok(db.executedSql.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS layout_overrides')));
+});
+
+test('contract: GET /layout adds font_size_pct column when migration is needed', async () => {
+  const db = makeLayoutDbCapture({ includeFontSizeColumn: false });
+  const res = await worker.fetch(
+    makeContractRequest('GET', '/layout?page=chapel'),
+    makeContractEnv({ DB: db }),
+  );
+  assert.strictEqual(res.status, 200);
+  assert.ok(db.executedSql.some((sql) => sql.includes('ALTER TABLE layout_overrides ADD COLUMN font_size_pct REAL')));
 });
 
 test('contract: GET /layout returns 500 when layout table initialization fails', async () => {

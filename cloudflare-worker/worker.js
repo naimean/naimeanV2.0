@@ -665,7 +665,10 @@ async function ensureLayoutOverridesTable(db) {
     }
     await db.prepare('ALTER TABLE layout_overrides ADD COLUMN font_size_pct REAL').run();
   } catch (error) {
-    throw new Error('Failed to migrate layout_overrides table', { cause: error });
+    const errorMessage = error && error.message ? String(error.message).toLowerCase() : '';
+    if (!errorMessage.includes('duplicate column name') && !errorMessage.includes('already exists')) {
+      throw new Error('Failed to migrate layout_overrides table', { cause: error });
+    }
   }
 }
 

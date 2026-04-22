@@ -475,6 +475,7 @@
     .hotspot-tool {
       position: fixed;
       right: 12px;
+      top: var(--hotspot-tool-top, 12px);
       z-index: 120;
       width: min(260px, calc(100vw - 24px));
       background: rgba(0, 0, 0, 0.88);
@@ -497,19 +498,19 @@
     }
 
     #hotspot-move-tool {
-      top: 12px;
+      --hotspot-tool-top: 12px;
     }
 
     #hotspot-size-tool {
-      top: 220px;
+      --hotspot-tool-top: 220px;
     }
 
     #hotspot-viewport-tool {
-      top: 440px;
+      --hotspot-tool-top: 440px;
     }
 
     #hotspot-font-tool {
-      top: 600px;
+      --hotspot-tool-top: 600px;
     }
 
     .hotspot-tool-title {
@@ -789,6 +790,7 @@
     const HOTSPOT_VIEWPORT_WIDTHS = [375, 390, 430, 768, 1024, 1280, 1440];
     const HOTSPOT_COUNTER_ID = 'chapel-tv-counter';
     const HOTSPOT_COUNTER_FONT_SIZE_MIN_PX = 4;
+    const HOTSPOT_COUNTER_FONT_SIZE_MAX_PX = 120;
     const HOTSPOT_STYLE_PROPERTY_NAMES = ['top', 'left', 'width', 'height', 'fontSize'];
     const HOTSPOT_IDS = [
       'chapel-return-btn',
@@ -842,9 +844,9 @@
       }
 
       return HOTSPOT_VIEWPORT_WIDTHS.reduce(function (closestWidth, candidateWidth) {
-        return Math.abs(candidateWidth - numericWidth) < Math.abs(closestWidth - numericWidth)
-          ? candidateWidth
-          : closestWidth;
+        const candidateDistance = Math.abs(candidateWidth - numericWidth);
+        const closestDistance = Math.abs(closestWidth - numericWidth);
+        return candidateDistance < closestDistance ? candidateWidth : closestWidth;
       }, HOTSPOT_VIEWPORT_WIDTHS[0]);
     }
 
@@ -927,7 +929,7 @@
         return;
       }
 
-      const clampedFontSizePx = Math.max(HOTSPOT_COUNTER_FONT_SIZE_MIN_PX, nextFontSizePx);
+      const clampedFontSizePx = Math.min(HOTSPOT_COUNTER_FONT_SIZE_MAX_PX, Math.max(HOTSPOT_COUNTER_FONT_SIZE_MIN_PX, nextFontSizePx));
       delete chapelTvCounter.dataset.layoutFontSizePct;
       chapelTvCounter.style.fontSize = `${clampedFontSizePx}px`;
     }
@@ -1118,7 +1120,7 @@
 
       const activeWidth = getCurrentHotspotViewportWidth();
       if (Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0) {
-        viewportMeta.textContent = `Simulating ${activeWidth}px viewport. Saves load from ${getCurrentHotspotLayoutPageKey()}.`;
+        viewportMeta.textContent = `Simulating ${activeWidth}px viewport. Loading saves from ${getCurrentHotspotLayoutPageKey()}.`;
         return;
       }
 
@@ -1483,31 +1485,35 @@
         fallbackPageKeys.push(HOTSPOT_LAYOUT_PAGE);
       }
 
-      Promise.all(fallbackPageKeys.map(function (pageKey) {
-        return fetch('/layout?page=' + encodeURIComponent(pageKey), { credentials: 'same-origin' })
-          .then(function (res) { return res.ok ? res.json() : null; })
-          .then(function (data) {
-            return {
-              pageKey: pageKey,
-              overrides: data && data.overrides ? data.overrides : null,
-            };
-          })
-          .catch(function () {
-            return {
-              pageKey: pageKey,
-              overrides: null,
-            };
-          });
-      }))
-        .then(function (responses) {
+      fallbackPageKeys.reduce(function (promise, pageKey) {
+        return promise.then(function (match) {
+          if (match) {
+            return match;
+          }
+
+          return fetch('/layout?page=' + encodeURIComponent(pageKey), { credentials: 'same-origin' })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .then(function (data) {
+              const overrides = data && data.overrides ? data.overrides : null;
+              if (overrides && Object.keys(overrides).length > 0) {
+                return {
+                  pageKey: pageKey,
+                  overrides: overrides,
+                };
+              }
+              return null;
+            })
+            .catch(function () {
+              return null;
+            });
+        });
+      }, Promise.resolve(null))
+        .then(function (match) {
           if (requestId !== activeLayoutLoadRequestId) {
             return;
           }
 
           restoreDefaultLayoutInlineStyles();
-          const match = responses.find(function (response) {
-            return response.overrides && Object.keys(response.overrides).length > 0;
-          });
           if (match) {
             applyLayoutOverrides(match.overrides);
           }
