@@ -1,6 +1,7 @@
 (() => {
   const AUTH_SESSION_API_URL = '/auth/session';
   const AUTH_DISCORD_LOGIN_PATH = '/auth/discord/login';
+  const AUTH_LOGOUT_API_URL = '/auth/logout';
   const AUTH_RESULT_QUERY_PARAM = 'auth';
   const POPUP_NAME = 'naimean-discord-auth';
   const POPUP_FEATURES = 'width=520,height=720,resizable=yes,scrollbars=yes';
@@ -20,6 +21,7 @@
   let popupWatcherId = null;
   let pendingLogin = null;
   let chipElements = null;
+  let authMenuOpen = false;
   const sessionListeners = new Set();
 
   function injectStyles() {
@@ -58,6 +60,10 @@
   padding: 6px 14px 6px 16px;
 }
 
+.discord-auth-chip.is-menu-open {
+  box-shadow: 0 0 18px rgba(142, 240, 178, 0.38);
+}
+
 .discord-auth-chip [hidden] {
   display: none !important;
 }
@@ -86,6 +92,19 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  padding: 2px 4px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.discord-auth-user:hover,
+.discord-auth-user:focus-visible {
+  background: rgba(142, 240, 178, 0.12);
+  outline: none;
 }
 
 .discord-auth-name {
@@ -122,6 +141,27 @@
   display: block;
   object-fit: cover;
 }
+
+.discord-auth-menu-action {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  border: 1px solid rgba(142, 240, 178, 0.9);
+  border-radius: 999px;
+  background: rgba(6, 14, 8, 0.96);
+  color: #8ef0b2;
+  padding: 6px 12px;
+  box-shadow: 0 0 14px rgba(142, 240, 178, 0.24);
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.discord-auth-menu-action:hover,
+.discord-auth-menu-action:focus-visible {
+  background: rgba(142, 240, 178, 0.16);
+  outline: none;
+}
     `.trim();
     document.head.appendChild(style);
   }
@@ -144,10 +184,13 @@
     loginBtn.type = 'button';
     loginBtn.textContent = 'Log in';
 
-    const userWrapper = document.createElement('div');
+    const userWrapper = document.createElement('button');
     userWrapper.id = USER_CONTAINER_ID;
     userWrapper.className = 'discord-auth-user';
+    userWrapper.type = 'button';
     userWrapper.hidden = true;
+    userWrapper.setAttribute('aria-haspopup', 'menu');
+    userWrapper.setAttribute('aria-expanded', 'false');
 
     const name = document.createElement('span');
     name.id = NAME_ID;
@@ -171,8 +214,16 @@
     avatar.appendChild(avatarImg);
     userWrapper.appendChild(name);
     userWrapper.appendChild(avatar);
+
+    const logoutBtn = document.createElement('button');
+    logoutBtn.type = 'button';
+    logoutBtn.className = 'discord-auth-menu-action';
+    logoutBtn.textContent = 'Log out';
+    logoutBtn.hidden = true;
+
     container.appendChild(loginBtn);
     container.appendChild(userWrapper);
+    container.appendChild(logoutBtn);
 
     document.body.appendChild(container);
 
@@ -184,13 +235,32 @@
       avatar,
       avatarFallback,
       avatarImg,
+      logoutBtn,
     };
 
     loginBtn.addEventListener('click', () => {
       startDiscordAuth({ returnToPath: getCurrentPath(), preferPopup: true });
     });
+    userWrapper.addEventListener('click', () => {
+      if (!authState || !authState.authenticated || !authState.user) {
+        return;
+      }
+      setAuthMenuOpen(!authMenuOpen);
+    });
+    logoutBtn.addEventListener('click', async () => {
+      await logout();
+    });
 
     return chipElements;
+  }
+
+  function setAuthMenuOpen(nextOpen) {
+    const els = buildChip();
+    const canOpen = Boolean(authState && authState.authenticated && authState.user);
+    authMenuOpen = canOpen && Boolean(nextOpen);
+    els.container.classList.toggle('is-menu-open', authMenuOpen);
+    els.logoutBtn.hidden = !authMenuOpen;
+    els.userWrapper.setAttribute('aria-expanded', authMenuOpen ? 'true' : 'false');
   }
 
   function notifySessionListeners(nextState) {
@@ -280,6 +350,7 @@
     els.container.setAttribute('data-auth-state', authStateName);
 
     if (!isAuthed) {
+      setAuthMenuOpen(false);
       els.loginBtn.hidden = false;
       els.userWrapper.hidden = true;
       els.name.textContent = '';
@@ -296,6 +367,8 @@
     els.loginBtn.hidden = true;
     els.userWrapper.hidden = false;
     els.name.textContent = displayName || 'user';
+    els.userWrapper.setAttribute('aria-label', `${displayName || 'User'} account options`);
+    setAuthMenuOpen(authMenuOpen);
 
     if (safeAvatarUrl) {
       els.avatarFallback.textContent = '';
@@ -334,6 +407,23 @@
     renderAuthChip(authState);
     notifySessionListeners(authState);
     return authState;
+  }
+
+  async function logout() {
+    const els = buildChip();
+    setAuthMenuOpen(false);
+    els.logoutBtn.disabled = true;
+    try {
+      await fetch(AUTH_LOGOUT_API_URL, {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+    } catch (_) {
+      // Refresh the local session either way so the chip stays in sync.
+    } finally {
+      els.logoutBtn.disabled = false;
+    }
+    return refreshAuthSession();
   }
 
   function clearPopupWatcher() {
@@ -448,9 +538,27 @@
     refreshAuthSession().catch(() => {});
   }
 
+  function handleDocumentPointerDown(event) {
+    if (!authMenuOpen || !chipElements || !chipElements.container) {
+      return;
+    }
+    if (chipElements.container.contains(event.target)) {
+      return;
+    }
+    setAuthMenuOpen(false);
+  }
+
+  function handleDocumentKeydown(event) {
+    if (event.key === 'Escape' && authMenuOpen) {
+      setAuthMenuOpen(false);
+    }
+  }
+
   function init() {
     initAuthChip();
     window.addEventListener('message', handlePopupMessage);
+    document.addEventListener('pointerdown', handleDocumentPointerDown);
+    document.addEventListener('keydown', handleDocumentKeydown);
     const outcome = getAuthOutcomeFromUrl();
     // If the user landed on the page after an OAuth redirect (fallback),
     // refresh the session so the chip renders the new state immediately.
@@ -468,6 +576,7 @@
   window.NaimeanAuth = {
     refreshSession: refreshAuthSession,
     startLogin: startDiscordAuth,
+    logout,
     requireDiscordAuth,
     renderAuthState: renderAuthChip,
     getSession: () => authState,
