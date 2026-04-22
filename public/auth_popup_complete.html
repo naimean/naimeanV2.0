@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Auth</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #060c08;
+      color: #8ef0b2;
+      font-family: 'VT323', 'IBM Plex Mono', 'Courier New', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .auth-card {
+      border: 1px solid rgba(142, 240, 178, 0.8);
+      padding: 18px 20px;
+      border-radius: 10px;
+      background: rgba(12, 20, 14, 0.9);
+      box-shadow: 0 0 18px rgba(142, 240, 178, 0.25);
+      text-align: center;
+      max-width: 320px;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    Completing Discord sign-in...
+  </div>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const nextRaw = params.get('next') || '/';
+      const authOutcome = (params.get('auth') || '').trim().toLowerCase() || 'unknown';
+
+      function sanitizePath(raw) {
+        const fallback = '/';
+        if (typeof raw !== 'string' || !raw.trim()) {
+          return fallback;
+        }
+        try {
+          const url = new URL(raw, window.location.origin);
+          if (url.origin !== window.location.origin) {
+            return fallback;
+          }
+          return url.pathname + url.search + url.hash;
+        } catch (_) {
+          return fallback;
+        }
+      }
+
+      const nextPath = sanitizePath(nextRaw);
+      const message = {
+        type: 'naimean-auth-result',
+        status: authOutcome,
+        nextPath,
+      };
+
+      const hasOpener = typeof window.opener === 'object' && window.opener && window.opener !== window;
+      if (hasOpener) {
+        try {
+          window.opener.postMessage(message, window.location.origin);
+        } catch (_) {}
+        // Give the opener time to receive the message before closing.
+        setTimeout(() => {
+          try { window.close(); } catch (_) {}
+        }, 350);
+        setTimeout(() => {
+          window.location.replace(nextPath);
+        }, 1200);
+      } else {
+        const joiner = nextPath.includes('?') ? '&' : '?';
+        const fallbackTarget = authOutcome ? `${nextPath}${joiner}auth=${encodeURIComponent(authOutcome)}` : nextPath;
+        window.location.replace(fallbackTarget);
+      }
+    })();
+  </script>
+</body>
+</html>

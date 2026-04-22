@@ -145,6 +145,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const createUnauthenticatedSession = () => ({ authenticated: false, user: null });
   let authSession = createUnauthenticatedSession();
 
+  function isDiscordSession(session) {
+    return Boolean(session && session.authenticated && session.user && session.user.provider === 'discord');
+  }
+
   function consumeAuthOutcomeFromUrl() {
     try {
       const pageUrl = new URL(window.location.href);
@@ -681,8 +685,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function beginDiscordLogin() {
-    const returnTo = encodeURIComponent(getReturnToPath());
-    window.location.assign(`${AUTH_DISCORD_LOGIN_PATH}?returnTo=${returnTo}`);
+    const returnTo = getReturnToPath();
+    if (window.NaimeanAuth && typeof window.NaimeanAuth.startLogin === 'function') {
+      window.NaimeanAuth.startLogin({ returnToPath: returnTo, preferPopup: true });
+      return;
+    }
+    window.location.assign(`${AUTH_DISCORD_LOGIN_PATH}?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   function getSessionDisplayName(user) {
@@ -733,6 +741,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function renderDiscordAuthChip() {
+    if (window.NaimeanAuth && typeof window.NaimeanAuth.renderAuthState === 'function') {
+      window.NaimeanAuth.renderAuthState(authSession);
+    }
     if (!discordAuthLoginBtn || !discordAuthUser || !discordAuthName || !discordAuthAvatar || !discordAuthAvatarImage) {
       return;
     }
@@ -767,6 +778,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function refreshAuthSession() {
+    if (window.NaimeanAuth && typeof window.NaimeanAuth.refreshSession === 'function') {
+      authSession = await window.NaimeanAuth.refreshSession();
+      return authSession;
+    }
     try {
       const response = await fetch(AUTH_SESSION_API_URL, {
         method: 'GET',
@@ -848,6 +863,27 @@ document.addEventListener('DOMContentLoaded', function() {
   async function showAuthStatusInShoutbox() {
     await refreshAuthSession();
     appendAuthStatusMessage();
+  }
+
+  async function requireDiscordSession(returnToPath) {
+    const targetPath = typeof returnToPath === 'string' && returnToPath.trim()
+      ? returnToPath
+      : getReturnToPath();
+    if (window.NaimeanAuth && typeof window.NaimeanAuth.requireDiscordAuth === 'function') {
+      const result = await window.NaimeanAuth.requireDiscordAuth({ returnToPath: targetPath });
+      if (result && result.session) {
+        authSession = result.session;
+      }
+      renderDiscordAuthChip();
+      return isDiscordSession(authSession);
+    }
+
+    const session = await refreshAuthSession();
+    if (isDiscordSession(session)) {
+      return true;
+    }
+    beginDiscordLogin();
+    return false;
   }
 
   // ─── Email auth form ──────────────────────────────────────────────────────
@@ -1564,6 +1600,11 @@ document.addEventListener('DOMContentLoaded', function() {
           if (!isKnownBootUser(normalizedUser)) {
             playWrongSound();
             resetBootInput();
+            updateBootQuickLinkVisibility();
+            return;
+          }
+          const hasDiscordAuth = await requireDiscordSession(getReturnToPath());
+          if (!hasDiscordAuth) {
             updateBootQuickLinkVisibility();
             return;
           }

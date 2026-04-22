@@ -172,6 +172,11 @@
     }
 
     @media (min-width: 900px) {
+      .chapel-trans-rick {
+        left: calc(46.1% + 25px);
+        top: calc(54.8% + 210px);
+      }
+
       /* Desktop-only requested offset: hitbox moved 10px left and 30px down. */
       .chapel-return-btn {
         left: calc(46.4% - 25px);
@@ -459,6 +464,13 @@
       }
     }
 
+    @media (max-width: 430px) {
+      .chapel-trans-rick {
+        left: calc((46.1% + 20px) - 5px);
+        top: calc((54.8% + 200px) - 85px);
+      }
+    }
+
     .hotspot-tool {
       position: fixed;
       right: 12px;
@@ -677,6 +689,7 @@
       <div class="torch-bloom" aria-hidden="true" style="left:calc(50% + var(--chapel-medial-bloom-center-offset));top:calc(58.5% - 16.18% - var(--chapel-seam-bloom-upshift) - var(--chapel-medial-bloom-upshift) - var(--chapel-light-elements-upshift));width:52%;height:6%"></div>
     </div>
   </div>
+  <script src="auth.js"></script>
   <script src="diagnostics.js"></script>
   <script>
     // Robust scroll to bottom — retry until images are painted (fixes mobile)
@@ -734,6 +747,9 @@
     let sauceDripTimerId = null;
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sauceDrip = document.getElementById('sauce-drip');
+    const wrongAudio = new Audio('assets/wrong.mp3');
+    wrongAudio.preload = 'auto';
+    wrongAudio.load();
 
     function parseNumericValue(value) {
       const numericValue = Number.parseFloat(value);
@@ -1646,13 +1662,68 @@
     const DISCORD_AUTH_GATE_URL = '/auth/discord/login?returnTo=' + encodeURIComponent(TRAPDOOR_DESTINATION_PATH);
     const FADE_TRANSITION_DURATION_MS = 900;
 
-    function navigateToSite() {
-      if (isNavigatingFromChapel) {
-        return;
-      }
-      isNavigatingFromChapel = true;
-      clearSauceDripTimer();
+    function isDiscordAuthSession(session) {
+      return Boolean(session && session.authenticated && session.user && session.user.provider === 'discord');
+    }
 
+    async function getLatestAuthSession() {
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.refreshSession === 'function') {
+        return window.NaimeanAuth.refreshSession();
+      }
+
+      try {
+        const response = await fetch('/auth/session', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!response.ok) {
+          return { authenticated: false, user: null };
+        }
+        const payload = await response.json();
+        return {
+          authenticated: Boolean(payload && payload.authenticated),
+          user: payload && payload.user ? payload.user : null,
+        };
+      } catch (_) {
+        return { authenticated: false, user: null };
+      }
+    }
+
+    async function requestDiscordAuthSession() {
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.requireDiscordAuth === 'function') {
+        const result = await window.NaimeanAuth.requireDiscordAuth({ returnToPath: TRAPDOOR_DESTINATION_PATH });
+        return result && result.session ? result.session : { authenticated: false, user: null };
+      }
+      window.location.assign(DISCORD_AUTH_GATE_URL);
+      return { authenticated: false, user: null };
+    }
+
+    function playWrongAuthSound() {
+      return new Promise((resolve) => {
+        if (!wrongAudio) {
+          resolve();
+          return;
+        }
+        let finished = false;
+        const finish = () => {
+          if (finished) {
+            return;
+          }
+          finished = true;
+          resolve();
+        };
+        wrongAudio.currentTime = 0;
+        wrongAudio.addEventListener('ended', finish, { once: true });
+        wrongAudio.addEventListener('error', finish, { once: true });
+        wrongAudio.play().catch(finish);
+        setTimeout(finish, 6000);
+      });
+    }
+
+    function proceedToTrapdoorDestination() {
+      clearSauceDripTimer();
       playDoorOpeningSound();
       congregationAudio.pause();
       if (rockRollContinuationMedia) {
@@ -1660,33 +1731,36 @@
       }
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
-      fetch('/auth/session', {
-        method: 'GET',
-        credentials: 'same-origin',
-        cache: 'no-store',
-        headers: {
-          'Accept': 'application/json',
-        },
-      })
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error('Auth check failed with status ' + response.status);
+      setTimeout(function () {
+        window.location.assign(TRAPDOOR_DESTINATION_PATH);
+      }, FADE_TRANSITION_DURATION_MS);
+    }
+
+    function navigateToSite() {
+      if (isNavigatingFromChapel) {
+        return;
+      }
+      isNavigatingFromChapel = true;
+
+      getLatestAuthSession()
+        .then(function (session) {
+          if (isDiscordAuthSession(session)) {
+            proceedToTrapdoorDestination();
+            return;
           }
-          return response.json();
+
+          return playWrongAuthSound().then(function () {
+            return requestDiscordAuthSession();
+          }).then(function (resultSession) {
+            if (isDiscordAuthSession(resultSession)) {
+              proceedToTrapdoorDestination();
+              return;
+            }
+            isNavigatingFromChapel = false;
+          });
         })
-        .then(function (payload) {
-          const nextLocation = payload.authenticated === true
-            ? TRAPDOOR_DESTINATION_PATH
-            : DISCORD_AUTH_GATE_URL;
-          setTimeout(function () {
-            window.location.assign(nextLocation);
-          }, FADE_TRANSITION_DURATION_MS);
-        })
-        .catch(function (error) {
-          console.warn('Trapdoor auth check failed, falling back to default destination.', error);
-          setTimeout(function () {
-            window.location.assign(TRAPDOOR_DESTINATION_PATH);
-          }, FADE_TRANSITION_DURATION_MS);
+        .catch(function () {
+          isNavigatingFromChapel = false;
         });
     }
 
