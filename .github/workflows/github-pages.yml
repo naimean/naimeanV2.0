@@ -178,6 +178,10 @@ jobs:
           wranglerVersion: "4.84.0"
           workingDirectory: cloudflare-worker
 
+      - name: Install naimean-api dependencies
+        working-directory: naimean-api
+        run: npm install --no-fund --no-audit
+
       - name: Deploy naimean-api worker
         uses: cloudflare/wrangler-action@v3.15.0
         with:
