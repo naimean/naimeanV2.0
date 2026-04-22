@@ -1525,6 +1525,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  if (window.NaimeanAuth && typeof window.NaimeanAuth.onSessionChange === 'function') {
+    window.NaimeanAuth.onSessionChange(function(nextSession) {
+      authSession = nextSession && typeof nextSession === 'object'
+        ? {
+            authenticated: Boolean(nextSession.authenticated),
+            user: nextSession.user || null,
+          }
+        : createUnauthenticatedSession();
+      if (authSession.authenticated) {
+        applySessionToBootInput();
+      } else {
+        resetBootInput();
+        updateBootQuickLinkVisibility();
+      }
+      renderDiscordAuthChip();
+    });
+  }
+
   renderDiscordAuthChip();
 
   if (shoutboxInput) {
