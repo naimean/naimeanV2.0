@@ -2061,9 +2061,13 @@
     function loadLayoutOverrides() {
       const requestId = ++activeLayoutLoadRequestId;
       const primaryPageKey = getCurrentHotspotLayoutPageKey();
-      // Preserve legacy saved layouts by falling back to the unscoped page key
-      // when no viewport-specific slot has been saved yet.
-      const fallbackPageKeys = [primaryPageKey, HOTSPOT_LAYOUT_PAGE];
+      // Preserve legacy saved layouts during normal page use, but keep simulated
+      // and probe viewports on their true viewport-specific/default positions so
+      // the editor does not snap back to a generic saved layout after resizing.
+      const fallbackPageKeys = (!isLayoutProbeMode
+        && (!Number.isFinite(activeSimulatedViewportWidth) || activeSimulatedViewportWidth <= 0))
+        ? [primaryPageKey, HOTSPOT_LAYOUT_PAGE]
+        : [primaryPageKey];
 
       fallbackPageKeys.reduce(function (promise, pageKey) {
         return promise.then(function (match) {
