@@ -481,7 +481,7 @@
     .hotspot-tool {
       position: fixed;
       right: 12px;
-      top: calc(var(--hotspot-tool-top, 12px) * var(--hotspot-tool-scale, 1));
+      top: calc((var(--hotspot-tool-top, 12px) * var(--hotspot-tool-scale, 1)) + var(--hotspot-tool-mobile-offset, 0px));
       z-index: 120;
       width: min(260px, calc(100vw - 24px));
       background: rgba(0, 0, 0, 0.88);
@@ -524,6 +524,7 @@
     @media (max-width: 768px) {
       .hotspot-tool {
         --hotspot-tool-scale: 0.5;
+        --hotspot-tool-mobile-offset: 100px;
       }
     }
 
