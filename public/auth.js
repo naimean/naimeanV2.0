@@ -157,7 +157,10 @@
     const avatar = document.createElement('span');
     avatar.id = AVATAR_ID;
     avatar.className = 'discord-auth-avatar';
-    avatar.textContent = '';
+
+    const avatarFallback = document.createElement('span');
+    avatarFallback.className = 'discord-auth-avatar-fallback';
+    avatarFallback.textContent = '';
 
     const avatarImg = document.createElement('img');
     avatarImg.id = AVATAR_IMG_ID;
@@ -165,6 +168,7 @@
     avatarImg.alt = '';
     avatarImg.hidden = true;
 
+    avatar.appendChild(avatarFallback);
     avatar.appendChild(avatarImg);
     userWrapper.appendChild(name);
     userWrapper.appendChild(avatar);
@@ -179,6 +183,7 @@
       userWrapper,
       name,
       avatar,
+      avatarFallback,
       avatarImg,
     };
 
@@ -279,9 +284,10 @@
       els.loginBtn.hidden = false;
       els.userWrapper.hidden = true;
       els.name.textContent = '';
+      els.avatarFallback.textContent = '';
+      els.avatarFallback.hidden = false;
       els.avatarImg.hidden = true;
       els.avatarImg.src = '';
-      els.avatar.textContent = '';
       return;
     }
 
@@ -293,13 +299,15 @@
     els.name.textContent = displayName || 'user';
 
     if (safeAvatarUrl) {
+      els.avatarFallback.textContent = '';
+      els.avatarFallback.hidden = true;
       els.avatarImg.src = safeAvatarUrl;
       els.avatarImg.hidden = false;
-      els.avatar.textContent = '';
     } else {
+      els.avatarFallback.textContent = (displayName || 'U').charAt(0);
+      els.avatarFallback.hidden = false;
       els.avatarImg.src = '';
       els.avatarImg.hidden = true;
-      els.avatar.textContent = (displayName || 'U').charAt(0);
     }
   }
 
