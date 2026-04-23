@@ -986,6 +986,7 @@
     let torchBloomIntensityBound = false;
     let sauceDripTimerId = null;
     let activeSimulatedViewportWidth = null;
+    let activeHotspotViewportWidth = null;
     let activeLayoutLoadRequestId = 0;
     let activeViewportProbeMessage = null;
     let activeViewportProbeToken = '';
@@ -1015,12 +1016,29 @@
       }, HOTSPOT_VIEWPORT_WIDTHS[0]);
     }
 
+    function isViewportSimulated() {
+      return Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0;
+    }
+
+    function resolveLiveHotspotViewportWidth() {
+      return resolveNearestHotspotViewportWidth(window.innerWidth || document.documentElement.clientWidth || 0);
+    }
+
+    function syncActiveHotspotViewportWidth() {
+      if (isViewportSimulated()) {
+        activeHotspotViewportWidth = activeSimulatedViewportWidth;
+      } else {
+        activeHotspotViewportWidth = resolveLiveHotspotViewportWidth();
+      }
+      return activeHotspotViewportWidth;
+    }
+
     function getCurrentHotspotViewportWidth() {
-      if (Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0) {
-        return activeSimulatedViewportWidth;
+      if (Number.isFinite(activeHotspotViewportWidth) && activeHotspotViewportWidth > 0) {
+        return activeHotspotViewportWidth;
       }
 
-      return resolveNearestHotspotViewportWidth(window.innerWidth || document.documentElement.clientWidth || 0);
+      return resolveLiveHotspotViewportWidth();
     }
 
     function getCurrentHotspotLayoutPageKey() {
@@ -1324,12 +1342,13 @@
       }
 
       const activeWidth = getCurrentHotspotViewportWidth();
-      if (Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0) {
-        viewportMeta.textContent = `Simulating ${activeWidth}px viewport. Loading saves from ${getCurrentHotspotLayoutPageKey()}.`;
+      const liveWindowWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+      if (isViewportSimulated()) {
+        viewportMeta.textContent = `Simulating ${activeWidth}px viewport slot. Saves use key ${getCurrentHotspotLayoutPageKey()} while live window is ${liveWindowWidth}px.`;
         return;
       }
 
-      viewportMeta.textContent = `Using ${activeWidth}px viewport slot for current window (${window.innerWidth}px).`;
+      viewportMeta.textContent = `Live window ${liveWindowWidth}px. Defaulting to ${activeWidth}px viewport slot using key ${getCurrentHotspotLayoutPageKey()}.`;
     }
 
     function getViewportProbeDisplayName(targetId) {
@@ -1343,13 +1362,15 @@
         return;
       }
 
-      if (!Number.isFinite(activeSimulatedViewportWidth) || activeSimulatedViewportWidth <= 0) {
-        viewportLiveMeta.textContent = 'Select a viewport to load an accurate live preview.';
+      const probeViewportWidth = getCurrentHotspotViewportWidth();
+
+      if (!Number.isFinite(probeViewportWidth) || probeViewportWidth <= 0) {
+        viewportLiveMeta.textContent = 'Loading viewport preview…';
         return;
       }
 
-      if (!activeViewportProbeMessage || activeViewportProbeMessage.viewportWidth !== activeSimulatedViewportWidth) {
-        viewportLiveMeta.textContent = `Loading real ${activeSimulatedViewportWidth}px viewport metrics…`;
+      if (!activeViewportProbeMessage || activeViewportProbeMessage.viewportWidth !== probeViewportWidth) {
+        viewportLiveMeta.textContent = `Loading ${isViewportSimulated() ? 'simulated' : 'live-slot'} ${probeViewportWidth}px viewport metrics…`;
         return;
       }
 
@@ -1431,7 +1452,8 @@
         return;
       }
 
-      if (!Number.isFinite(activeSimulatedViewportWidth) || activeSimulatedViewportWidth <= 0) {
+      const probeViewportWidth = getCurrentHotspotViewportWidth();
+      if (!Number.isFinite(probeViewportWidth) || probeViewportWidth <= 0) {
         activeViewportProbeMessage = null;
         activeViewportProbeToken = '';
         previewCanvas.classList.remove('is-ready');
@@ -1459,11 +1481,11 @@
       previewCanvas.style.width = '';
       previewCanvas.style.height = '';
       previewFrame.style.transform = '';
-      previewFrame.style.width = `${activeSimulatedViewportWidth}px`;
+      previewFrame.style.width = `${probeViewportWidth}px`;
       previewFrame.style.height = '640px';
       previewFrame.setAttribute('src', probeUrl.toString());
       previewEmpty.hidden = false;
-      previewEmpty.textContent = `Loading accurate ${activeSimulatedViewportWidth}px preview…`;
+      previewEmpty.textContent = `Loading accurate ${probeViewportWidth}px preview…`;
       renderViewportProbeMeta();
     }
 
@@ -1855,6 +1877,8 @@
         return Boolean(selectedTarget && selectedTarget.contains(event.target));
       }
 
+      syncActiveHotspotViewportWidth();
+
       syncHotspotTargetSelection(HOTSPOT_TOOL_DEFAULT_TARGET);
       updateSelectionHighlight(HOTSPOT_TOOL_DEFAULT_TARGET);
       renderHotspotToolMeta();
@@ -2028,15 +2052,23 @@
       const viewportTool = document.getElementById('hotspot-viewport-tool');
       if (viewportTool) {
         let activeViewportBtn = null;
+        function setActiveViewportButton(viewportWidth) {
+          if (activeViewportBtn) {
+            activeViewportBtn.classList.remove('hotspot-viewport-active');
+          }
+          activeViewportBtn = viewportTool.querySelector(`[data-viewport-width="${viewportWidth}"]`);
+          if (activeViewportBtn) {
+            activeViewportBtn.classList.add('hotspot-viewport-active');
+          }
+        }
         viewportTool.querySelectorAll('[data-viewport-width]').forEach(function (btn) {
           btn.addEventListener('click', function () {
             const width = btn.getAttribute('data-viewport-width');
             activeSimulatedViewportWidth = parseNumericValue(width);
+            syncActiveHotspotViewportWidth();
             document.documentElement.style.setProperty('--simulated-viewport-width', width + 'px');
             document.body.classList.add('viewport-simulated');
-            if (activeViewportBtn) { activeViewportBtn.classList.remove('hotspot-viewport-active'); }
-            btn.classList.add('hotspot-viewport-active');
-            activeViewportBtn = btn;
+            setActiveViewportButton(activeSimulatedViewportWidth);
             renderViewportToolMeta();
             updateViewportProbePreview();
             loadLayoutOverrides();
@@ -2046,14 +2078,17 @@
         if (resetBtn) {
           resetBtn.addEventListener('click', function () {
             activeSimulatedViewportWidth = null;
+            syncActiveHotspotViewportWidth();
             document.documentElement.style.removeProperty('--simulated-viewport-width');
             document.body.classList.remove('viewport-simulated');
-            if (activeViewportBtn) { activeViewportBtn.classList.remove('hotspot-viewport-active'); activeViewportBtn = null; }
+            setActiveViewportButton(getCurrentHotspotViewportWidth());
             renderViewportToolMeta();
             updateViewportProbePreview();
             loadLayoutOverrides();
           });
         }
+        setActiveViewportButton(getCurrentHotspotViewportWidth());
+        updateViewportProbePreview();
       }
 
       if (fontTool) {
@@ -2135,14 +2170,32 @@
       }
 
       window.addEventListener('resize', function () {
-        if (document.body.classList.contains('viewport-simulated')) {
+        if (isViewportSimulated()) {
+          renderViewportToolMeta();
+          renderViewportProbeMeta();
           syncViewportProbePreviewScale();
+          applyResponsiveLayoutFontOverrides();
+          renderCounterFontToolMeta();
           return;
         }
+
+        const previousViewportWidth = getCurrentHotspotViewportWidth();
+        const nextViewportWidth = syncActiveHotspotViewportWidth();
+        if (viewportTool) {
+          viewportTool.querySelectorAll('[data-viewport-width]').forEach(function (button) {
+            button.classList.toggle('hotspot-viewport-active', parseNumericValue(button.dataset.viewportWidth) === nextViewportWidth);
+          });
+        }
         renderViewportToolMeta();
-        renderViewportProbeMeta();
         applyResponsiveLayoutFontOverrides();
         renderCounterFontToolMeta();
+        if (previousViewportWidth !== nextViewportWidth) {
+          updateViewportProbePreview();
+          loadLayoutOverrides();
+          return;
+        }
+        renderViewportProbeMeta();
+        syncViewportProbePreviewScale();
       });
     }
 
