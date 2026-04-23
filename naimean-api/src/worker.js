@@ -26,7 +26,7 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()",
 };
 
-function jsonResponse(body, status = 200, isSecureTransport = false) {
+function jsonResponse(body, status = 200, isHttps = false) {
   const headers = {
     "Content-Type": "application/json",
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -35,7 +35,7 @@ function jsonResponse(body, status = 200, isSecureTransport = false) {
     ...SECURITY_HEADERS,
   };
 
-  if (isSecureTransport) {
+  if (isHttps) {
     headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
   }
 
@@ -50,18 +50,18 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
     const method = request.method;
-    const isSecureTransport = url.protocol === "https:";
+    const isHttps = url.protocol === "https:";
 
     try {
       if (pathname === "/api/health" && method === "GET") {
-        return jsonResponse({ status: "ok", timestamp: new Date().toISOString() }, 200, isSecureTransport);
+        return jsonResponse({ status: "ok", timestamp: new Date().toISOString() }, 200, isHttps);
       }
 
       if (pathname === "/api/data" && method === "GET") {
         const result = await env.DB.prepare(
           "SELECT id, title, content, created_at FROM entries ORDER BY created_at DESC LIMIT 50"
         ).all();
-        return jsonResponse(result.results, 200, isSecureTransport);
+        return jsonResponse(result.results, 200, isHttps);
       }
 
       if (pathname === "/api/data" && method === "POST") {
@@ -69,25 +69,25 @@ export default {
         try {
           body = await request.json();
         } catch {
-          return jsonResponse({ error: "invalid JSON body" }, 400, isSecureTransport);
+          return jsonResponse({ error: "invalid JSON body" }, 400, isHttps);
         }
 
         const title = body && typeof body.title === "string" ? body.title.trim() : "";
         if (!title) {
-          return jsonResponse({ error: "title is required" }, 400, isSecureTransport);
+          return jsonResponse({ error: "title is required" }, 400, isHttps);
         }
 
         const content = body && typeof body.content === "string" ? body.content : null;
 
         await env.DB.prepare("INSERT INTO entries (title, content) VALUES (?, ?)").bind(title, content).run();
 
-        return jsonResponse({ success: true }, 201, isSecureTransport);
+        return jsonResponse({ success: true }, 201, isHttps);
       }
 
-      return jsonResponse("naimean.com API — use /api/health or /api/data", 404, isSecureTransport);
+      return jsonResponse("naimean.com API — use /api/health or /api/data", 404, isHttps);
     } catch (err) {
       console.error("naimean-api request failed", err);
-      return jsonResponse({ error: "internal server error" }, 500, isSecureTransport);
+      return jsonResponse({ error: "internal server error" }, 500, isHttps);
     }
   },
 };

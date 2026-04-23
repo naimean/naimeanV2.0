@@ -887,6 +887,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function openProtectedTool(toolPath) {
     const popup = window.open('', '_blank', 'noopener');
+    if (popup && popup.document) {
+      popup.document.title = 'Opening tool…';
+      popup.document.body.textContent = 'Checking your session…';
+    }
     const session = await refreshAuthSession();
     if (!session || !session.authenticated) {
       if (popup && !popup.closed) {
