@@ -617,7 +617,7 @@
     }
 
     /* Dashed highlight on the currently selected hotspot element. */
-    .hotspot-selected {
+    body.hotspot-tools-active .hotspot-selected {
       outline: 2px dashed rgba(255, 220, 0, 0.9) !important;
       outline-offset: 2px !important;
       z-index: var(--chapel-selected-element-z-index) !important;
@@ -771,7 +771,7 @@
           <option value="__none__">no hotspot</option>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
-          <option value="ceiling-tools-btn">ceiling tools hotspot</option>
+          <option value="ceiling-tools-btn">tools toggle button</option>
           <option value="crusty-button">crusty hotspot</option>
           <option value="goose-button">goose hotspot</option>
           <option value="morty-button">morty hotspot</option>
@@ -809,7 +809,7 @@
           <option value="__none__">no hotspot</option>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
-          <option value="ceiling-tools-btn">ceiling tools hotspot</option>
+          <option value="ceiling-tools-btn">tools toggle button</option>
           <option value="crusty-button">crusty hotspot</option>
           <option value="goose-button">goose hotspot</option>
           <option value="morty-button">morty hotspot</option>
@@ -874,6 +874,7 @@
         </div>
         <div class="hotspot-tool-grid">
           <button type="button" data-font-size-reset>reset</button>
+          <button type="button" data-hotspot-tools-hide>hide</button>
         </div>
         <div class="hotspot-tool-meta" id="font-tool-meta" aria-live="polite">Counter font size uses the default style.</div>
       </section>
@@ -1668,8 +1669,14 @@
         try { return localStorage.getItem(LAYOUT_TOOLS_KEY) === '1'; } catch (_) { return false; }
       }
       function setToolsActive(on) {
-        try { on ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
-        document.body.classList.toggle('hotspot-tools-active', on);
+        const nextToolsActive = Boolean(on);
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
+        if (!nextToolsActive) {
+          stopSelectedTargetDrag();
+          clearResizeCursorClasses(selectedTarget);
+        }
+        document.body.classList.toggle('hotspot-tools-active', nextToolsActive);
         syncTransRickPresentation();
       }
       setToolsActive(isToolsActive());
@@ -1695,6 +1702,19 @@
         const username = typeof session.user.username === 'string' ? session.user.username.trim().toLowerCase() : '';
         const displayName = typeof session.user.displayName === 'string' ? session.user.displayName.trim().toLowerCase() : '';
         return HOTSPOT_OWNER_DISCORD_ALIASES.has(username) || HOTSPOT_OWNER_DISCORD_ALIASES.has(displayName);
+      }
+      function showToolsByDefaultForOwner(session) {
+        if (isOwnerDiscordSession(session)) {
+          setToolsActive(true);
+        }
+      }
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.getSession === 'function') {
+        showToolsByDefaultForOwner(window.NaimeanAuth.getSession());
+      }
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.onSessionChange === 'function') {
+        window.NaimeanAuth.onSessionChange(function (session) {
+          showToolsByDefaultForOwner(session);
+        });
       }
       function hasTouchCapability() {
         if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
@@ -2069,6 +2089,13 @@
           resetFontBtn.addEventListener('click', function () {
             resetCounterFontSize();
             renderCounterFontToolMeta();
+          });
+        }
+
+        const hideToolsBtn = fontTool.querySelector('[data-hotspot-tools-hide]');
+        if (hideToolsBtn) {
+          hideToolsBtn.addEventListener('click', function () {
+            setToolsActive(false);
           });
         }
       }
