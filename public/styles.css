@@ -853,7 +853,7 @@ body {
   position: relative;
   z-index: 1;
   color: #c8ffd9;
-  font-size: 0.98em;
+  font-size: 0.88em;
   letter-spacing: 0.8px;
   text-shadow: 0 0 8px rgba(200, 255, 217, 0.16);
 }
@@ -1045,7 +1045,7 @@ body {
   }
 
   .shoutbox-hint {
-    font-size: 0.88em;
+    font-size: 0.78em;
   }
 
   #shoutbox-input,
