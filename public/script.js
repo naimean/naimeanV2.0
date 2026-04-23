@@ -79,12 +79,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_DEFAULT_SUFFIX = 'Admin';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
-  const BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY = {
-    showDiscordButton: false,
-    showWhiteboardButton: true,
-    showCapExButton: true,
-    showSnowButton: false
-  };
   const BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY = {
     showDiscordButton: false,
     showWhiteboardButton: true,
@@ -92,19 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
     showSnowButton: true
   };
   const BOOT_ROLE_VISIBILITY_BY_USER = {
-    ADMIN: { showDiscordButton: true,  showWhiteboardButton: false, showCapExButton: false, showSnowButton: false },
-    RCA:   { showDiscordButton: false, showWhiteboardButton: true,  showCapExButton: false, showSnowButton: false },
-    MAD:   { showDiscordButton: false, showWhiteboardButton: true,  showCapExButton: true,  showSnowButton: true  },
-    JV:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    KB:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    JY:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    RD:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    JS:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    JD:    BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY,
-    DL:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    EW:    BOOT_WHITEBOARD_AND_CAPEX_VISIBILITY,
-    RAD:   { showDiscordButton: false, showWhiteboardButton: false, showCapExButton: false, showSnowButton: false },
-    SED:   { showDiscordButton: false, showWhiteboardButton: false, showCapExButton: false, showSnowButton: false }
+    RCA: BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY
   };
   const wrongAudio = new Audio('assets/wrong.mp3');
   wrongAudio.preload = 'auto';
