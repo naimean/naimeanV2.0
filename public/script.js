@@ -1653,7 +1653,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!isDiscordSession(session)) {
         playWrongSound();
         const authResult = await requireDiscordSession(getReturnToPath());
-        if (authResult === true && isDiscordSession(authSession)) {
+        if (authResult === true) {
           fadeToChapel();
         }
         return;
@@ -1671,7 +1671,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isDiscordSession(session)) {
           playWrongSound();
           const authResult = await requireDiscordSession(getReturnToPath());
-          if (authResult === true && isDiscordSession(authSession)) {
+          if (authResult === true) {
             try {
               window.sessionStorage.setItem('naimean-skip-discord-redirect', '1');
             } catch (_) {}
@@ -1857,7 +1857,8 @@ document.addEventListener('DOMContentLoaded', function() {
           const normalizedUser = getNormalizedBootUser();
           if (!isKnownBootUser(normalizedUser)) {
             playWrongSound();
-            if (!isDiscordSession(authSession)) {
+            const currentSession = await refreshAuthSession();
+            if (!isDiscordSession(currentSession)) {
               // Not authenticated — start OAuth after the wrong-sound cue, then
               // continue through the nedry gate flow once auth completes.
               beginJoinDiscordWorkflow();
