@@ -433,12 +433,13 @@
     }
   }
 
-  function resolvePendingLogin(status, nextPath) {
+  function resolvePendingLogin(status, nextPath, fromPath) {
     if (pendingLogin && typeof pendingLogin.resolve === 'function') {
       pendingLogin.resolve({
         status,
         session: authState,
         nextPath: sanitizeReturnPath(nextPath || pendingLogin.nextPath || getCurrentPath()),
+        fromPath: sanitizeReturnPath(fromPath || pendingLogin.fromPath || getCurrentPath()),
       });
       pendingLogin = null;
     }
@@ -458,21 +459,22 @@
 
   async function startDiscordAuth(options = {}) {
     const returnToPath = sanitizeReturnPath(options.returnToPath || getCurrentPath());
-    const popupReturnTo = `/auth_popup_complete.html?next=${encodeURIComponent(returnToPath)}&from=${encodeURIComponent(getCurrentPath())}`;
+    const fromPath = sanitizeReturnPath(options.fromPath || getCurrentPath());
+    const popupReturnTo = `/auth_popup_complete.html?next=${encodeURIComponent(returnToPath)}&from=${encodeURIComponent(fromPath)}`;
     const loginUrl = `${AUTH_DISCORD_LOGIN_PATH}?returnTo=${encodeURIComponent(popupReturnTo)}`;
 
     const existingSession = await refreshAuthSession();
     if (existingSession.authenticated && existingSession.user && existingSession.user.provider === 'discord') {
-      return { status: 'already', session: existingSession, nextPath: returnToPath };
+      return { status: 'already', session: existingSession, nextPath: returnToPath, fromPath };
     }
 
     popupWindow = window.open(loginUrl, POPUP_NAME, POPUP_FEATURES);
     if (!popupWindow) {
       window.location.assign(loginUrl);
-      return { status: 'redirect', session: existingSession, nextPath: returnToPath };
+      return { status: 'redirect', session: existingSession, nextPath: returnToPath, fromPath };
     }
 
-    pendingLogin = { resolve: null, nextPath: returnToPath };
+    pendingLogin = { resolve: null, nextPath: returnToPath, fromPath };
     const resultPromise = new Promise((resolve) => {
       pendingLogin.resolve = resolve;
     });
@@ -486,16 +488,18 @@
 
   async function requireDiscordAuth(options = {}) {
     const targetPath = sanitizeReturnPath(options.returnToPath || getCurrentPath());
+    const fromPath = sanitizeReturnPath(options.fromPath || getCurrentPath());
     const current = await refreshAuthSession();
     if (current.authenticated && current.user && current.user.provider === 'discord') {
-      return { status: 'already', session: current, nextPath: targetPath };
+      return { status: 'already', session: current, nextPath: targetPath, fromPath };
     }
-    const result = await startDiscordAuth({ returnToPath: targetPath, preferPopup: true });
+    const result = await startDiscordAuth({ returnToPath: targetPath, fromPath, preferPopup: true });
     const refreshed = await refreshAuthSession();
     return {
       status: result && result.status ? result.status : 'completed',
       session: refreshed,
       nextPath: targetPath,
+      fromPath,
     };
   }
 
@@ -510,12 +514,13 @@
 
     const status = data.status || WRONG_ORIGIN;
     const nextPath = sanitizeReturnPath(data.nextPath || getCurrentPath());
+    const fromPath = sanitizeReturnPath(data.fromPath || getCurrentPath());
     refreshAuthSession().then(() => {
       if (popupWindow && !popupWindow.closed) {
         try { popupWindow.close(); } catch (_) {}
       }
       clearPopupWatcher();
-      resolvePendingLogin(status, nextPath);
+      resolvePendingLogin(status, nextPath, fromPath);
     });
   }
 
