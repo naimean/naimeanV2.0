@@ -1350,6 +1350,8 @@ document.addEventListener('DOMContentLoaded', function() {
         reloadHomePage();
         return;
       }
+      // Clear the marker when the popup flow completes in-place; full-page OAuth
+      // redirects reload before this point and are resumed after the page reloads.
       setPowerOnAuthPending(false);
     }
 
