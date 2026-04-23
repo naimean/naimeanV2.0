@@ -18,6 +18,3 @@ database_id = "0871f90d-f7e3-467a-a1f9-4e74ac8aef42"
 [[kv_namespaces]]
 binding = "KV"
 id = "dff7175059ce478eab8c910949ca330f"
-
-[limits]
-cpu_ms = 200

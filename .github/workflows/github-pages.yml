@@ -167,7 +167,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "3.99.0"
+          wranglerVersion: "4"
           workingDirectory: .
 
       - name: Deploy counter worker (barrelrollcounter-worker)
@@ -175,7 +175,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "3.99.0"
+          wranglerVersion: "4"
           workingDirectory: cloudflare-worker
 
       - name: Deploy naimean-api worker
@@ -183,4 +183,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
           workingDirectory: naimean-api
