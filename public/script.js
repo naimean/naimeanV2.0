@@ -938,7 +938,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function continueJoinDiscordWorkflow() {
     if (prankRunning) {
-      return true;
+      return false;
     }
 
     if (!screenOn) {
@@ -953,10 +953,7 @@ document.addEventListener('DOMContentLoaded', function() {
       await delay(JOIN_DISCORD_PLEASE_SCREEN_HOLD_MS);
     }
 
-    if (!prankRunning) {
-      await runPleaseSequence();
-    }
-
+    await runPleaseSequence();
     return true;
   }
 
@@ -1586,8 +1583,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (returnBypassBtn) {
-    returnBypassBtn.addEventListener('click', async function() {
-      await beginJoinDiscordWorkflow();
+    returnBypassBtn.addEventListener('click', function() {
+      fadeToChapel();
     });
   }
 
@@ -1773,6 +1770,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const didStartWorkflow = await beginJoinDiscordWorkflow();
           if (!didStartWorkflow) {
             updateBootQuickLinkVisibility();
+            return;
           }
         }
       });
