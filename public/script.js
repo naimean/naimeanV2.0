@@ -936,7 +936,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.location.replace('/');
   }
 
-  function powerOnScreenForJoinDiscordWorkflow() {
+  function powerOnScreen() {
     if (screenOn) {
       return;
     }
@@ -968,7 +968,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (!screenOn) {
-      powerOnScreenForJoinDiscordWorkflow();
+      powerOnScreen();
       await playStaticTransition();
       showBlueNedryGateScreen();
       await delay(JOIN_DISCORD_GATE_HOLD_MS);
@@ -1029,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    powerOnScreenForJoinDiscordWorkflow();
+    powerOnScreen();
     await playStaticTransition();
     showBlueNedryGateScreen();
   }
