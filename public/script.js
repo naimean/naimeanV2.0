@@ -122,7 +122,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
   const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
-  const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
+  const RICKROLL_COUNTER_FALLBACK_BASE_URLS = [
+    'https://naimean.com',
+    'https://www.naimean.com',
+    'https://barrelrollcounter-worker.naimean.workers.dev'
+  ];
   const RICKROLL_COUNT_TIMEOUT_MS = 8000;
   const DISCORD_WIDGET_ID = '1487898909224341534';
   const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
@@ -176,7 +180,9 @@ document.addEventListener('DOMContentLoaded', function() {
         candidates.push(new URL(pathname, window.location.origin).toString());
       }
     } catch (_) {}
-    candidates.push(`${LEGACY_RICKROLL_COUNTER_BASE_URL}${pathname}`);
+    for (const baseUrl of RICKROLL_COUNTER_FALLBACK_BASE_URLS) {
+      candidates.push(`${baseUrl}${pathname}`);
+    }
     const urls = Array.from(new Set(candidates));
     if (window.NaimeanDiag) {
       window.NaimeanDiag.log('endpoints ' + pathname + ': ' + urls.join(', '));
