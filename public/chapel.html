@@ -1708,13 +1708,16 @@
           setToolsActive(true);
         }
       }
-      if (window.NaimeanAuth && typeof window.NaimeanAuth.getSession === 'function') {
-        showToolsByDefaultForOwner(window.NaimeanAuth.getSession());
-      }
-      if (window.NaimeanAuth && typeof window.NaimeanAuth.onSessionChange === 'function') {
-        window.NaimeanAuth.onSessionChange(function (session) {
+      const authApi = window.NaimeanAuth;
+      if (authApi) {
+        if (typeof authApi.getSession === 'function') {
+          showToolsByDefaultForOwner(authApi.getSession());
+        }
+        if (typeof authApi.onSessionChange === 'function') {
+          authApi.onSessionChange(function (session) {
           showToolsByDefaultForOwner(session);
-        });
+          });
+        }
       }
       function hasTouchCapability() {
         if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
