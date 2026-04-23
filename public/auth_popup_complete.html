@@ -82,11 +82,11 @@
         } else {
           const card = document.getElementById('auth-card');
           if (card) {
-            card.textContent = 'Authentication cancelled. You can close this window.';
+            card.textContent = 'Authentication did not complete. You can close this window.';
           }
         }
       } else {
-        // Full-page redirect fallback (popup was blocked by the browser).
+        // Full-page redirect fallback (popup was blocked or opener is unavailable).
         // Only proceed to the destination on success; otherwise return to the
         // page the user came from so they are not sent to a protected page.
         if (authSuccess) {
