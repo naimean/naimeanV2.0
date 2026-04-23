@@ -1016,7 +1016,7 @@
       }, HOTSPOT_VIEWPORT_WIDTHS[0]);
     }
 
-    function isHotspotViewportSimulated() {
+    function isViewportSimulated() {
       return Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0;
     }
 
@@ -1025,9 +1025,11 @@
     }
 
     function syncActiveHotspotViewportWidth() {
-      activeHotspotViewportWidth = isHotspotViewportSimulated()
-        ? activeSimulatedViewportWidth
-        : resolveLiveHotspotViewportWidth();
+      if (isViewportSimulated()) {
+        activeHotspotViewportWidth = activeSimulatedViewportWidth;
+      } else {
+        activeHotspotViewportWidth = resolveLiveHotspotViewportWidth();
+      }
       return activeHotspotViewportWidth;
     }
 
@@ -1036,7 +1038,7 @@
         return activeHotspotViewportWidth;
       }
 
-      return syncActiveHotspotViewportWidth();
+      return resolveLiveHotspotViewportWidth();
     }
 
     function getCurrentHotspotLayoutPageKey() {
@@ -1341,12 +1343,12 @@
 
       const activeWidth = getCurrentHotspotViewportWidth();
       const liveWindowWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-      if (isHotspotViewportSimulated()) {
-        viewportMeta.textContent = `Simulating ${activeWidth}px viewport slot. Saving/loading ${getCurrentHotspotLayoutPageKey()} while live window is ${liveWindowWidth}px.`;
+      if (isViewportSimulated()) {
+        viewportMeta.textContent = `Simulating ${activeWidth}px viewport slot. Saves use key ${getCurrentHotspotLayoutPageKey()} while live window is ${liveWindowWidth}px.`;
         return;
       }
 
-      viewportMeta.textContent = `Live window ${liveWindowWidth}px. Defaulting to ${activeWidth}px viewport slot via ${getCurrentHotspotLayoutPageKey()}.`;
+      viewportMeta.textContent = `Live window ${liveWindowWidth}px. Defaulting to ${activeWidth}px viewport slot using key ${getCurrentHotspotLayoutPageKey()}.`;
     }
 
     function getViewportProbeDisplayName(targetId) {
@@ -1368,7 +1370,7 @@
       }
 
       if (!activeViewportProbeMessage || activeViewportProbeMessage.viewportWidth !== probeViewportWidth) {
-        viewportLiveMeta.textContent = `Loading ${isHotspotViewportSimulated() ? 'simulated' : 'live-slot'} ${probeViewportWidth}px viewport metrics…`;
+        viewportLiveMeta.textContent = `Loading ${isViewportSimulated() ? 'simulated' : 'live-slot'} ${probeViewportWidth}px viewport metrics…`;
         return;
       }
 
@@ -2054,7 +2056,7 @@
           if (activeViewportBtn) {
             activeViewportBtn.classList.remove('hotspot-viewport-active');
           }
-          activeViewportBtn = viewportTool.querySelector('[data-viewport-width="' + viewportWidth + '"]');
+          activeViewportBtn = viewportTool.querySelector(`[data-viewport-width="${viewportWidth}"]`);
           if (activeViewportBtn) {
             activeViewportBtn.classList.add('hotspot-viewport-active');
           }
@@ -2168,7 +2170,7 @@
       }
 
       window.addEventListener('resize', function () {
-        if (isHotspotViewportSimulated()) {
+        if (isViewportSimulated()) {
           renderViewportToolMeta();
           renderViewportProbeMeta();
           syncViewportProbePreviewScale();
@@ -2179,10 +2181,11 @@
 
         const previousViewportWidth = getCurrentHotspotViewportWidth();
         const nextViewportWidth = syncActiveHotspotViewportWidth();
-        const activeViewportButton = document.querySelector('[data-viewport-width="' + nextViewportWidth + '"]');
-        document.querySelectorAll('#hotspot-viewport-tool [data-viewport-width]').forEach(function (button) {
-          button.classList.toggle('hotspot-viewport-active', button === activeViewportButton);
-        });
+        if (viewportTool) {
+          viewportTool.querySelectorAll('[data-viewport-width]').forEach(function (button) {
+            button.classList.toggle('hotspot-viewport-active', parseNumericValue(button.dataset.viewportWidth) === nextViewportWidth);
+          });
+        }
         renderViewportToolMeta();
         applyResponsiveLayoutFontOverrides();
         renderCounterFontToolMeta();
