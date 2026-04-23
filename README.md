@@ -34,7 +34,7 @@ naimeanv2
   └─ everything else                                  -> ASSETS -> public/
 ```
 
-### Live production entrypoints
+### Repo-managed routes
 
 - `naimean.com/*` -> `naimeanv2`
 - `www.naimean.com/*` -> `naimeanv2`
@@ -150,16 +150,16 @@ That list must stay aligned with `run_worker_first` in `wrangler.toml`. CI enfor
 | `DISCORD_CLIENT_SECRET` | set |
 | `DISCORD_REDIRECT_URI` | set |
 | `OWNER_DISCORD_ID` | missing |
-| `TOOL_URL_WHITEBOARD` | missing |
-| `TOOL_URL_CAPEX` | missing |
-| `TOOL_URL_SNOW` | missing |
-| `BACKDOOR_ADMIN_KEY` | set but previously undocumented |
-| `DISCORD_WEBHOOK_URL` | set but previously undocumented |
+| `TOOL_URL_WHITEBOARD` | optional override; repo code has HTTPS fallback |
+| `TOOL_URL_CAPEX` | optional override; repo code has HTTPS fallback |
+| `TOOL_URL_SNOW` | optional override; repo code has HTTPS fallback |
+| `BACKDOOR_ADMIN_KEY` | operational/out-of-band; not consumed by current repo code |
+| `DISCORD_WEBHOOK_URL` | operational/out-of-band; not consumed by current repo code |
 
 ### Backend caveats
 
-- `ROUTER_SECRET` is still mentioned in some older docs/comments, but current runtime code does not consume it
-- `/go/*` exists server-side, but the frontend still has legacy hardcoded tool URLs in `public/script.js`
+- `ROUTER_SECRET` is legacy documentation only; current runtime code does not consume it
+- homepage tool launches now go through authenticated `/go/*` redirects in `public/script.js`
 - `/layout` is a required live route and must always remain in router/docs/config alignment
 
 ---
@@ -178,7 +178,7 @@ That list must stay aligned with `run_worker_first` in `wrangler.toml`. CI enfor
 
 - D1: `naimean-db`
 - KV: `naimean-kv`
-- secret: `API_TOKEN` *(set, but should stay documented in handoff docs)*
+- no runtime API secret is consumed by `naimean-api/src/worker.js`; `/api/*` is public in the repo as currently implemented
 
 ---
 
@@ -214,7 +214,7 @@ Workflow file:
 - `node --check` for repository JS files
 - `node --test cloudflare-worker/worker.test.js`
 - validates all three `wrangler.toml` files
-- checks `PROXY_PATHS` ↔ `run_worker_first` alignment
+- checks `PROXY_PATHS` ↔ `run_worker_first` alignment and validates expected worker route patterns
 - deploys `public/` to GitHub Pages
 - deploys `naimeanv2`, `barrelrollcounter-worker`, and `naimean-api`
 
@@ -267,8 +267,8 @@ node --test cloudflare-worker/worker.test.js
 
 ### P0 — immediate cleanup / risk reduction
 
-- [ ] Set `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, and `TOOL_URL_SNOW` on `barrelrollcounter-worker`
-- [ ] Finish the move away from client-side hardcoded tool URLs and make all launches go through `/go/*`
+- [ ] Set `OWNER_DISCORD_ID` on `barrelrollcounter-worker` if `/layout` writes must be locked to one Discord account
+- [ ] Set `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, and `TOOL_URL_SNOW` only if the built-in `/go/*` destinations should be overridden
 - [ ] Enable Cloudflare WAF managed rules on the `naimean.com` zone
 - [ ] Add edge rate limits for `/hit`, `/increment`, `/auth/*`, `/layout`, and `/api/*`
 - [ ] Put Zero Trust in front of privileged/internal tool flows
@@ -276,8 +276,9 @@ node --test cloudflare-worker/worker.test.js
 
 ### P1 — near-term stability and operations
 
-- [ ] Document `BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`, and `API_TOKEN` consistently across handoff docs
+- [ ] Document `BACKDOOR_ADMIN_KEY` and `DISCORD_WEBHOOK_URL` consistently across handoff docs
 - [ ] Verify both D1 schemas directly if Cloudflare metadata still reports `num_tables: 0`
+- [ ] Keep worker route declarations in `wrangler.toml` aligned with the Cloudflare dashboard state
 - [ ] Normalize docs so every handoff file agrees on routes, payloads, database IDs, and secret inventory
 - [ ] Decide whether `naimean-sessions` should be bound, repurposed, or deleted
 - [ ] Add a real D1 backup/export cadence and restore runbook for both databases

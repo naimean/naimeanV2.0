@@ -15,8 +15,8 @@ Cloudflare account:
 2. `ROUTER_SECRET` is still mentioned in some older docs/comments, but current runtime code does not consume it.
 3. `naimean-api` is part of this repo and deploys from this repo.
 4. `GET /api/health` currently returns `{ "status": "ok", "timestamp": "..." }`.
-5. The backend supports `/go/*`, but the frontend still contains legacy hardcoded tool URLs.
-6. Four main-backend secrets are still missing today: `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW`.
+5. The homepage now launches tools through authenticated `/go/*` redirects instead of hardcoded external URLs.
+6. `OWNER_DISCORD_ID` and `TOOL_URL_*` are optional overrides in repo code, not mandatory deploy blockers.
 
 ---
 
@@ -38,7 +38,7 @@ Cloudflare account:
 | `www.naimean.com/*` | `naimeanv2` |
 | `naimean.com/api/*` | `naimean-api` |
 
-Critical: `naimean.com` must not point directly to GitHub Pages in production.
+These route declarations now live in repo-managed `wrangler.toml` files. Critical: `naimean.com` must not point directly to GitHub Pages in production.
 
 ### 3. Confirm storage resources
 
@@ -87,21 +87,24 @@ Recommended token permissions:
 
 #### `barrelrollcounter-worker`
 
-Already set:
+Required:
 
 - `SESSION_SECRET`
 - `DISCORD_CLIENT_ID`
 - `DISCORD_CLIENT_SECRET`
 - `DISCORD_REDIRECT_URI`
-- `BACKDOOR_ADMIN_KEY` *(undocumented runtime secret; keep value out of repo)*
-- `DISCORD_WEBHOOK_URL` *(undocumented runtime secret; keep value out of repo)*
 
-Still missing and needed:
+Optional:
 
 - `OWNER_DISCORD_ID`
 - `TOOL_URL_WHITEBOARD`
 - `TOOL_URL_CAPEX`
 - `TOOL_URL_SNOW`
+
+Tracked operationally outside current repo code:
+
+- `BACKDOOR_ADMIN_KEY`
+- `DISCORD_WEBHOOK_URL`
 
 Commands:
 
@@ -110,6 +113,7 @@ wrangler secret put SESSION_SECRET --name barrelrollcounter-worker
 wrangler secret put DISCORD_CLIENT_ID --name barrelrollcounter-worker
 wrangler secret put DISCORD_CLIENT_SECRET --name barrelrollcounter-worker
 wrangler secret put DISCORD_REDIRECT_URI --name barrelrollcounter-worker
+# Optional overrides:
 wrangler secret put OWNER_DISCORD_ID --name barrelrollcounter-worker
 wrangler secret put TOOL_URL_WHITEBOARD --name barrelrollcounter-worker
 wrangler secret put TOOL_URL_CAPEX --name barrelrollcounter-worker
@@ -122,9 +126,7 @@ Critical exact-match value:
 
 #### `naimean-api`
 
-Already set:
-
-- `API_TOKEN` *(documented here so it is not forgotten, but value remains out-of-band)*
+As currently implemented in `naimean-api/src/worker.js`, `/api/*` is public and no runtime API secret is enforced.
 
 ### 6. Run post-deploy validation
 
@@ -134,7 +136,9 @@ Already set:
 - [ ] `curl https://naimean.com/auth/discord/login` redirects to Discord
 - [ ] `curl 'https://naimean.com/layout?page=chapel'` returns JSON
 - [ ] `curl https://naimean.com/api/health` returns `{ "status": "ok", "timestamp": "..." }`
+- [ ] `curl -i https://naimean.com/api/health` shows CSP, HSTS, no-store cache headers, and `Permissions-Policy`
 - [ ] the homepage loads at `https://naimean.com`
+- [ ] authenticated homepage tool buttons open `/go/*` routes successfully
 - [ ] the latest `deploy-workers` GitHub Actions job is green
 
 ### 7. Verify actual D1 tables if metadata looks wrong
@@ -193,8 +197,8 @@ Especially keep these synchronized:
 
 - `/layout` is required
 - `ROUTER_SECRET` is currently unused
-- `/go/*` still has frontend migration work left
-- undocumented secrets (`BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`, `API_TOKEN`) still exist operationally
+- `/go/*` is now the homepage tool-launch path
+- undocumented secrets (`BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`) still exist operationally
 
 ---
 
@@ -212,7 +216,7 @@ Especially keep these synchronized:
 - D1: `naimean-db`
 - KV: `naimean-kv`
 
-### Missing secrets to fix first
+### Optional overrides to consider
 
 - `OWNER_DISCORD_ID`
 - `TOOL_URL_WHITEBOARD`

@@ -44,6 +44,9 @@ jobs:
           grep -q 'name' wrangler.toml
           grep -q 'main' wrangler.toml
           grep -q 'compatibility_date' wrangler.toml
+          grep -q '\[\[routes\]\]' wrangler.toml
+          grep -q 'pattern = "naimean.com/\*"' wrangler.toml
+          grep -q 'pattern = "www.naimean.com/\*"' wrangler.toml
           grep -q 'name' cloudflare-worker/wrangler.toml
           grep -q 'main' cloudflare-worker/wrangler.toml
           grep -q 'compatibility_date' cloudflare-worker/wrangler.toml
@@ -61,10 +64,19 @@ jobs:
           grep -q 'main' naimean-api/wrangler.toml
           grep -qE 'compatibility_date = "[0-9]{4}-[0-9]{2}-[0-9]{2}"' naimean-api/wrangler.toml
           grep -q '\[\[d1_databases\]\]' naimean-api/wrangler.toml
+          grep -q '\[\[routes\]\]' naimean-api/wrangler.toml
+          grep -q 'pattern = "naimean.com/api/\*"' naimean-api/wrangler.toml
           # Confirm the naimean-api migration file exists
           test -f naimean-api/migrations/0000_create_entries.sql
 
-      - name: Check bidirectional route alignment (PROXY_PATHS ↔ run_worker_first)
+      - name: Validate expected schema tables are declared
+        run: |
+          grep -q 'CREATE TABLE IF NOT EXISTS rickroll_counter' cloudflare-worker/schema.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS layout_overrides' cloudflare-worker/schema.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS registered_users' cloudflare-worker/schema.sql
+          grep -q 'CREATE TABLE IF NOT EXISTS entries' naimean-api/migrations/0000_create_entries.sql
+
+      - name: Check route alignment (proxy paths + worker routes)
         run: node scripts/check-route-alignment.js
 
       - name: Verify site assets

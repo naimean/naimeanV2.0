@@ -3,6 +3,14 @@ main = "src/index.js"
 compatibility_date = "2026-04-18"
 compatibility_flags = ["nodejs_compat"]
 
+[[routes]]
+pattern = "naimean.com/*"
+zone_name = "naimean.com"
+
+[[routes]]
+pattern = "www.naimean.com/*"
+zone_name = "naimean.com"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
