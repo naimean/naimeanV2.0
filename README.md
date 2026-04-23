@@ -1,557 +1,432 @@
 # Naimean V2.0
 
-A Commodore 64-themed interactive personal website — rickroll trap, Discord community hub, and private tool launcher — deployed on Cloudflare Workers backed by GitHub Pages.
+A Cloudflare-first personal website that mixes a static Commodore 64-style interactive experience with Worker-powered auth, persistence, protected tool redirects, and a small separate `/api/*` service.
 
 > **He boiled for our sins.**
 
 ---
 
-## Vision
+## What this repository is
 
-- User types `naimean.com` into their browser → lands on a C64-themed landing page
-- Entertaining puzzles and experiences keep them engaged
-- Clear call-to-action: join the Discord community
-- Discord OAuth gates the authenticated shoutbox and internal tool links
-- Private tool redirects (Whiteboard, Cap-Ex, ServiceNow) require a valid session
+This repo is really **four things living together**:
+
+1. **The edge router Worker** (`src/index.js`) that sits in front of the domain
+2. **The main backend Worker** (`cloudflare-worker/worker.js`) that owns counter/auth/layout/tool-launcher logic
+3. **A second API Worker** (`naimean-api/src/worker.js`) that owns `naimean.com/api/*`
+4. **A static scene-based site** (`public/`) that contains the C64 homepage, chapel, bedroom, and level sequence
+
+That split explains most of the codebase organization: the frontend stays lightweight and static, while the parts that need secrets, cookies, storage, or redirects live in Workers.
 
 ---
 
-## Architecture
+## Why the code is organized this way
 
-Two Cloudflare Workers collaborate at runtime. GitHub Pages hosts the static files.
+The project started as a **hand-crafted interactive website**, not as a framework app. The code still reflects that origin:
 
-```
+- **Static HTML/CSS/JS** was the fastest way to build the scenes, precise hotspots, media timing, and puzzle interactions
+- **Cloudflare Workers** were added only where the static site needed server behavior: counter writes, auth, sessions, redirects, and persistence
+- **D1** was enough for the small amount of durable data the site needs, so there was no reason to introduce a heavier backend stack
+- **GitHub Pages + Cloudflare** keeps the static portion simple while still letting the domain be controlled at the edge
+
+The result is a repo that feels part art project, part edge application, and part operations handoff.
+
+---
+
+## Runtime architecture
+
+```text
 Browser
   │
   ▼
-naimeanv2 (edge router — src/index.js)
+naimeanv2 (edge router Worker)
   │
-  ├─ /get, /hit, /increment, /auth/*, /go/*  ──────────► barrelrollcounter-worker
-  │   (Service binding: COUNTER)                          (cloudflare-worker/worker.js)
-  │                                                              │
-  │                                                      D1: barrelroll-counter-db
-  │                                                      Discord OAuth API (v10)
+  ├─ /get, /hit, /increment, /auth/*, /go/*, /layout
+  │      └─► barrelrollcounter-worker
+  │             ├─ D1: barrelroll-counter-db
+  │             ├─ session cookies / Discord OAuth / email auth
+  │             ├─ layout overrides
+  │             └─ authenticated tool redirects
   │
-  └─ everything else  ──────────────────────────────────► ASSETS binding
-                                                          (GitHub Pages / public/)
+  ├─ /api/*
+  │      └─► naimean-api
+  │             ├─ D1: naimean-db
+  │             └─ KV binding reserved for future use
+  │
+  └─ everything else
+         └─► ASSETS binding -> public/
 ```
 
-Custom domains:
-- `naimean.com` → `naimeanv2`
-- `www.naimean.com` → `naimeanv2`
+### Production entrypoints
 
-Cloudflare zones: `naimean.com`, `madmedia.studio` (both active, nameservers: `felipe.ns.cloudflare.com`, `veronica.ns.cloudflare.com`)
+- `naimean.com` -> `naimeanv2`
+- `www.naimean.com` -> `naimeanv2`
+- `naimean.com/api/*` -> `naimean-api`
+
+### Current Cloudflare zones called out in docs
+
+- `naimean.com`
+- `madmedia.studio`
 
 ---
 
-## Codebase Structure at a Glance
+## Repository map
 
-If you are new to the repo, read it in this order:
-
-| Path | What it is | Why it matters |
+| Path | Role | Why it matters |
 |---|---|---|
-| `src/index.js` | Edge router worker | First entrypoint for production traffic; decides proxy vs static asset handling and applies security headers |
-| `cloudflare-worker/worker.js` | Backend worker | Counter API, Discord OAuth, session cookies, layout API, `/go/*` redirects |
-| `public/` | Static site | Main C64 experience, chapel/bedroom/level pages, shared browser JS/CSS/assets |
-| `cloudflare-worker/schema.sql` | D1 schema | Creates the counter/layout/auth tables the backend depends on |
-| `wrangler.toml` | Router deploy config | Binds `ASSETS` and the `COUNTER` service binding |
-| `cloudflare-worker/wrangler.toml` | Backend deploy config | Binds D1 and documents required Cloudflare secrets |
-| `.github/workflows/github-pages.yml` | CI/CD pipeline | Runs syntax checks/tests, deploys Pages, and deploys the Workers |
-| `CLOUDFLARE_README.md` | Infra runbook | Best place for Cloudflare-side setup, deploy, and troubleshooting details |
-
-### How the code is organized
-
-- **Edge layer:** `src/index.js`
-- **Backend/business logic:** `cloudflare-worker/worker.js`
-- **Frontend behavior:** `public/script.js`, `public/auth.js`, `public/diagnostics.js`
-- **Frontend markup/scenes:** `public/*.html`
-- **Styling:** `public/styles.css`
-- **Tests:** `cloudflare-worker/worker.test.js`
+| `src/index.js` | Edge router Worker | First code hit in production for most traffic |
+| `wrangler.toml` | Edge router config | Defines `ASSETS`, `COUNTER`, and worker-first paths |
+| `cloudflare-worker/worker.js` | Main backend Worker | Counter, Discord/email auth, layout API, `/go/*` redirects, rate limits |
+| `cloudflare-worker/schema.sql` | Main D1 schema | Creates `rickroll_counter`, `layout_overrides`, and `registered_users` |
+| `cloudflare-worker/wrangler.toml` | Main backend config | Declares D1 binding and documents required secrets |
+| `naimean-api/src/worker.js` | Separate API Worker | Owns `/api/health` and `/api/data` |
+| `naimean-api/migrations/0000_create_entries.sql` | API D1 schema | Creates the `entries` table |
+| `naimean-api/wrangler.toml` | API Worker config | Declares route, D1 binding, and KV binding |
+| `public/` | Static website | All interactive scenes, shared JS, CSS, and assets |
+| `.github/workflows/github-pages.yml` | CI/CD | Syntax checks, tests, route-alignment checks, Pages deploy, Worker deploys |
+| `CLOUDFLARE_README.md` | Infra runbook | Best operational reference for Cloudflare-side setup |
+| `FELIPE_HANDOFF.md` | Ops handoff | Felipe-specific setup, validation, and caveats |
+| `naimean-README.md` | Repo CV / narrative inventory | Alternate high-context summary of the codebase |
+| `PLAN.md` | Roadmap + recommendation backlog | Current recommendation list and follow-up priorities |
+| `UPDATE.md` | Update log | Change history and recent documentation refresh notes |
 
 ---
 
-## Worker 1 — Edge Router (`src/index.js`)
+## Worker 1 — edge router (`src/index.js`)
 
-~80 lines. One job: route and stamp security headers.
+The router Worker is intentionally small. Its job is:
 
-**Routing:**
-- `PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go"]` → forwarded to `barrelrollcounter-worker` via the `COUNTER` service binding
-- All other paths → served from the `ASSETS` binding (GitHub Pages static files)
+- proxy dynamic routes to `barrelrollcounter-worker`
+- serve static assets from `public/`
+- add security headers consistently
+- provide extensionless `.html` fallback behavior for static pages
 
-**Security headers applied to every response:**
+### Current proxied paths
 
-| Header | HTML pages | API / all other |
-|---|---|---|
-| `Content-Security-Policy` | Full `DOCUMENT_CSP` (fonts, Discord iframes, Discord avatar CDN, self scripts) | Strict `API_CSP` (`default-src 'none'`) |
-| `Cache-Control` | `no-cache, must-revalidate` | `public, max-age=31536000, immutable` for media/fonts |
-| `X-Content-Type-Options` | `nosniff` | `nosniff` |
-| `X-Frame-Options` | `DENY` | `DENY` |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | camera/mic/geo/etc all `()` | same |
-| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` (HTTPS only) | same |
-
-Config: `wrangler.toml` (root). `run_worker_first` list in wrangler.toml must stay in sync with `PROXY_PATHS` in `src/index.js` — CI enforces this.
-
----
-
-## Worker 2 — Counter / Auth / Go-Redirect (`cloudflare-worker/worker.js`)
-
-~770 lines. All business logic lives here.
-
-### API Endpoints
-
-| Method | Path | Auth required | What it does |
-|---|---|---|---|
-| `GET` | `/get` | No | Returns `{ value: N }` — current rickroll count |
-| `POST` | `/hit` | No | Atomically increments count, returns `{ value: N }` |
-| `POST` | `/increment` | No | Alias of `/hit` |
-| `GET` | `/auth/session` | No | Returns `{ authenticated, user }` from session cookie |
-| `GET` | `/auth/discord/login` | No | Starts Discord OAuth2 PKCE flow → redirects to Discord |
-| `GET` | `/auth/discord/callback` | No (validates state+PKCE) | Completes OAuth, sets session cookie, redirects back |
-| `POST` | `/auth/logout` | No (CSRF-guarded) | Clears session cookie |
-| `GET` | `/go/whiteboard` | ✅ Session cookie | 303 redirect to Whiteboard URL |
-| `GET` | `/go/capex` | ✅ Session cookie | 303 redirect to Cap-Ex URL |
-| `GET` | `/go/snow` | ✅ Session cookie | 303 redirect to ServiceNow URL |
-| `OPTIONS` | any of the above | No | CORS preflight |
-
-### Session Tokens
-
-Homemade signed tokens (no external JWT library). Format: `base64url(JSON payload) + "." + HMAC-SHA256(payload, SESSION_SECRET)`. Verified via `crypto.subtle` in the Workers runtime. Session TTL: 7 days. OAuth flow TTL: 10 minutes.
-
-### Discord OAuth (PKCE)
-
-1. `GET /auth/discord/login` → generates `state` (18-byte random) + `codeVerifier` (48-byte random), derives `codeChallenge = sha256(codeVerifier)`, stores signed `naimean_discord_oauth` cookie, redirects to Discord's `/oauth2/authorize`
-2. Discord redirects back to `GET /auth/discord/callback` with `code` + `state`
-3. Worker validates state, exchanges `code`+`codeVerifier` for access token, fetches `/users/@me`, creates 7-day `naimean_session` cookie, redirects to `/?auth=success`
-
-### Discord OAuth working checklist
-
-To get Discord OAuth fully working in Cloudflare, all of these must be true:
-
-1. `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, and `SESSION_SECRET` are set on `barrelrollcounter-worker`
-2. `DISCORD_REDIRECT_URI` exactly matches the Discord app callback URL, usually `https://naimean.com/auth/discord/callback`
-3. `naimean.com` and `www.naimean.com` route to `naimeanv2`, not directly to GitHub Pages
-4. `naimeanv2` keeps `/auth` in both `PROXY_PATHS` and `wrangler.toml` `run_worker_first`
-5. The Discord app callback in the Discord developer portal uses the same production hostname as Cloudflare
-6. The HTML CSP allows Discord assets needed by the signed-in UI, including Discord avatar images
-
-If login redirects correctly but the signed-in avatar does not render, check the browser CSP console first.
-
-### CORS
-
-Allowed in production: `naimean.com`, `www.naimean.com`, `naimean.github.io`. Localhost origins added automatically when `APP_ENV` ≠ `production`. Hostname suffix wildcard requires explicit `CORS_ALLOW_PROD_ORIGIN_SUFFIXES=true` in production.
-
-### Required Cloudflare Secrets
-
-Set via `wrangler secret put <NAME>`:
-
-| Secret | Purpose |
-|---|---|
-| `SESSION_SECRET` | HMAC key for signed session + OAuth cookies |
-| `DISCORD_CLIENT_ID` | Discord OAuth app client ID |
-| `DISCORD_CLIENT_SECRET` | Discord OAuth app client secret |
-| `DISCORD_REDIRECT_URI` | Discord OAuth callback URL |
-| `ROUTER_SECRET` | Shared secret for internal route authentication |
-| `TOOL_URL_WHITEBOARD` | Destination URL for `/go/whiteboard` |
-| `TOOL_URL_CAPEX` | Destination URL for `/go/capex` |
-| `TOOL_URL_SNOW` | Destination URL for `/go/snow` (hardcoded ServiceNow SAML fallback baked in if unset) |
-
-### Optional Environment Variables
-
-| Variable | Purpose |
-|---|---|
-| `CORS_ALLOWED_ORIGINS` | Comma-separated origins to add to the CORS allowlist |
-| `CORS_ALLOWED_ORIGIN_SUFFIXES` | Comma-separated hostname suffixes for scoped wildcard CORS |
-| `CORS_ALLOW_PROD_ORIGIN_SUFFIXES` | Set `true` to enable suffix matching in production |
-| `APP_ENV` / `ENVIRONMENT` | Set to non-`production` to allow localhost origins |
-
----
-
-## Database
-
-One D1 SQLite table (`cloudflare-worker/schema.sql`):
-
-```sql
-CREATE TABLE IF NOT EXISTS rickroll_counter (
-  id    TEXT    PRIMARY KEY,
-  value INTEGER NOT NULL DEFAULT 0
-);
-INSERT OR IGNORE INTO rickroll_counter (id, value) VALUES ('rickrolls', 0);
+```js
+const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"];
 ```
 
-One row (`id = 'rickrolls'`). The `UPDATE … RETURNING value` trick makes increments atomic without a separate SELECT.
+That list must stay in sync with `run_worker_first` in the root `wrangler.toml`. CI enforces this with `scripts/check-route-alignment.js`.
 
-Initialize: `wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql`
+### Why this layer exists
 
-Database ID: `22277fbe-031d-4cad-8937-245309e981cd`
+This keeps routing and header policy centralized without mixing business logic into the static site. The router is thin on purpose: it reduces blast radius, keeps the asset flow simple, and makes Cloudflare domain behavior easier to understand.
 
-Other Cloudflare storage (not currently bound in this repo):
-- **R2** — `radley-gallery` bucket
-- **KV** — `naimean-sessions` namespace
+### Security header strategy
 
----
-
-## Static Pages (`public/`)
-
-All files in `public/` are deployed to GitHub Pages and served via the `ASSETS` binding.
-
-| File | Description |
-|---|---|
-| `index.html` | Main page — Commodore 64 UI |
-| `script.js` | All C64 interactivity (~45 KB) |
-| `diagnostics.js` | Hidden debug panel (activate: `?diag=1` or `Ctrl+Shift+D`) |
-| `styles.css` | Global stylesheet |
-| `chapel.html` | Rickroll destination — the Chapel |
-| `bedroom.html` | Horizontally-scrolling bedroom scene |
-| `bedroom_antechamber.html` | Antechamber between chapel and bedroom (procedural door-close audio) |
-| `first_level.html` – `ninth_level.html` | Nine puzzle levels; full-viewport image + Back/Forward nav |
-| `level_one.html` | Alias used by antechamber "Descend to first level" link |
-| `assets/` | Images (`.png`/`.jpg`), videos (`.mp4`), audio (`.mp3`) |
+- **HTML** responses get the document CSP plus `Cache-Control: no-cache, must-revalidate`
+- **API / non-HTML** responses get a strict API CSP
+- immutable media/font assets get long-lived cache headers
+- baseline browser hardening headers are applied to every response
 
 ---
 
-## The C64 Homepage — State Machine
+## Worker 2 — main backend (`cloudflare-worker/worker.js`)
 
-The homepage is a photograph of a Commodore 64. All UI layers are positioned absolutely over the image.
+This is the main application backend.
 
-### States
+### Current endpoints
 
-1. **Cold start** — C64 image visible, shadow layer over screen, power button in the corner. Screen is OFF.
-
-2. **Power button click** → `runInitialPowerOnSequence()`:
-   - Shows Discord widget iframe overlay for 3 seconds
-   - Plays a short static TV noise clip (`assets/static.mp4`)
-   - Shows the blue "Nedry Gate" boot screen
-
-3. **Nedry Gate (boot screen)** — input locked to prefix `C:\Naimean\User\`:
-   - Typing a suffix checks `BOOT_ROLE_VISIBILITY_BY_USER` (hardcoded user codes: `ADMIN`, `RCA`, `MAD`, `JV`, `KB`, `JY`, `RD`, `JS`, `JD`, `DL`, `EW`, `RAD`, `SED`) and shows/hides quick-launch buttons (Whiteboard, Cap-Ex, ServiceNow) per role
-   - Submitting an unknown code → wrong-answer sound, reset
-   - Submitting a known code → `runNedryGateSequence()`: plays `assets/joinourdiscord.mp4`, transitions to the shoutbox terminal
-
-4. **Power button (second click, after 5s cooldown)** → `runPowerOffPrank()`:
-   - Plays power-off video overlay
-   - Transitions through static
-   - Plays prank video (`assets/notarickroll.mp4`)
-   - After 5s: increments rickroll counter via `POST /increment`, saves video playback state to `sessionStorage`, navigates to `chapel.html`
-
-5. **Shoutbox terminal** (after Nedry gate) — input locked to `C:\Naimean\`:
-
-   | Input | Effect |
-   |---|---|
-   | `C:\Naimean\please` / `Please` | Plays Zelda secret chime, prank video, increments counter, goes to `chapel.html` |
-   | `login` / `signin` / `discord` | Redirects to `GET /auth/discord/login` |
-   | `logout` / `signout` | Calls `POST /auth/logout`, clears session |
-   | `play` / `game` / `start` | Starts 1–9 number-guessing mini-game (5 attempts) |
-   | A number (1–9) while game active | Validates guess, gives "too high/low" feedback |
-   | Anything else | Wrong-answer sound, reset |
-
-   - A hint ("You didn't say the magic word.") is hidden behind a cover that gradually reveals as you move the mouse across it; clicking reveals it fully
-   - Auth status message shown on open; Discord OAuth outcomes (`?auth=success/error`) consumed from URL and displayed as one-time status messages
-
-6. **Quick-launch buttons** (Whiteboard, Cap-Ex, Snow):
-   - `window.open('/go/<tool>', '_blank')` → worker verifies session cookie → 303 redirect to tool URL
-
-7. **Return bypass button** — invisible, positioned over the C64 screen:
-   - Click or `Enter` key (while screen is off) → black fade → `chapel.html`
-
-### Rickroll Counter Display
-
-The boot screen shows a 2-digit counter. On load, `script.js` calls `GET /get` (no-cache timestamp appended) and displays the result. Value is cached to `localStorage` as a fallback if the API is unreachable. When the prank fires, `POST /increment` is called before navigation.
-
----
-
-## The Chapel (`chapel.html`)
-
-Chapel scene with stitched PNG layers, warm torch bloom CSS overlays (`mix-blend-mode: lighten`), and a pulsing animated power light over a miniature C64 on the altar.
-
-- **Rickroll counter** shown on a "TV screen" (reads `GET /get` on load)
-- **Rock-roll continuation** — if `sessionStorage` has a saved video playback position from the prank, the video resumes from that position before congregation audio starts
-- **Discord invite redirect** — if the `naimean-discord-invite-redirect-pending` flag is set in `sessionStorage`, queries the Discord Widget API for a live invite link and opens it (falls back to in-page Discord iframe widget)
-- **Chapel return button** — invisible hotspot over the C64 screen → black fade → `index.html`
-- **Trapdoor button** — invisible hotspot at the bottom → Discord auth gate (`/auth/discord/login?returnTo=/bedroom_antechamber.html`) when unauthenticated, otherwise enters `bedroom_antechamber.html`
-- **Congregation audio** (`assets/congregation.mp3`) plays on arrival
-
----
-
-## Level Sequence
-
-```
-index.html
-  └─► chapel.html (prank destination)
-        └─► bedroom_antechamber.html
-              ├─► bedroom.html (horizontal-scroll inertia scene)
-              └─► first_level.html ↔ second_level.html ↔ … ↔ ninth_level.html
-```
-
-Nine level pages share a template: full-viewport image, 72px nav bar with Back/Forward. No JS, no API calls — pure static.
-
-`bedroom.html` has a `requestAnimationFrame`-based inertia scroller with mouse-wheel and click-nudge support. Clicking the doorway hotspot returns to the antechamber.
-
----
-
-## Worker 3 — naimean-api (`naimean.com/api/*`)
-
-A standalone Cloudflare Worker deployed separately from this repo. Route: `naimean.com/api/*` → `naimean-api`.
-
-### API Endpoints
-
-| Method | Path | Description | Body |
-|---|---|---|---|
-| `GET` | `/api/health` | Worker health check | — |
-| `GET` | `/api/data` | List the latest 50 D1-backed entries | — |
-| `POST` | `/api/data` | Create a new D1-backed entry | `{ "title": "...", "content": "..." }` |
-
-All `naimean-api` responses are JSON and the worker applies restrictive API security headers.
-
-### Database
-
-| Resource | Name | ID |
+| Method | Path | Purpose |
 |---|---|---|
-| D1 Database | `naimean-db` | `0871f90d-f7e3-467a-a1f9-4e74ac8aef42` |
+| `GET` | `/get` | Return current rickroll count |
+| `POST` | `/hit` | Increment count |
+| `POST` | `/increment` | Alias of `/hit` |
+| `GET` | `/auth/session` | Return current session state |
+| `POST` | `/auth/register` | Create an email-backed account |
+| `POST` | `/auth/emaillogin` | Sign in with email/password |
+| `GET` | `/auth/discord/login` | Start Discord OAuth PKCE flow |
+| `GET` | `/auth/discord/callback` | Finish Discord OAuth flow |
+| `POST` | `/auth/logout` | Clear session cookie |
+| `GET` | `/layout?page=<page>` | Read layout overrides |
+| `POST` | `/layout` | Save layout overrides |
+| `GET` | `/go/whiteboard` | Authenticated redirect |
+| `GET` | `/go/capex` | Authenticated redirect |
+| `GET` | `/go/snow` | Authenticated redirect |
+| `OPTIONS` | above routes | CORS preflight |
 
-### Cloudflare Resources
+### Key backend features
 
-| Resource | Name | ID |
-|---|---|---|
-| Worker | `naimean-api` | — |
-| D1 Database | `naimean-db` | `0871f90d-f7e3-467a-a1f9-4e74ac8aef42` |
-| KV Namespace | `KV` | `dff7175059ce478eab8c910949ca330f` |
-| Zone | `naimean.com` | `dc46eab0761d2ce7e372ea996e8735ea` |
-| Workers Route | `naimean.com/api/*` | `8be1b1b6388944e4910a6def585e4f15` |
+#### 1. Counter
+The original persisted feature. It now uses `POST` for writes, which is the correct direction for abuse resistance and cleaner HTTP semantics.
 
-### Deployment (naimean-api)
+#### 2. Session/auth stack
+The Worker supports **two auth paths**:
 
-Deployed from its own repository via Cloudflare Wrangler. `wrangler.toml` key config:
+- **Discord OAuth with PKCE**
+- **email registration + login backed by D1**
 
-```toml
-name = "naimean-api"
-main = "src/worker.js"
-compatibility_date = "2026-04-14"
-compatibility_flags = ["nodejs_compat"]
-workers_dev = true
+Session tokens are **homegrown signed cookies** using HMAC rather than JWT libraries, which matches the repo's lightweight/no-dependency style.
 
-[[d1_databases]]
-binding = "DB"
-database_name = "naimean-db"
-database_id = "0871f90d-f7e3-467a-a1f9-4e74ac8aef42"
+#### 3. Layout API
+The chapel scene can load and save hotspot/layout overrides through `/layout`.
 
-[[kv_namespaces]]
-binding = "KV"
-id = "dff7175059ce478eab8c910949ca330f"
-```
+This is important because it explains why the backend is not just a counter worker anymore: it also acts as a lightweight scene-configuration service.
 
-### API Token Permissions (naimean-api CI/CD)
+#### 4. Authenticated `/go/*` redirects
+The Worker can gate internal tool redirects behind a valid session and only redirect to HTTPS destinations.
 
-The `CLOUDFLARE_API_TOKEN` for that repo requires:
-- **Account-level:** Workers Scripts: Edit, D1: Edit, Account Settings: Read
-- **Zone-level (naimean.com):** Workers Routes: Edit
+### Backend security posture
 
----
+The Worker contains most of the repo's hardening work:
 
-## CI/CD Workflows (`.github/workflows/`)
+- signed OAuth and session cookies
+- Discord PKCE + state verification
+- PBKDF2 password hashing for email auth
+- same-origin logout guard
+- rate limiting by client IP and route bucket
+- environment-aware CORS allowlists
+- validation on layout payloads and redirect targets
+- strict API response headers
 
-### `github-pages.yml` — Main Pipeline
+### Current backend caveats
 
-Triggers: push to `main`/`master`, PRs against them, manual dispatch.
-
-| Job | When | Steps |
-|---|---|---|
-| `lint-and-check` | Always | `node --check` all 4 JS files; `node --test worker.test.js`; grep-validates both `wrangler.toml` files; asserts `/auth` exists in both `run_worker_first` and `PROXY_PATHS`; checks required static assets exist |
-| `deployment-check` | PR only | Verifies assets, configures GitHub Pages (dry-run) |
-| `dependency-review` | PR only | `actions/dependency-review-action` — catches vulnerable dependency additions |
-| `deploy` | Push to main only (after `lint-and-check`) | Uploads `public/` as a GitHub Pages artifact and deploys it — no build step, no node_modules |
-| `deploy-workers` | Push to main only (after `lint-and-check`) | Deploys both Cloudflare Workers via `cloudflare/wrangler-action@v3.15.0` using Wrangler v4 (`wranglerVersion: 4.84.0`) |
-
-### `copilot-setup-steps.yml`
-
-Sets up Node.js 22 for the Copilot coding agent environment. Only runs when the workflow file itself changes or on manual dispatch.
-
-### Required GitHub Secrets (for automated Wrangler deploy)
-
-| Secret | Purpose |
-|---|---|
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID (secret or Actions variable) |
-| `CLOUDFLARE_API_TOKEN` | Token with Workers deploy permissions |
+- `ROUTER_SECRET` is still documented in several docs and comments, but the current committed runtime code does **not** consume it
+- `/go/*` exists server-side, but the browser UI still contains legacy **hardcoded direct tool URLs** in `public/script.js`; the repo is in a transitional state between direct client links and fully server-controlled redirects
 
 ---
 
-## Local Development
+## Worker 3 — `naimean-api` (`naimean-api/src/worker.js`)
+
+This is a separate Cloudflare Worker routed at `naimean.com/api/*`.
+
+### Current endpoints
+
+| Method | Path | Current response |
+|---|---|---|
+| `GET` | `/api/health` | `{ "status": "ok", "timestamp": "..." }` |
+| `GET` | `/api/data` | Latest 50 D1-backed entries |
+| `POST` | `/api/data` | Creates a new entry from `{ title, content }` |
+
+### Why it matters
+
+This Worker is the cleanest example of the repo moving toward a more conventional API surface. Instead of shoving every future endpoint into the legacy fun-site backend, `/api/*` has its own deployment unit, D1 database, and KV binding.
+
+### Current Cloudflare resources for `naimean-api`
+
+- Worker name: `naimean-api`
+- Route: `naimean.com/api/*`
+- D1 database: `naimean-db`
+- KV namespace binding: `KV`
+
+### Important note
+
+`naimean-api` already has its own `package.json` to pin Wrangler, so the repo is still low-dependency, but it is no longer accurate to say there are **no** package manifests anywhere.
+
+---
+
+## Static frontend organization (`public/`)
+
+The site is organized as **scene pages**, not as reusable framework components.
+
+### Shared browser scripts
+
+- `public/script.js` — main homepage state machine and puzzle logic
+- `public/auth.js` — shared floating auth chip / popup login flow
+- `public/diagnostics.js` — hidden browser-side diagnostics panel
+
+### Core pages
+
+- `public/index.html` — Commodore 64 homepage
+- `public/chapel.html` — chapel scene, counter display, layout editor hooks
+- `public/bedroom_antechamber.html` — scene bridge between chapel and bedroom / level chain
+- `public/bedroom.html` — horizontally scrolling bedroom scene
+- `public/first_level.html` through `public/ninth_level.html` — image-based level sequence
+- `public/level_one.html` — alias entry point used by the antechamber
+- `public/auth_popup_complete.html` — popup OAuth completion bridge
+
+### Why the frontend feels monolithic
+
+`public/script.js` is large because the homepage is effectively one big **state machine**:
+
+- power-on sequence
+- boot input locking
+- Discord overlay timing
+- auth commands and status messaging
+- mini-game behavior
+- prank/rickroll flow
+- counter sync with local fallback
+- media timing and navigation handoff
+
+That code is less like a modern SPA and more like choreography for an interactive scene.
+
+---
+
+## Data model
+
+## Main backend D1 database: `barrelroll-counter-db`
+
+Created by `cloudflare-worker/schema.sql`.
+
+### Tables
+
+- `rickroll_counter`
+- `layout_overrides`
+- `registered_users`
+
+### Why these tables exist
+
+- `rickroll_counter` keeps the core joke/metric persistent
+- `layout_overrides` lets chapel hotspot tuning survive deploys and viewport changes
+- `registered_users` supports email-based auth without introducing a separate auth service
+
+## API Worker D1 database: `naimean-db`
+
+Created by `naimean-api/migrations/0000_create_entries.sql`.
+
+### Table
+
+- `entries`
+
+### Why it exists
+
+This supports the standalone `/api/data` service and gives the repo a cleaner lane for future app-style features.
+
+---
+
+## CI/CD and validation
+
+Workflow file:
+
+- `.github/workflows/github-pages.yml`
+
+### What CI does today
+
+- syntax checks with `node --check`
+- worker tests with `node --test cloudflare-worker/worker.test.js`
+- wrangler config field checks
+- route-alignment verification between router code and config
+- GitHub Pages deployment of `public/`
+- Worker deployment for:
+  - `naimeanv2`
+  - `barrelrollcounter-worker`
+  - `naimean-api`
+
+### Why CI is shaped this way
+
+There is no build pipeline for the main site, so CI focuses on what actually matters here:
+
+- JavaScript syntax safety
+- config drift safety
+- contract safety for the backend Worker
+- deployment authentication correctness
+
+---
+
+## What Felipe needs configured on the Cloudflare side
+
+This is the practical handoff summary.
+
+### Workers expected
+
+- `naimeanv2`
+- `barrelrollcounter-worker`
+- `naimean-api`
+
+### Routes/domains expected
+
+- `naimean.com` -> `naimeanv2`
+- `www.naimean.com` -> `naimeanv2`
+- `naimean.com/api/*` -> `naimean-api`
+
+### D1 resources expected
+
+- `barrelroll-counter-db`
+- `naimean-db`
+
+### KV resource expected
+
+- `KV` namespace bound to `naimean-api`
+
+### GitHub Actions secrets expected
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+### `barrelrollcounter-worker` secrets expected
+
+- `SESSION_SECRET`
+- `DISCORD_CLIENT_ID`
+- `DISCORD_CLIENT_SECRET`
+- `DISCORD_REDIRECT_URI`
+- `OWNER_DISCORD_ID`
+- `TOOL_URL_WHITEBOARD`
+- `TOOL_URL_CAPEX`
+- `TOOL_URL_SNOW`
+- `ROUTER_SECRET` *(still documented, though not consumed by current runtime code)*
+
+### Important Cloudflare caveats
+
+1. `/layout` is a real live proxied route and must stay configured with the router
+2. `DISCORD_REDIRECT_URI` must exactly match the callback configured in the Discord developer portal
+3. `naimean-api` has its own D1 + KV bindings and is deployed separately from the other two Workers even though it lives in the same repo
+4. the current `GET /api/health` response is `{ "status": "ok", "timestamp": "..." }`, so validation docs should not expect a different payload shape
+
+For the step-by-step ops checklist, use `FELIPE_HANDOFF.md`.
+
+---
+
+## Recommended reading order
+
+If someone is brand new to the repo, the best order is:
+
+1. `FELIPE_HANDOFF.md`
+2. `CLOUDFLARE_README.md`
+3. `wrangler.toml`
+4. `src/index.js`
+5. `cloudflare-worker/wrangler.toml`
+6. `cloudflare-worker/worker.js`
+7. `naimean-api/wrangler.toml`
+8. `naimean-api/src/worker.js`
+9. `public/index.html`
+10. `public/script.js`
+11. `PLAN.md`
+12. `UPDATE.md`
+
+---
+
+## Local validation commands
 
 ```bash
-# This repo has no package.json and no npm dependencies.
-# Only Wrangler CLI is needed for local Worker/dev/deploy commands.
-
-# Install Wrangler globally
-npm install -g wrangler
-
-# Login (local only — never commit credentials)
-wrangler login
-
-# Run edge router locally
-wrangler dev
-
-# Run counter worker locally
-cd cloudflare-worker && wrangler dev
-
-# Set secrets
-wrangler secret put SESSION_SECRET
-wrangler secret put DISCORD_CLIENT_ID
-wrangler secret put DISCORD_CLIENT_SECRET
-wrangler secret put DISCORD_REDIRECT_URI
-wrangler secret put ROUTER_SECRET
-wrangler secret put TOOL_URL_WHITEBOARD
-wrangler secret put TOOL_URL_CAPEX
-wrangler secret put TOOL_URL_SNOW
-
-# Initialize the D1 database (once)
-wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
-
-# Run worker unit tests
-node --test cloudflare-worker/worker.test.js
-
-# Syntax-check all JS files
 node --check src/index.js
 node --check cloudflare-worker/worker.js
 node --check public/script.js
 node --check public/diagnostics.js
+node --check naimean-api/src/worker.js
+node --check naimean-api/src/agents/naimean-agent.js
+node --test cloudflare-worker/worker.test.js
 ```
 
 ---
 
-## Deployment
+## Recommendation backlog
 
-| Component | Method | Trigger |
-|---|---|---|
-| Static files (`public/`) | GitHub Pages via `actions/deploy-pages` | Push to `main` |
-| `naimeanv2` edge worker | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` + Wrangler v4 | Push to `main` |
-| `barrelrollcounter-worker` | GitHub Actions `deploy-workers` job via `cloudflare/wrangler-action@v3.15.0` + Wrangler v4 | Push to `main` |
+### P0 — immediate cleanup / risk reduction
 
----
+- [ ] Finish the move away from client-side hardcoded tool URLs and make all tool launches go through `/go/*`
+- [ ] Decide whether `ROUTER_SECRET` should be implemented for real internal request validation or removed from docs/secrets inventory
+- [ ] Add Cloudflare WAF managed rules and edge rate limits for `/hit`, `/increment`, `/auth/*`, `/layout`, and `/api/*`
+- [ ] Put Zero Trust in front of any privileged/internal tool flows
+- [ ] Add Worker alerting / Logpush / dashboard checks so deploy failures and 5xx spikes are visible immediately
 
-## Cloudflare Workflow Optimization Notes
+### P1 — near-term stability and operations
 
-Recommended next Cloudflare-side improvements:
+- [ ] Add end-to-end coverage for Discord popup auth, chapel trapdoor auth gate, and `/layout` save/load behavior
+- [ ] Add API contract tests for `naimean-api`
+- [ ] Create a real staging/preview route or `workers.dev` validation path for auth and D1 changes
+- [ ] Normalize documentation so every handoff doc agrees on routes, payloads, and required secrets
+- [ ] Decide whether the `naimean-api` KV binding should be used soon or removed until needed
 
-1. **Use GitHub environments for deploy gates**  
-   Keep `cloudflare-workers` and `github-pages` as separate protected environments so production deploys can require approval if needed.
+### P2 — product and maintainability
 
-2. **Keep secrets at the worker that owns them**  
-   Put Discord OAuth secrets only on `barrelrollcounter-worker`; keep router config minimal.
-
-3. **Use preview/staging routes before production**  
-   Test changes on `workers.dev` or a staging hostname before merging to `main`, especially for auth and D1 changes.
-
-4. **Separate deploy validation from production deploy**  
-   Keep fast syntax/tests on PRs; reserve `wrangler deploy` for merge-to-main only.
-
-5. **Monitor auth and counter paths explicitly**  
-   Add Cloudflare alerts and WAF/rate-limit rules for `/auth/*`, `/hit`, and `/increment`.
-
-6. **Back up D1 before schema changes**  
-   Export `barrelroll-counter-db` before auth/layout schema changes so rollback is simple.
-
-For the Cloudflare-specific runbook, see `CLOUDFLARE_README.md`.
+- [ ] Break large scene logic into clearer modules where possible without introducing unnecessary build tooling
+- [ ] Move role/quick-link visibility rules out of client code if they are considered sensitive
+- [ ] Optimize media further (modern formats, lazy loading, preload strategy)
+- [ ] Add a clear restore runbook for D1 data and documented migration procedures
+- [ ] Add lightweight observability conventions such as request IDs and structured error logging
 
 ---
 
-## Diagnostics Console
+## One-sentence summary
 
-Activate on any page:
-- Add `?diag=1` to the URL
-- Run `NaimeanDiag.toggle()` from the browser console
-- Press `Ctrl+Shift+D`
-- Set `localStorage['naimean-diag'] = '1'` and reload
-
-Public API: `NaimeanDiag.log(msg)`, `NaimeanDiag.set(key, value)`, `NaimeanDiag.del(key)`, `NaimeanDiag.toggle()`, `NaimeanDiag.isActive()`
-
----
-
-## Release Checklist
-
-- [ ] Cross-browser smoke test (latest Chrome, Firefox, Safari, Edge)
-- [ ] Mobile verification (iOS Safari + Android Chrome)
-- [ ] Accessibility pass (keyboard navigation, focus visibility, ARIA/live regions, contrast)
-- [ ] Core regression pass (`power` boot flow, `/get`, `POST /hit`, `POST /increment`, `/auth/session`, `/go/*`)
-- [ ] CI status green (`lint-and-check`, worker tests, route alignment checks)
-- [ ] Deployment sanity check (GitHub Pages site load + Cloudflare worker endpoint response)
-
----
-
-## Security Backlog
-
-### P0 — Immediate
-
-- [ ] Add Cloudflare WAF managed rules + rate limiting on `/hit`, `/increment`, `/auth/*` endpoints
-- [ ] Add Cloudflare Turnstile (bot protection) on any user-input or upload endpoints
-- [ ] Add Cloudflare Zero Trust / One Access policies for admin/backdoor operations and any non-public dashboards
-- [x] Wire up automated `wrangler deploy` for both workers in GitHub Actions CI (requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secret/variable)
-
-### P1 — Near-Term
-
-- [ ] Add Cloudflare-focused CI checks: wrangler config validation, route smoke tests, endpoint contract checks on PRs
-- [ ] Add automated integration/e2e test coverage for core flows (boot, overlays, auth, shoutbox)
-- [ ] Add error logging and performance monitoring (client + edge) with alerting and SLOs
-- [x] Define a release checklist (cross-browser, mobile, accessibility, regression)
-- [ ] Implement server-side shoutbox: Discord-authenticated users post messages; persisted in D1 or R2; moderated; requires sanitization and escaping of all user-generated content
-- [ ] Move role-visibility config (`BOOT_ROLE_VISIBILITY_BY_USER`) out of public client JS — it currently leaks internal usernames; serve it from a session-authenticated API endpoint instead
-
-### P2 — Planned
-
-- [ ] Convert heavy images/video to modern formats (WebP/AVIF, optimized MP4/WebM)
-- [ ] Minify/compress CSS/JS; defer non-critical scripts; preload critical assets
-- [ ] Lazy-load non-critical media and overlays after first meaningful render
-- [ ] Define D1/R2 operational safeguards: migration strategy, scheduled exports, restore runbooks
-- [ ] Add edge observability baselines (Worker logs, latency/error SLOs, alerting for counter/API failures)
-- [ ] Standardize Worker compatibility dates and deployment controls across both workers
-- [ ] Improve onboarding with a short "how to interact" prompt on first visit
-
-### Completed ✅
-
-- [x] Strict edge security headers (CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-Content-Type-Options) on all responses
-- [x] Discord OAuth2 PKCE + state validation + short-lived signed session tokens
-- [x] POST-only counter writes (`/hit`, `/increment`) — legacy GET write path removed
-- [x] CSRF guard on `POST /auth/logout`
-- [x] CORS allowlisting tightened: production suffix matching disabled by default; explicit opt-in via env var
-- [x] `/auth` route added to `run_worker_first` in `wrangler.toml`; removed unimplemented `/board*` / `/uploads/*` entries
-- [x] Worker unit tests (14 tests, Node.js built-in test runner)
-- [x] CI: `lint-and-check` job with JS syntax validation, wrangler config checks, route-alignment assertion, unit test run, asset existence checks
-- [x] `dependency-review-action` on PRs
-- [x] Accessibility: `role="log"`, `aria-live="polite"`, `aria-label`s, `<main>` landmark, `fetchpriority="high"` on hero image, visible keyboard focus rings
-- [x] `hardcoded tool URLs removed from client JS; `/go/*` routes with session-auth gate handle redirects server-side
-- [x] Immutable cache headers on versioned media/font assets; `no-cache` on HTML
-- [x] Automated `wrangler deploy` for both workers in GitHub Actions CI (`deploy-workers` job using `cloudflare/wrangler-action@v3.15.0`; requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secret/variable)
-- [x] Defined release checklist for cross-browser, mobile, accessibility, regression, CI, and deployment sanity checks
-
----
-
-## Changelog
-
-### 2026-04-20 (hardening + CI + accessibility)
-- CSRF same-origin guard on `POST /auth/logout`
-- Fixed `wrangler.toml` `run_worker_first`: added `/auth`, removed unimplemented `/board*` and `/uploads/*`
-- Updated `cloudflare-worker/wrangler.toml` compatibility date to `2026-04-18`
-- Strengthened `src/index.js` edge security headers across all content types
-- Added `cloudflare-worker/worker.test.js` — 14 unit tests using Node.js built-in test runner
-- Tightened CORS allowlisting: production no longer applies hostname-suffix wildcard matching unless `CORS_ALLOW_PROD_ORIGIN_SUFFIXES=true`
-- Upgraded CI: `lint-and-check` job with JS syntax validation, wrangler config checks, route-alignment assertion, worker unit tests, asset checks; `dependency-review-action` on PRs
-- Accessibility: `role="log"`, `aria-live`, `aria-label`s, `<main>` landmark, `fetchpriority="high"`, keyboard focus rings
-
-### 2026-04-20
-- Shoutbox mini-game command flow (`C:\Naimean\play`) with number-guess gameplay and replay support
-- Discord OAuth integration foundation: `/auth/discord/*`, `/auth/session`, `/auth/logout` worker routes
-- Shoutbox auth command wiring (`login`, `logout`) and in-screen auth status/outcome messaging
-- Edge security headers (CSP/HSTS + baseline browser headers) across frontend and API worker responses
-- Counter write flow moved to POST-only; legacy GET write path removed
-
-### 2026-04-15
-- Data light moved down 3px, right 5px for precise placement
-- Power button border removed; glow effect retained; color blue-tinted to match Commodore palette
-- Animated shadow layer improvements
-
-### Earlier
-- Interactive power button and CRT-on animation
-- Animated shadow layer and flicker logic
-
----
-
-_Last updated: 2026-04-20_
+`naimeanV2.0` is a hybrid interactive website and Cloudflare edge application: a static, scene-driven frontend backed by small Workers that handle auth, persistence, routing, and operational control.

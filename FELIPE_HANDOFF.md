@@ -1,228 +1,297 @@
 # Felipe — Cloudflare Setup Handoff
 
-Hi Felipe! This document walks you through everything that needs to happen on the Cloudflare (and GitHub) side to get the full naimean.com stack running and secured. It's split into two phases: **Phase 1 — must-do before the next production push** and **Phase 2 — security hardening** (can be done shortly after the site is live, but shouldn't be left open for long).
-
-All the Workers and config files are already in this repository. Deployment to Cloudflare is automated via GitHub Actions on every push to `main`, so once the credentials and resources below are in place, everything deploys without manual intervention.
+Hi Felipe — this is the current handoff for the `naimean.com` stack as it exists in the repository today. It focuses on what you need to configure in Cloudflare/GitHub, what is already automated, and what is still in a transitional state.
 
 ---
 
-## Phase 1 — Must-Do Before the Next Deploy
+## Before you start: important current-state caveats
 
-These items are hard blockers. If they're missing, the automatic deploy job will fail or the site will be broken at runtime.
+These are worth knowing **before** you spend time wiring things up:
 
-### 1. GitHub Actions secrets
+1. **`/layout` is a live route now.** The router currently proxies `/get`, `/hit`, `/increment`, `/auth`, `/go`, and `/layout`.
+2. **`ROUTER_SECRET` is documented, but current runtime code does not consume it.** Keep that in mind if you are trying to trace an internal-auth mechanism that does not seem to exist.
+3. **`naimean-api` is part of this repo and deploys from this repo.** It is not an external service anymore.
+4. **The current `/api/health` payload is `{ "status": "ok", "timestamp": "..." }`.** If you validate against an older `ok/service` response shape, the check will look wrong even though the worker is healthy.
+5. **The backend supports `/go/*` redirects, but the browser still has legacy hardcoded tool URLs in `public/script.js`.** So the redirect worker path is present, but not yet the only route being used by the UI.
 
-The `deploy-workers` CI job needs two secrets to authenticate with Cloudflare. Add them in the repository at **Settings → Secrets and variables → Actions → New repository secret**:
+---
 
-| Secret name | Where to find the value |
+## Phase 1 — must-do before the next production push
+
+These items are hard blockers for a healthy deploy.
+
+### 1. Add the GitHub Actions deploy secrets
+
+In GitHub repository settings, add:
+
+| Secret | Purpose |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare dashboard → My Profile → API Tokens → Create Token → use the *Edit Cloudflare Workers* template and scope it to the `naimean.com` zone and your account |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → right-side panel on the Workers & Pages overview page |
+| `CLOUDFLARE_API_TOKEN` | Lets GitHub Actions run `wrangler deploy` |
+| `CLOUDFLARE_ACCOUNT_ID` | Identifies the Cloudflare account for Wrangler |
 
-> **Why this matters:** Every push to `main` triggers the `deploy-workers` job in `.github/workflows/github-pages.yml`. That job runs `wrangler deploy` for all three workers using these credentials. Without them the job exits with an authentication error and nothing reaches Cloudflare.
+### Why this matters
+
+`.github/workflows/github-pages.yml` deploys **three Workers** on push to `main`/`master`:
+
+- `naimeanv2`
+- `barrelrollcounter-worker`
+- `naimean-api`
+
+If either secret is missing, `deploy-workers` fails immediately.
 
 ---
 
-### 2. Verify all three Workers exist in Cloudflare
+### 2. Verify the three Worker names Cloudflare will deploy
 
-Go to **Workers & Pages** in the Cloudflare dashboard and confirm these three worker names exist (they will be created on first successful deploy, but their bindings need to be configured beforehand):
+Expected Worker names:
 
-| Worker name | Purpose |
+| Worker | Purpose |
 |---|---|
-| `naimeanv2` | Edge router — serves static assets and proxies API routes |
-| `barrelrollcounter-worker` | Counter + Discord OAuth + session + tool-launcher backend |
-| `naimean-api` | D1-backed REST API (`/api/*` routes on naimean.com) |
+| `naimeanv2` | edge router + static asset entrypoint |
+| `barrelrollcounter-worker` | counter/auth/layout/tool backend |
+| `naimean-api` | separate `/api/*` Worker |
 
-> **Why this matters:** `naimeanv2` calls `barrelrollcounter-worker` via a **service binding** named `COUNTER`. If that binding is absent or the target worker name is wrong the entire site's API layer (counter, auth, `/go/*` redirects) will return errors. The three worker names must exactly match what is in the `wrangler.toml` files.
+### Why this matters
 
----
-
-### 3. Create and bind the D1 databases
-
-Two D1 databases are needed.
-
-#### `barrelroll-counter-db`
-Used by `barrelrollcounter-worker` for the rickroll counter, layout overrides, and registered users.
-
-```bash
-# Create the database (one time)
-wrangler d1 create barrelroll-counter-db
-
-# Note the database_id in the output — it should match cloudflare-worker/wrangler.toml:
-#   database_id = "22277fbe-031d-4cad-8937-245309e981cd"
-# If the IDs differ, update cloudflare-worker/wrangler.toml and commit the change.
-
-# Apply the schema (one time)
-wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
-```
-
-#### `naimean-db`
-Used by `naimean-api` for the REST API entries table.
-
-```bash
-# Create the database (one time)
-wrangler d1 create naimean-db
-
-# Note the database_id — it should match naimean-api/wrangler.toml:
-#   database_id = "0871f90d-f7e3-467a-a1f9-4e74ac8aef42"
-# If the IDs differ, update naimean-api/wrangler.toml and commit.
-
-# Apply the schema (one time)
-wrangler d1 execute naimean-db --file=naimean-api/migrations/0000_create_entries.sql
-```
-
-> **Why this matters:** Both workers query their respective D1 databases on every request. If the tables don't exist the workers return 500 errors immediately. The schema files are already in the repo and are safe to run repeatedly (`CREATE TABLE IF NOT EXISTS`).
+- the router uses a service binding named `COUNTER` that must point at `barrelrollcounter-worker`
+- `naimean-api` has its own route and storage bindings and is deployed independently
 
 ---
 
-### 4. Create the KV namespace for `naimean-api`
+### 3. Verify the domain and route mapping
 
-```bash
-wrangler kv namespace create KV
-# Note the id in the output — it should match naimean-api/wrangler.toml:
-#   id = "dff7175059ce478eab8c910949ca330f"
-# Update the toml and commit if they differ.
-```
+Expected routing in Cloudflare:
 
-> **Why this matters:** `naimean-api`'s wrangler.toml declares a KV binding — if the namespace doesn't exist Wrangler will refuse to deploy.
-
----
-
-### 5. Set Worker secrets for `barrelrollcounter-worker`
-
-Run these from the repo root (from the `cloudflare-worker/` directory, or add `--name barrelrollcounter-worker`). Never commit the values.
-
-```bash
-# Signs session tokens and OAuth cookies — generate with: openssl rand -hex 32
-wrangler secret put SESSION_SECRET --name barrelrollcounter-worker
-
-# Signs internal requests between naimeanv2 and this worker — generate with: openssl rand -hex 32
-wrangler secret put ROUTER_SECRET --name barrelrollcounter-worker
-
-# From your Discord app at https://discord.com/developers/applications
-wrangler secret put DISCORD_CLIENT_ID --name barrelrollcounter-worker
-wrangler secret put DISCORD_CLIENT_SECRET --name barrelrollcounter-worker
-wrangler secret put DISCORD_REDIRECT_URI --name barrelrollcounter-worker
-# DISCORD_REDIRECT_URI value should be: https://naimean.com/auth/discord/callback
-
-# Restrict POST /layout to your Discord account (find your numeric ID in Discord:
-# Settings → Advanced → Developer Mode → right-click your username → Copy User ID)
-wrangler secret put OWNER_DISCORD_ID --name barrelrollcounter-worker
-
-# Destination URLs for the authenticated /go/* launcher
-wrangler secret put TOOL_URL_WHITEBOARD --name barrelrollcounter-worker
-wrangler secret put TOOL_URL_CAPEX --name barrelrollcounter-worker
-wrangler secret put TOOL_URL_SNOW --name barrelrollcounter-worker
-```
-
-> **Why this matters:** The auth flow (Discord OAuth PKCE, session cookies) and the `/go/*` tool-launcher redirects are entirely driven by these secrets. Missing any one of them results in auth failures or blank/errored redirects. `ROUTER_SECRET` must match on both the edge worker and this worker — they share it for internal request validation.
-
----
-
-### 6. Verify custom domain routing
-
-In the Cloudflare dashboard under **Workers & Pages → naimeanv2 → Settings → Domains & Routes**, confirm:
-
-| Route / Domain | Worker |
+| Route / domain | Target |
 |---|---|
 | `naimean.com` | `naimeanv2` |
 | `www.naimean.com` | `naimeanv2` |
+| `naimean.com/api/*` | `naimean-api` |
 
-For `naimean-api`, the route `naimean.com/api/*` is declared in `naimean-api/wrangler.toml` and will be registered automatically on deploy. Confirm it appears under **Workers Routes** for the `naimean.com` zone.
+### Why this matters
 
-> **Why this matters:** The edge worker is the entry point for the entire site. If the domain is pointing somewhere else (or not pointing at all), none of the site traffic hits the worker.
-
----
-
-## Phase 2 — Security Hardening
-
-These items protect the live site against abuse and lock down privileged operations. They don't block the initial deploy but should be completed promptly after the site is confirmed working.
-
-### 8. Enable WAF managed rules + rate limiting
-
-In the Cloudflare dashboard under **Security → WAF**:
-
-- Enable **Cloudflare Managed Ruleset** for the `naimean.com` zone.
-- Add a **Rate Limiting rule** targeting:
-  - `POST /hit` and `POST /increment` — limit to ~10 requests/minute per IP to prevent counter flooding.
-  - `GET /auth/*` and `POST /auth/*` — limit to ~20 requests/minute per IP to protect the OAuth flow.
-
-> **Why this matters:** The rickroll counter endpoints are publicly accessible and unauthenticated. Without rate limiting, anyone can script thousands of hits per second. The auth endpoints are a target for credential-stuffing and OAuth abuse.
+If the root domain points somewhere else, none of the auth/counter/layout behavior hits the router Worker.
 
 ---
 
-### 9. Apply Cloudflare Zero Trust access policies for admin operations
+### 4. Create and initialize the storage resources
 
-In **Zero Trust → Access → Applications**, create a policy that restricts access to any admin or internal endpoints (e.g., `/go/*` tool-launcher, any future `/admin/*` routes) to your team's identity provider or email list.
+## A. `barrelroll-counter-db`
 
-> **Why this matters:** The `/go/*` routes redirect authenticated users to internal tools (whiteboard, CapEx, ServiceNow). While they require a valid session cookie today, Zero Trust provides a defense-in-depth layer so internal tools are never exposed directly to unauthenticated internet traffic, even if a session bug is introduced.
-
----
-
-### 10. Add Cloudflare Turnstile bot protection on user-input endpoints
-
-When the shoutbox (planned server-side feature in the security backlog) is implemented, add a [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) widget to the submission form. The site key and secret key are obtained from the Cloudflare dashboard under **Turnstile**.
-
-> **Why this matters:** The shoutbox will accept user-generated content stored in D1. Without bot protection, it becomes a spam/abuse target on day one.
-
----
-
-### 11. Set up D1 backup/export cadence
-
-D1 does not automatically export or snapshot data by default. Set up a recurring task (manual or via a Cloudflare Cron Trigger worker) to export the `barrelroll-counter-db` database periodically:
+Used by `barrelrollcounter-worker`.
 
 ```bash
-# Manual export (run periodically or before any schema migration)
-wrangler d1 export barrelroll-counter-db --output=backup-$(date +%Y%m%d).sql
+wrangler d1 create barrelroll-counter-db
+wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
 ```
 
-Store exports in R2 (`radley-gallery` bucket or a dedicated backup bucket) or a secure external location.
+What it stores:
 
-> **Why this matters:** Auto-deploy on every `main` push means a bad schema migration could run against production immediately. Having a recent export means you can restore to a known-good state without data loss.
+- `rickroll_counter`
+- `layout_overrides`
+- `registered_users`
 
----
+Expected `database_id` in `cloudflare-worker/wrangler.toml`:
 
-### 12. Enable Worker alerting and basic monitoring
+- `22277fbe-031d-4cad-8937-245309e981cd`
 
-In the Cloudflare dashboard under **Workers & Pages → naimeanv2 (or barrelrollcounter-worker) → Metrics**:
+## B. `naimean-db`
 
-- Set up **email or webhook notifications** for error rate spikes (Workers Analytics — `5xx` rate).
-- Consider enabling **Logpush** to R2 or an external log aggregator for persistent Worker logs.
+Used by `naimean-api`.
 
-> **Why this matters:** The deploy pipeline is fully automated — a bad deploy goes live immediately. Alerting gives you early warning before a user reports an outage.
+```bash
+wrangler d1 create naimean-db
+wrangler d1 execute naimean-db --file=naimean-api/migrations/0000_create_entries.sql
+```
 
----
+Expected `database_id` in `naimean-api/wrangler.toml`:
 
-## Quick Reference: All Secrets Summary
+- `0871f90d-f7e3-467a-a1f9-4e74ac8aef42`
 
-| Worker | Secret | Notes |
-|---|---|---|
-| `barrelrollcounter-worker` | `SESSION_SECRET` | HMAC key for session/OAuth cookies; `openssl rand -hex 32` |
-| `barrelrollcounter-worker` | `ROUTER_SECRET` | Shared with edge worker for internal auth; `openssl rand -hex 32` |
-| `barrelrollcounter-worker` | `DISCORD_CLIENT_ID` | From Discord developer portal |
-| `barrelrollcounter-worker` | `DISCORD_CLIENT_SECRET` | From Discord developer portal |
-| `barrelrollcounter-worker` | `DISCORD_REDIRECT_URI` | `https://naimean.com/auth/discord/callback` |
-| `barrelrollcounter-worker` | `OWNER_DISCORD_ID` | Your numeric Discord user ID; restricts `POST /layout` to owner only |
-| `barrelrollcounter-worker` | `TOOL_URL_WHITEBOARD` | Internal whiteboard tool URL |
-| `barrelrollcounter-worker` | `TOOL_URL_CAPEX` | Internal CapEx tool URL |
-| `barrelrollcounter-worker` | `TOOL_URL_SNOW` | ServiceNow URL |
-| GitHub Actions | `CLOUDFLARE_API_TOKEN` | Wrangler deploy permissions |
-| GitHub Actions | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+## C. KV namespace for `naimean-api`
 
----
+```bash
+wrangler kv namespace create KV
+```
 
-## Verification Checklist
+Expected `id` in `naimean-api/wrangler.toml`:
 
-After completing Phase 1, run through these checks to confirm the stack is healthy:
+- `dff7175059ce478eab8c910949ca330f`
 
-- [ ] Push a trivial commit to `main` → GitHub Actions `deploy-workers` job passes (green)
-- [ ] `curl https://naimean.com/get` → returns `{"value": 0}` (or current counter)
-- [ ] `curl -X POST https://naimean.com/hit` → returns incremented counter value
-- [ ] `curl https://naimean.com/auth/session` → returns `{"authenticated": false}` (not a 500)
-- [ ] `curl https://naimean.com/auth/discord/login` → redirects to Discord OAuth (not a 500)
-- [ ] `curl https://naimean.com/api/health` → returns `{"ok": true, "service": "naimean-api", ...}`
-- [ ] `naimean.com` loads the C64 homepage in the browser
+### Why this matters
+
+Wrangler deploys fail if required D1/KV bindings are missing, and runtime requests fail if the tables do not exist.
 
 ---
 
-_Last updated: 2026-04-21_
+### 5. Set Worker secrets on `barrelrollcounter-worker`
+
+```bash
+# Session / OAuth signing
+wrangler secret put SESSION_SECRET --name barrelrollcounter-worker
+
+# Discord OAuth app
+wrangler secret put DISCORD_CLIENT_ID --name barrelrollcounter-worker
+wrangler secret put DISCORD_CLIENT_SECRET --name barrelrollcounter-worker
+wrangler secret put DISCORD_REDIRECT_URI --name barrelrollcounter-worker
+
+# Restrict POST /layout to a specific Discord account (optional but recommended)
+wrangler secret put OWNER_DISCORD_ID --name barrelrollcounter-worker
+
+# Redirect destinations for authenticated /go/* paths
+wrangler secret put TOOL_URL_WHITEBOARD --name barrelrollcounter-worker
+wrangler secret put TOOL_URL_CAPEX --name barrelrollcounter-worker
+wrangler secret put TOOL_URL_SNOW --name barrelrollcounter-worker
+
+# Still documented in repo comments / docs, but not consumed by current runtime code
+wrangler secret put ROUTER_SECRET --name barrelrollcounter-worker
+```
+
+### Critical value to get exactly right
+
+`DISCORD_REDIRECT_URI` should match the Discord developer portal callback **exactly**, typically:
+
+- `https://naimean.com/auth/discord/callback`
+
+---
+
+### 6. Run the practical verification checks
+
+After deploy succeeds, confirm:
+
+- [ ] `curl https://naimean.com/get` returns JSON with `value`
+- [ ] `curl -X POST https://naimean.com/hit` increments successfully
+- [ ] `curl https://naimean.com/auth/session` returns JSON, not a 500
+- [ ] `curl https://naimean.com/auth/discord/login` redirects to Discord
+- [ ] `curl 'https://naimean.com/layout?page=chapel'` returns JSON
+- [ ] `curl https://naimean.com/api/health` returns `{ "status": "ok", "timestamp": "..." }`
+- [ ] the homepage loads at `https://naimean.com`
+- [ ] the latest `deploy-workers` GitHub Actions job is green
+
+---
+
+## Phase 2 — security and operations hardening
+
+These items should be done soon after the basic stack is live.
+
+### 7. Put WAF and edge rate limits in front of the dynamic routes
+
+Recommended first targets:
+
+- `POST /hit`
+- `POST /increment`
+- `GET /auth/*`
+- `POST /auth/*`
+- `GET /layout`
+- `POST /layout`
+- `/api/*`
+
+### Why this matters
+
+The Worker already has application-level rate limiting, but Cloudflare edge controls give better abuse handling and reduce load before requests even reach the Worker.
+
+---
+
+### 8. Add Zero Trust / Access controls for privileged internal flows
+
+Best candidates:
+
+- `/go/*`
+- any future admin route
+- any future layout/admin tooling surface
+
+### Why this matters
+
+Even with session-based authorization, Zero Trust gives a second gate for internal resources.
+
+---
+
+### 9. Add monitoring, alerting, and log retention
+
+Recommended:
+
+- Workers error-rate alerts
+- log retention via Logpush or an external aggregator
+- explicit monitoring of:
+  - `/get`
+  - `/hit`
+  - `/auth/session`
+  - `/layout`
+  - `/api/health`
+
+### Why this matters
+
+This repo auto-deploys on push to `main`, so fast failure visibility matters.
+
+---
+
+### 10. Add D1 backup/export cadence for both databases
+
+```bash
+wrangler d1 export barrelroll-counter-db --output=barrelroll-counter-db-$(date +%Y%m%d).sql
+wrangler d1 export naimean-db --output=naimean-db-$(date +%Y%m%d).sql
+```
+
+### Why this matters
+
+If a schema change or bad deploy lands, restores are much easier if exports already exist.
+
+---
+
+### 11. Set up a preview/staging validation path
+
+Recommended options:
+
+- workers.dev validation for pre-merge testing
+- a staging hostname under Cloudflare
+- protected GitHub environments for production deploy approval
+
+### Why this matters
+
+Auth, D1, and route changes are the highest-risk changes in this repo. A preview lane lowers production risk.
+
+---
+
+### 12. Close the current docs/runtime gaps
+
+Recommended cleanup items:
+
+- decide whether to implement or remove `ROUTER_SECRET`
+- update the frontend so all tool launches consistently use `/go/*`
+- keep all docs aligned on `/layout`, `naimean-api`, and `/api/health`
+
+### Why this matters
+
+Right now the repo is understandable, but a few transitional details can confuse ops handoff if they are not called out explicitly.
+
+---
+
+## Quick-reference summary
+
+### GitHub secrets
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+### Worker secrets
+
+- `SESSION_SECRET`
+- `DISCORD_CLIENT_ID`
+- `DISCORD_CLIENT_SECRET`
+- `DISCORD_REDIRECT_URI`
+- `OWNER_DISCORD_ID`
+- `TOOL_URL_WHITEBOARD`
+- `TOOL_URL_CAPEX`
+- `TOOL_URL_SNOW`
+- `ROUTER_SECRET` *(documented, but not consumed by current runtime code)*
+
+### Must-exist Cloudflare resources
+
+- Workers: `naimeanv2`, `barrelrollcounter-worker`, `naimean-api`
+- D1: `barrelroll-counter-db`, `naimean-db`
+- KV: `KV` bound to `naimean-api`
+- Routes: `naimean.com`, `www.naimean.com`, `naimean.com/api/*`
+
+---
+
+_Last updated: 2026-04-23_
