@@ -30,6 +30,19 @@ function hasFileExtension(pathname) {
   return /\.[^/]+$/.test(pathname);
 }
 
+function buildHtmlFallbackPaths(pathname) {
+  if (pathname === '/' || hasFileExtension(pathname)) {
+    return [];
+  }
+
+  const normalizedPath = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  if (!normalizedPath || normalizedPath === '/') {
+    return [];
+  }
+
+  return [`${normalizedPath}.html`, `${normalizedPath}/index.html`];
+}
+
 function applyEdgeSecurityHeaders(response, isSecureTransport, pathname) {
   const headers = new Headers(response.headers);
   const contentType = (headers.get('content-type') || '').toLowerCase();
@@ -80,13 +93,17 @@ export default {
       if (
         upstreamResponse.status === 404
         && request.method === 'GET'
-        && url.pathname !== '/'
-        && !url.pathname.endsWith('/')
-        && !hasFileExtension(url.pathname)
       ) {
-        const htmlUrl = new URL(request.url);
-        htmlUrl.pathname = `${url.pathname}.html`;
-        upstreamResponse = await env.ASSETS.fetch(new Request(htmlUrl.toString(), request));
+        const htmlFallbackPaths = buildHtmlFallbackPaths(url.pathname);
+        for (const fallbackPath of htmlFallbackPaths) {
+          const htmlUrl = new URL(request.url);
+          htmlUrl.pathname = fallbackPath;
+          const fallbackResponse = await env.ASSETS.fetch(new Request(htmlUrl.toString(), request));
+          if (fallbackResponse.status !== 404) {
+            upstreamResponse = fallbackResponse;
+            break;
+          }
+        }
       }
     }
 
