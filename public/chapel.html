@@ -2979,10 +2979,11 @@
     async function requestDiscordAuthSession() {
       if (window.NaimeanAuth && typeof window.NaimeanAuth.requireDiscordAuth === 'function') {
         const result = await window.NaimeanAuth.requireDiscordAuth({ returnToPath: TRAPDOOR_DESTINATION_PATH });
+        const authResult = result && typeof result === 'object' ? result : {};
         return {
-          status: result && result.status ? result.status : 'completed',
-          nextPath: result && typeof result.nextPath === 'string' ? result.nextPath : TRAPDOOR_DESTINATION_PATH,
-          session: result && result.session ? result.session : { authenticated: false, user: null },
+          status: authResult.status || 'completed',
+          nextPath: typeof authResult.nextPath === 'string' ? authResult.nextPath : TRAPDOOR_DESTINATION_PATH,
+          session: authResult.session || { authenticated: false, user: null },
         };
       }
       window.location.assign(DISCORD_AUTH_GATE_URL);
@@ -3025,7 +3026,7 @@
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
-        window.location.assign(typeof destinationPath === 'string' && destinationPath ? destinationPath : TRAPDOOR_DESTINATION_PATH);
+        window.location.assign(destinationPath || TRAPDOOR_DESTINATION_PATH);
       }, FADE_TRANSITION_DURATION_MS);
     }
 
