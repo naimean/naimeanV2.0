@@ -633,7 +633,7 @@
     }
 
     /* Dashed highlight on the currently selected hotspot element. */
-    .hotspot-selected {
+    body.hotspot-tools-active .hotspot-selected {
       outline: 2px dashed rgba(255, 220, 0, 0.9) !important;
       outline-offset: 2px !important;
       z-index: var(--chapel-selected-element-z-index) !important;
@@ -787,7 +787,7 @@
           <option value="__none__">no hotspot</option>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
-          <option value="ceiling-tools-btn">ceiling tools hotspot</option>
+          <option value="ceiling-tools-btn">tools toggle button</option>
           <option value="crusty-button">crusty hotspot</option>
           <option value="goose-button">goose hotspot</option>
           <option value="morty-button">morty hotspot</option>
@@ -825,7 +825,7 @@
           <option value="__none__">no hotspot</option>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
-          <option value="ceiling-tools-btn">ceiling tools hotspot</option>
+          <option value="ceiling-tools-btn">tools toggle button</option>
           <option value="crusty-button">crusty hotspot</option>
           <option value="goose-button">goose hotspot</option>
           <option value="morty-button">morty hotspot</option>
@@ -890,6 +890,7 @@
         </div>
         <div class="hotspot-tool-grid">
           <button type="button" data-font-size-reset>reset</button>
+          <button type="button" data-hotspot-tools-hide>hide</button>
         </div>
         <div class="hotspot-tool-meta" id="font-tool-meta" aria-live="polite">Counter font size uses the default style.</div>
       </section>
@@ -1702,25 +1703,41 @@
       // ── Tool activation ──────────────────────────────────────────────────────
       // Toggle visibility with Ctrl+Shift+H or window.NaimeanLayout.toggle().
       const LAYOUT_TOOLS_KEY = 'naimean-hotspot-tools';
+      let ownerToolsAutoShown = false;
+      let ownerToolsManuallyHidden = false;
       function isToolsActive() {
         try { return localStorage.getItem(LAYOUT_TOOLS_KEY) === '1'; } catch (_) { return false; }
       }
-      function setToolsActive(on) {
-        try { on ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
-        document.body.classList.toggle('hotspot-tools-active', on);
+      function setToolsActive(on, options) {
+        const nextToolsActive = Boolean(on);
+        const isManualToggle = Boolean(options && options.manual);
+        if (isManualToggle) {
+          ownerToolsManuallyHidden = !nextToolsActive;
+        } else if (nextToolsActive) {
+          ownerToolsManuallyHidden = false;
+        }
+        try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
+        if (!nextToolsActive) {
+          const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+          stopSelectedTargetDrag();
+          if (selectedTarget) {
+            clearResizeCursorClasses(selectedTarget);
+          }
+        }
+        document.body.classList.toggle('hotspot-tools-active', nextToolsActive);
         syncTransRickPresentation();
       }
       setToolsActive(isToolsActive());
       document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.shiftKey && !e.altKey && e.key === 'H') {
           e.preventDefault();
-          setToolsActive(!isToolsActive());
+          setToolsActive(!isToolsActive(), { manual: true });
         }
       });
       const ceilingToolsButton = document.getElementById('ceiling-tools-btn');
       if (ceilingToolsButton) {
         ceilingToolsButton.addEventListener('click', function () {
-          setToolsActive(!isToolsActive());
+          setToolsActive(!isToolsActive(), { manual: true });
         });
       }
 
@@ -1733,6 +1750,26 @@
         const username = typeof session.user.username === 'string' ? session.user.username.trim().toLowerCase() : '';
         const displayName = typeof session.user.displayName === 'string' ? session.user.displayName.trim().toLowerCase() : '';
         return HOTSPOT_OWNER_DISCORD_ALIASES.has(username) || HOTSPOT_OWNER_DISCORD_ALIASES.has(displayName);
+      }
+      function showToolsByDefaultForOwner(session) {
+        if (!session || ownerToolsAutoShown || ownerToolsManuallyHidden) {
+          return;
+        }
+        if (isOwnerDiscordSession(session) && !isToolsActive()) {
+          ownerToolsAutoShown = true;
+          setToolsActive(true, { manual: false });
+        }
+      }
+      const authApi = window.NaimeanAuth;
+      if (authApi) {
+        if (typeof authApi.getSession === 'function') {
+          showToolsByDefaultForOwner(authApi.getSession());
+        }
+        if (typeof authApi.onSessionChange === 'function') {
+          authApi.onSessionChange(function (session) {
+            showToolsByDefaultForOwner(session);
+          });
+        }
       }
       function hasTouchCapability() {
         if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
@@ -1763,7 +1800,7 @@
         getLatestAuthSession()
           .then(function (session) {
             if (isOwnerDiscordSession(session)) {
-              setToolsActive(true);
+              setToolsActive(true, { manual: true });
             }
           })
           .catch(function (error) {
@@ -2122,6 +2159,13 @@
             renderCounterFontToolMeta();
           });
         }
+
+        const hideToolsBtn = fontTool.querySelector('[data-hotspot-tools-hide]');
+        if (hideToolsBtn) {
+          hideToolsBtn.addEventListener('click', function () {
+            setToolsActive(false, { manual: true });
+          });
+        }
       }
 
       // ── Save button ──────────────────────────────────────────────────────────
@@ -2292,12 +2336,12 @@
     }
 
     // ── Public API ───────────────────────────────────────────────────────────────
-    window.NaimeanLayout = {
-      toggle: function () {
-        const isActive = document.body.classList.contains('hotspot-tools-active');
-        setToolsActive(!isActive);
-      },
-    };
+      window.NaimeanLayout = {
+        toggle: function () {
+          const isActive = document.body.classList.contains('hotspot-tools-active');
+          setToolsActive(!isActive, { manual: true });
+        },
+      };
 
     function syncTransRickPresentation() {
       if (!chapelTransRick) {
