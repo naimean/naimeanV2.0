@@ -1851,33 +1851,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     if (bootForm && bootVideo && bootSubmit) {
-      bootForm.addEventListener('submit', async function(e) {
+      bootForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        if (screenOn && !puzzleSolved) {
-          const normalizedUser = getNormalizedBootUser();
-          if (!isKnownBootUser(normalizedUser)) {
-            playWrongSound();
-            const currentSession = await refreshAuthSession();
-            if (!isDiscordSession(currentSession)) {
-              // Not authenticated — start OAuth after the wrong-sound cue, then
-              // continue through the nedry gate flow once auth completes.
-              beginJoinDiscordWorkflow();
-            } else {
-              resetBootInput();
-              updateBootQuickLinkVisibility();
-            }
-            return;
-          }
-          if (joinDiscordWorkflowRunning) {
-            return;
-          }
-          joinDiscordWorkflowRunning = true;
-          try {
-            await runNedryGateSequence();
-          } finally {
-            joinDiscordWorkflowRunning = false;
-          }
-        }
+        playWrongSound();
       });
     }
 
