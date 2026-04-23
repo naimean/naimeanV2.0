@@ -461,9 +461,6 @@ test('contract: POST /increment creates and increments when counter seed row is 
         bind(..._args) {
           return {
             async first() {
-              if (normalizedSql.startsWith('UPDATE')) {
-                return null;
-              }
               if (normalizedSql.startsWith('INSERT')) {
                 return { value: 1 };
               }
