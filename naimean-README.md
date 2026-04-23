@@ -4,82 +4,81 @@
 - **Repository:** `naimean/naimeanV2.0`
 - **Type:** interactive personal website + Cloudflare edge application
 - **Frontend style:** vanilla HTML/CSS/JS scene pages
-- **Primary platform:** Cloudflare Workers + D1
-- **Static delivery:** GitHub Pages artifact served through Cloudflare `ASSETS`
+- **Primary platform:** Cloudflare Workers + D1 + GitHub Pages
+- **Cloudflare account:** `Naimean@hotmail.com's Account` (`85d52ed1ca1933df067bf0c167d65a84`)
 
 ---
 
 ## Professional summary
 
-`naimeanV2.0` is a hybrid repo that combines a hand-built interactive web experience with production-minded Cloudflare edge services.
+`naimeanV2.0` is a hybrid repo: a handcrafted interactive site wrapped in a small but real Cloudflare application.
 
-For visitors, it feels like a retro Commodore 64-themed puzzle site.
-For operators, it behaves like a small edge application with:
+For visitors it feels like a retro C64-themed puzzle site.
+For operators it behaves like an edge stack with:
 
 - Worker-based routing
-- D1-backed persistence
+- two D1-backed services
+- one KV-backed API deployment footprint
 - Discord OAuth + email auth
-- authenticated redirect handling
-- route/config validation in CI
-- Cloudflare deployment automation
+- authenticated tool redirects
+- Cloudflare-first deployment automation
+- documentation-heavy infra handoff requirements
 
 ---
 
 ## Core story of the codebase
 
-This repository did **not** start life as a conventional app. The frontend scenes came first, and the Workers were added as the site needed durable state, auth, and deploy-time control.
+The static scenes came first. Workers were added only where the site needed secrets, persistence, auth, redirects, or route control. That history still explains the repo:
 
-That history explains the structure:
-
-- the **frontend** remains static, handcrafted, and scene-driven
-- the **Workers** own the parts that need secrets, cookies, redirects, or storage
-- the **docs** matter more than usual because Cloudflare bindings/routes are part of the architecture, not just deployment details
+- the **frontend** stays static and handcrafted
+- the **Workers** own state, auth, redirects, and APIs
+- the **docs** matter because Cloudflare resources are part of the architecture, not just deployment trivia
 
 ---
 
 ## User journey snapshot
 
 1. User lands on `public/index.html`
-2. User powers on the C64 scene and interacts with the boot/shoutbox flow
-3. User can trigger Discord/email auth, a mini-game, or the prank/rickroll path
-4. The flow transitions into `chapel.html`, then `bedroom_antechamber.html`, then `bedroom.html` or the level chain
-5. Persistent state is served through Workers rather than embedded directly in the static site
+2. User interacts with the power-on / boot / shoutbox flow
+3. User can trigger Discord auth, email auth, mini-game flows, or the prank/rickroll path
+4. The experience moves through chapel, bedroom antechamber, bedroom, and level pages
+5. Persistent state and privileged redirects are served through Workers instead of embedded in the static site
 
 ---
 
 ## Technical stack
 
 - **Runtime:** Cloudflare Workers
-- **Databases:** Cloudflare D1 (`barrelroll-counter-db`, `naimean-db`)
-- **Additional binding:** Workers KV for `naimean-api`
-- **Frontend:** vanilla HTML/CSS/JavaScript
+- **Databases:** D1 (`barrelroll-counter-db`, `naimean-db`)
+- **KV:** `naimean-kv` bound to `naimean-api`; `naimean-sessions` exists but is currently unbound
+- **Frontend:** vanilla HTML/CSS/JS
 - **Tests:** Node built-in test runner
 - **Validation:** `node --check`
-- **CI/CD:** GitHub Actions + Wrangler deploys + GitHub Pages deploy
+- **CI/CD:** GitHub Actions + Wrangler + GitHub Pages
 
 ---
 
 ## Component inventory
 
 ### 1) Edge router Worker (`src/index.js`)
-**Role:** production entrypoint for most traffic.
+**Role:** production entrypoint for most site traffic.
 
 **Responsibilities:**
 - proxies `/get`, `/hit`, `/increment`, `/auth`, `/go`, and `/layout`
 - serves all other paths from `ASSETS`
-- adds document/API CSP and baseline browser hardening headers
-- provides extensionless HTML fallback for static pages
+- adds CSP and baseline security headers
+- provides extensionless `.html` fallback
 
 **Why it matters:**
-This Worker keeps the domain controlled at the edge without mixing business logic into the static site.
+It keeps Cloudflare domain control centralized without mixing business logic into the static site.
 
 ---
 
 ### 2) Router config (`wrangler.toml`)
-**Role:** binds `ASSETS`, `COUNTER`, and worker-first paths.
+**Role:** binds `ASSETS`, `COUNTER`, and worker-first routes.
 
-**Important current fact:**
-`run_worker_first` must match `PROXY_PATHS` in `src/index.js`, and CI checks that with `scripts/check-route-alignment.js`.
+**Important fact:**
+`run_worker_first` must match `PROXY_PATHS`, and CI checks that with `scripts/check-route-alignment.js`.
 
 ---
 
@@ -95,16 +94,16 @@ This Worker keeps the domain controlled at the edge without mixing business logi
 - authenticated `/go/*` redirects
 - rate limiting, CORS, payload validation, and API security headers
 
-**Why it matters:**
-This is where the repo stopped being “just a static site” and became a real edge app.
+**Important operational fact:**
+The Worker depends on D1 plus secrets, and four secrets are still missing in the current Cloudflare handoff: `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW`.
 
 ---
 
 ### 4) Main backend config (`cloudflare-worker/wrangler.toml`)
-**Role:** binds D1 and documents required secrets.
+**Role:** binds `barrelroll-counter-db`.
 
 **Important caveat:**
-`ROUTER_SECRET` is still documented here, but current runtime code does not consume it.
+`ROUTER_SECRET` is still documented in older comments/docs, but current runtime code does not consume it.
 
 ---
 
@@ -115,16 +114,15 @@ This is where the repo stopped being “just a static site” and became a real 
 - `registered_users`
 
 **Why it matters:**
-This schema shows the three durable concerns the main backend currently owns: metric state, scene layout state, and local account state.
+These are the repo's primary durable concerns: metric state, scene layout state, and email-auth account state.
 
 ---
 
 ### 6) Main backend tests (`cloudflare-worker/worker.test.js`)
-**Role:** regression tests for auth/counter/layout helpers and endpoint contracts.
+**Role:** regression and contract tests for auth/counter/layout helpers and routes.
 
 **Coverage themes:**
 - cookies and token helpers
-- CORS/origin logic
 - method enforcement
 - rate limiting
 - Discord login redirect behavior
@@ -142,15 +140,17 @@ This schema shows the three durable concerns the main backend currently owns: me
 - `POST /api/data`
 
 **Why it matters:**
-This is the repo’s cleaner API lane and signals a move toward separating fun-site backend logic from general app API logic.
+It is the repo's cleaner API lane and owns its own D1 + KV footprint.
 
 ---
 
-### 8) API Worker config (`naimean-api/wrangler.toml` + `naimean-api/package.json`)
-**Role:** defines route, D1, KV, and Wrangler tooling for `naimean-api`.
+### 8) API Worker config (`naimean-api/wrangler.toml`)
+**Role:** defines route, D1, and KV bindings.
 
-**Important current fact:**
-The repo is still lightweight, but it is no longer accurate to describe it as having no package manifests anywhere because `naimean-api/package.json` exists.
+**Current infra facts:**
+- D1: `naimean-db` (`0871f90d-f7e3-467a-a1f9-4e74ac8aef42`)
+- KV: `naimean-kv` (`dff7175059ce478eab8c910949ca330f`)
+- secret: `API_TOKEN` exists operationally and should stay documented in handoff docs
 
 ---
 
@@ -158,24 +158,22 @@ The repo is still lightweight, but it is no longer accurate to describe it as ha
 **Role:** main interactive shell.
 
 **Contains:**
-- C64 artwork
-- power button
-- boot screen
+- C64 artwork and overlays
+- power button / boot screen
 - shoutbox area
 - Discord overlay/widget frame
-- media overlays
 - auth/debug/main script includes
 
 ---
 
 ### 10) Main scene logic (`public/script.js`)
-**Role:** orchestrates the homepage state machine.
+**Role:** homepage state machine.
 
 **Current domains of logic:**
 - power state
 - boot/shoutbox command parsing
 - counter sync with local fallback
-- Discord/email auth integration hooks
+- auth integration hooks
 - mini-game behavior
 - prank/rickroll flow
 - scene transitions
@@ -187,33 +185,23 @@ The UI still contains direct hardcoded tool destinations even though `/go/*` exi
 ---
 
 ### 11) Shared auth UI (`public/auth.js`)
-**Role:** floating auth chip, popup login flow, session refresh hooks, logout interaction.
-
-**Why it matters:**
-This keeps auth behavior reusable across otherwise-static pages.
+**Role:** floating auth chip, popup login flow, logout/session refresh hooks.
 
 ---
 
 ### 12) Diagnostics (`public/diagnostics.js`)
-**Role:** hidden terminal-style in-browser diagnostics panel.
-
-**Activation:**
-- `?diag=1`
-- `Ctrl+Shift+D`
-- `localStorage['naimean-diag'] = '1'`
-- `NaimeanDiag.toggle()`
+**Role:** hidden in-browser diagnostics panel.
 
 ---
 
 ### 13) Scene pages (`public/*.html`)
 **Notable pages:**
-- `chapel.html` — counter display, continuation behavior, layout tooling hooks
-- `bedroom_antechamber.html` — transition scene and route split to bedroom / level path
-- `bedroom.html` — horizontal-scroll room scene
-- `first_level.html` through `ninth_level.html` — image + nav progression
+- `chapel.html`
+- `bedroom_antechamber.html`
+- `bedroom.html`
+- `first_level.html` through `ninth_level.html`
 
-**Why they matter:**
-These pages show that the frontend is organized around scenes and hotspots, not components.
+These pages show the frontend is organized around scenes and hotspots, not components.
 
 ---
 
@@ -224,17 +212,17 @@ These pages show that the frontend is organized around scenes and hotspots, not 
 - `node --check`
 - `node --test cloudflare-worker/worker.test.js`
 - wrangler field checks
-- route alignment checks
-- GitHub Pages deployment
+- route-alignment checks
+- GitHub Pages deploy
 - Worker deploys for all three Workers
 
 ---
 
 ### 15) Documentation set
-- `README.md` — main repository explanation and current recommendation backlog
-- `CLOUDFLARE_README.md` — Cloudflare runbook and infra notes
-- `FELIPE_HANDOFF.md` — practical ops handoff for Felipe
-- `PLAN.md` — roadmap + recommendation list
+- `README.md` — main repository explainer and recommendation backlog
+- `CLOUDFLARE_README.md` — Cloudflare resource inventory and runbook
+- `FELIPE_HANDOFF.md` — practical setup checklist
+- `PLAN.md` — recommendation backlog and operations roadmap
 - `UPDATE.md` — change log
 
 ---
@@ -250,13 +238,15 @@ These pages show that the frontend is organized around scenes and hotspots, not 
 ### Main backend runtime
 - config: `cloudflare-worker/wrangler.toml`
 - D1 binding: `DB` -> `barrelroll-counter-db`
-- optional owner restriction secret: `OWNER_DISCORD_ID`
+- missing secrets to set: `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW`
+- undocumented-but-live secrets: `BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`
 
 ### API runtime
 - config: `naimean-api/wrangler.toml`
 - route: `naimean.com/api/*`
 - D1 binding: `DB` -> `naimean-db`
-- KV binding: `KV`
+- KV binding: `KV` -> `naimean-kv`
+- secret: `API_TOKEN`
 
 ---
 
@@ -266,7 +256,7 @@ Current hardening already present in code:
 
 - edge-enforced security headers
 - separate document/API CSP strategy
-- signed cookies for session and OAuth state
+- signed cookies for sessions and OAuth state
 - Discord PKCE + state validation
 - PBKDF2 password hashing for email auth
 - same-origin logout guard
@@ -280,21 +270,22 @@ Current hardening already present in code:
 ## Recommendation highlights
 
 ### Immediate
+- set the four missing backend secrets
 - finish moving tool launches to `/go/*`
-- resolve the `ROUTER_SECRET` docs/runtime mismatch
-- add edge WAF/rate limits and monitoring
+- add WAF, edge rate limits, monitoring, and Zero Trust protections
 
 ### Next
-- add e2e coverage for auth + layout flows
-- align all docs on payload shapes and required secrets
-- decide whether the API KV binding should be used or removed
+- document the previously undocumented secrets everywhere ops handoff matters
+- verify D1 schemas directly if metadata drift continues
+- decide whether `naimean-sessions` should survive
 
 ### Planned
 - improve observability and restore runbooks
-- continue media optimization and scene maintainability work
+- add staging/preview validation paths
+- continue scene maintainability and accessibility work
 
 ---
 
 ## Closing statement
 
-`naimeanV2.0` is best understood as a small Cloudflare application wrapped around a handcrafted interactive website: static where that keeps the experience nimble, dynamic only where persistence, auth, and operational control are actually needed.
+`naimeanV2.0` is best understood as a small Cloudflare production stack wrapped around a handcrafted interactive website: static where that keeps the experience nimble, dynamic where auth, persistence, routing, and operational control are actually needed.
