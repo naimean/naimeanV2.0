@@ -1670,9 +1670,9 @@
       }
       function setToolsActive(on) {
         const nextToolsActive = Boolean(on);
-        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
         try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
         if (!nextToolsActive) {
+          const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
           stopSelectedTargetDrag();
           clearResizeCursorClasses(selectedTarget);
         }
@@ -1704,7 +1704,7 @@
         return HOTSPOT_OWNER_DISCORD_ALIASES.has(username) || HOTSPOT_OWNER_DISCORD_ALIASES.has(displayName);
       }
       function showToolsByDefaultForOwner(session) {
-        if (isOwnerDiscordSession(session)) {
+        if (isOwnerDiscordSession(session) && !isToolsActive()) {
           setToolsActive(true);
         }
       }
