@@ -40,7 +40,16 @@ if (!workerFirstMatch) {
 const extract = (s) => [...s.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 const proxyPaths = extract(proxyMatch[1]);
 const workerFirstPaths = extract(workerFirstMatch[1]);
-const extractRoutePatterns = (toml) => [...toml.matchAll(/pattern\s*=\s*"([^"]+)"/g)].map((m) => m[1]);
+// Each [[routes]] block is isolated by splitting on the next TOML section header.
+const extractRoutePatterns = (toml) => toml
+  .split(/\[\[routes\]\]/)
+  .slice(1)
+  .map((section) => {
+    const currentSection = section.split(/\n\[[^\n]*\]/)[0];
+    const match = currentSection.match(/pattern\s*=\s*"([^"]+)"/);
+    return match ? match[1] : '';
+  })
+  .filter(Boolean);
 const routerRoutes = extractRoutePatterns(routerToml);
 const apiRoutes = extractRoutePatterns(apiToml);
 

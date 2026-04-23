@@ -84,7 +84,11 @@ export default {
         return jsonResponse({ success: true }, 201, isHttps);
       }
 
-      return jsonResponse("naimean.com API — use /api/health or /api/data", 404, isHttps);
+      return jsonResponse(
+        { error: "endpoint not found - use /api/health or /api/data" },
+        404,
+        isHttps
+      );
     } catch (err) {
       console.error("naimean-api request failed", err);
       return jsonResponse({ error: "internal server error" }, 500, isHttps);

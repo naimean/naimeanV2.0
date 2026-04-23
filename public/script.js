@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const DISCORD_OVERLAY_DISPLAY_DURATION_MS = 5000;
   const DISCORD_INVITE_REDIRECT_PENDING_KEY = 'naimean-discord-invite-redirect-pending';
   const PRANK_REDIRECT_DELAY_MS = 5000;
+  const TOOL_POPUP_TIMEOUT_MS = 10000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
   const WHITEBOARD_URL = '/go/whiteboard';
   const CAP_EX_URL = '/go/capex';
@@ -887,12 +888,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function openProtectedTool(toolPath) {
     const popup = window.open('', '_blank', 'noopener');
+    const popupCloseTimeout = popup
+      ? setTimeout(function() {
+          if (popup && !popup.closed) {
+            popup.close();
+          }
+        }, TOOL_POPUP_TIMEOUT_MS)
+      : null;
     if (popup && popup.document) {
       popup.document.title = 'Opening tool…';
       popup.document.body.textContent = 'Checking your session…';
     }
     const session = await refreshAuthSession();
     if (!session || !session.authenticated) {
+      if (popupCloseTimeout) {
+        clearTimeout(popupCloseTimeout);
+      }
       if (popup && !popup.closed) {
         popup.close();
       }
@@ -900,6 +911,9 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    if (popupCloseTimeout) {
+      clearTimeout(popupCloseTimeout);
+    }
     if (popup && !popup.closed) {
       popup.location = toolPath;
       return;
