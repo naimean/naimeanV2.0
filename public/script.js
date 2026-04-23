@@ -1648,16 +1648,37 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (returnBypassBtn) {
-    returnBypassBtn.addEventListener('click', function() {
+    returnBypassBtn.addEventListener('click', async function() {
+      const session = await refreshAuthSession();
+      if (!isDiscordSession(session)) {
+        playWrongSound();
+        const authResult = await requireDiscordSession(getReturnToPath());
+        if (authResult === true) {
+          fadeToChapel();
+        }
+        return;
+      }
       fadeToChapel();
     });
   }
 
-  document.addEventListener('keydown', function(e) {
+  document.addEventListener('keydown', async function(e) {
     if (e.key === 'Enter' && !screenOn) {
       const active = document.activeElement;
       const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'BUTTON' || active.tagName === 'TEXTAREA');
       if (!isInput) {
+        const session = await refreshAuthSession();
+        if (!isDiscordSession(session)) {
+          playWrongSound();
+          const authResult = await requireDiscordSession(getReturnToPath());
+          if (authResult === true) {
+            try {
+              window.sessionStorage.setItem('naimean-skip-discord-redirect', '1');
+            } catch (_) {}
+            fadeToChapel();
+          }
+          return;
+        }
         try {
           window.sessionStorage.setItem('naimean-skip-discord-redirect', '1');
         } catch (_) {}
@@ -1817,6 +1838,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (Date.now() < powerButtonCooldownUntil) {
           return;
         }
+        // Require auth before the power-off prank (rickroll path)
+        const powOffSession = await refreshAuthSession();
+        if (!isDiscordSession(powOffSession)) {
+          playWrongSound();
+          beginJoinDiscordWorkflow();
+          return;
+        }
         // Turn off: rickroll them instead
         runPowerOffPrank();
       }
@@ -1829,8 +1857,15 @@ document.addEventListener('DOMContentLoaded', function() {
           const normalizedUser = getNormalizedBootUser();
           if (!isKnownBootUser(normalizedUser)) {
             playWrongSound();
-            resetBootInput();
-            updateBootQuickLinkVisibility();
+            const currentSession = await refreshAuthSession();
+            if (!isDiscordSession(currentSession)) {
+              // Not authenticated — start OAuth after the wrong-sound cue, then
+              // continue through the nedry gate flow once auth completes.
+              beginJoinDiscordWorkflow();
+            } else {
+              resetBootInput();
+              updateBootQuickLinkVisibility();
+            }
             return;
           }
           if (joinDiscordWorkflowRunning) {
