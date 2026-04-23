@@ -970,6 +970,7 @@
     const HOTSPOT_MOBILE_TRIPLE_TAP_WINDOW_MS = 700;
     const HOTSPOT_OWNER_DISCORD_ALIASES = new Set(['badonka', 'muahdib']);
     const HOTSPOT_STYLE_PROPERTY_NAMES = ['top', 'left', 'width', 'height', 'fontSize'];
+    const LAYOUT_TOOLS_KEY = 'naimean-hotspot-tools';
     const HOTSPOT_IDS = [
       'chapel-return-btn',
       'trapdoor-btn',
@@ -1007,6 +1008,10 @@
     let activeLayoutLoadRequestId = 0;
     let activeViewportProbeMessage = null;
     let activeViewportProbeToken = '';
+    let ownerToolsAutoShown = false;
+    let ownerToolsManuallyHidden = false;
+    let stopHotspotToolsDrag = function () {};
+    let clearHotspotResizeCursorClasses = function () {};
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sauceDrip = document.getElementById('sauce-drip');
     const wrongAudio = new Audio('assets/wrong.mp3');
@@ -1018,6 +1023,30 @@
     function parseNumericValue(value) {
       const numericValue = Number.parseFloat(value);
       return Number.isFinite(numericValue) ? numericValue : 0;
+    }
+
+    function isToolsActive() {
+      try { return localStorage.getItem(LAYOUT_TOOLS_KEY) === '1'; } catch (_) { return false; }
+    }
+
+    function setToolsActive(on, options) {
+      const nextToolsActive = Boolean(on);
+      const isManualToggle = Boolean(options && options.manual);
+      if (isManualToggle) {
+        ownerToolsManuallyHidden = !nextToolsActive;
+      } else if (nextToolsActive) {
+        ownerToolsManuallyHidden = false;
+      }
+      try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
+      if (!nextToolsActive) {
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        stopHotspotToolsDrag();
+        if (selectedTarget) {
+          clearHotspotResizeCursorClasses(selectedTarget);
+        }
+      }
+      document.body.classList.toggle('hotspot-tools-active', nextToolsActive);
+      syncTransRickPresentation();
     }
 
     function resolveNearestHotspotViewportWidth(width) {
@@ -1702,31 +1731,6 @@
 
       // ── Tool activation ──────────────────────────────────────────────────────
       // Toggle visibility with Ctrl+Shift+H or window.NaimeanLayout.toggle().
-      const LAYOUT_TOOLS_KEY = 'naimean-hotspot-tools';
-      let ownerToolsAutoShown = false;
-      let ownerToolsManuallyHidden = false;
-      function isToolsActive() {
-        try { return localStorage.getItem(LAYOUT_TOOLS_KEY) === '1'; } catch (_) { return false; }
-      }
-      function setToolsActive(on, options) {
-        const nextToolsActive = Boolean(on);
-        const isManualToggle = Boolean(options && options.manual);
-        if (isManualToggle) {
-          ownerToolsManuallyHidden = !nextToolsActive;
-        } else if (nextToolsActive) {
-          ownerToolsManuallyHidden = false;
-        }
-        try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
-        if (!nextToolsActive) {
-          const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
-          stopSelectedTargetDrag();
-          if (selectedTarget) {
-            clearResizeCursorClasses(selectedTarget);
-          }
-        }
-        document.body.classList.toggle('hotspot-tools-active', nextToolsActive);
-        syncTransRickPresentation();
-      }
       setToolsActive(isToolsActive());
       document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.shiftKey && !e.altKey && e.key === 'H') {
@@ -1916,6 +1920,9 @@
         activeDrag = null;
         renderHotspotToolMeta();
       }
+
+      stopHotspotToolsDrag = stopSelectedTargetDrag;
+      clearHotspotResizeCursorClasses = clearResizeCursorClasses;
 
       function shouldInitiateDrag(event, selectedTarget) {
         if (!document.body.classList.contains('hotspot-tools-active') || !event.isPrimary) {
