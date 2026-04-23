@@ -94,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let screenOn = false;
   let puzzleSolved = false;
   let prankRunning = false;
+  let joinDiscordWorkflowRunning = false;
   let powerButtonCooldownUntil = 0;
   let hintRevealProgress = 0;
   let lastPointerPosition = null;
@@ -115,6 +116,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
   const DISCORD_OVERLAY_DISPLAY_DURATION_MS = 5000;
   const DISCORD_INVITE_REDIRECT_PENDING_KEY = 'naimean-discord-invite-redirect-pending';
+  const JOIN_DISCORD_WORKFLOW_PENDING_KEY = 'naimean-join-discord-workflow-pending';
+  const JOIN_DISCORD_GATE_HOLD_MS = 1200;
+  const JOIN_DISCORD_PLEASE_SCREEN_HOLD_MS = 1200;
   const PRANK_REDIRECT_DELAY_MS = 5000;
   const TOOL_POPUP_TIMEOUT_MS = 10000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
@@ -886,6 +890,109 @@ document.addEventListener('DOMContentLoaded', function() {
     return false;
   }
 
+  function setJoinDiscordWorkflowPending(isPending) {
+    try {
+      if (isPending) {
+        window.sessionStorage.setItem(JOIN_DISCORD_WORKFLOW_PENDING_KEY, '1');
+        return;
+      }
+      window.sessionStorage.removeItem(JOIN_DISCORD_WORKFLOW_PENDING_KEY);
+    } catch (_) {}
+  }
+
+  function consumeJoinDiscordWorkflowPending() {
+    try {
+      const isPending = window.sessionStorage.getItem(JOIN_DISCORD_WORKFLOW_PENDING_KEY) === '1';
+      window.sessionStorage.removeItem(JOIN_DISCORD_WORKFLOW_PENDING_KEY);
+      return isPending;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function powerOnScreenForJoinDiscordWorkflow() {
+    if (screenOn) {
+      return;
+    }
+
+    if (powerBtn) {
+      powerBtn.classList.add('on');
+    }
+    if (powerLight) {
+      powerLight.style.background = '#222';
+      powerLight.style.boxShadow = 'none';
+    }
+    if (shadowLayer) {
+      shadowLayer.classList.add('hidden');
+    }
+    if (bootScreen) {
+      bootScreen.classList.remove('visible');
+    }
+    if (shoutboxContainer) {
+      shoutboxContainer.classList.remove('visible');
+    }
+
+    screenOn = true;
+    powerButtonCooldownUntil = Date.now() + POWER_BUTTON_COOLDOWN_MS;
+  }
+
+  async function continueJoinDiscordWorkflow() {
+    if (prankRunning) {
+      return false;
+    }
+
+    if (!screenOn) {
+      powerOnScreenForJoinDiscordWorkflow();
+      await playStaticTransition();
+      showBlueNedryGateScreen();
+      await delay(JOIN_DISCORD_GATE_HOLD_MS);
+    }
+
+    if (!puzzleSolved) {
+      await runNedryGateSequence();
+      await delay(JOIN_DISCORD_PLEASE_SCREEN_HOLD_MS);
+    }
+
+    await runPleaseSequence();
+    return true;
+  }
+
+  async function beginJoinDiscordWorkflow() {
+    if (joinDiscordWorkflowRunning || prankRunning) {
+      return false;
+    }
+
+    joinDiscordWorkflowRunning = true;
+    try {
+      const session = await refreshAuthSession();
+      if (!isDiscordSession(session)) {
+        setJoinDiscordWorkflowPending(true);
+        const hasDiscordAuth = await requireDiscordSession(getReturnToPath());
+        if (!hasDiscordAuth) {
+          setJoinDiscordWorkflowPending(false);
+          return false;
+        }
+      }
+
+      setJoinDiscordWorkflowPending(false);
+      return continueJoinDiscordWorkflow();
+    } finally {
+      joinDiscordWorkflowRunning = false;
+    }
+  }
+
+  async function resumeJoinDiscordWorkflowIfNeeded() {
+    if (!consumeJoinDiscordWorkflowPending()) {
+      return;
+    }
+
+    if (!isDiscordSession(authSession)) {
+      return;
+    }
+
+    await continueJoinDiscordWorkflow();
+  }
+
   async function openProtectedTool(toolPath) {
     const popup = window.open('', '_blank', 'noopener');
     const popupCloseTimeout = popup
@@ -1546,6 +1653,7 @@ document.addEventListener('DOMContentLoaded', function() {
     refreshAuthSession().then(function () {
       applySessionToBootInput();
       renderDiscordAuthChip();
+      resumeJoinDiscordWorkflowIfNeeded().catch(function () {});
     }).catch(function () {});
   }
 
@@ -1659,12 +1767,11 @@ document.addEventListener('DOMContentLoaded', function() {
             updateBootQuickLinkVisibility();
             return;
           }
-          const hasDiscordAuth = await requireDiscordSession(getReturnToPath());
-          if (!hasDiscordAuth) {
+          const didStartWorkflow = await beginJoinDiscordWorkflow();
+          if (!didStartWorkflow) {
             updateBootQuickLinkVisibility();
             return;
           }
-          await runNedryGateSequence();
         }
       });
     }
