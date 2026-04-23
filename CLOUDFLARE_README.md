@@ -1,298 +1,403 @@
 # Cloudflare Infrastructure — Naimean
 
-This document is the Cloudflare-side runbook for `naimean.com`. It explains what is deployed, what must exist in Cloudflare, how GitHub Actions fits in, and what is currently true about the runtime vs. what is still transitional.
+Account: `Naimean@hotmail.com's Account` (`85d52ed1ca1933df067bf0c167d65a84`)
+
+This is the Cloudflare-side runbook for `naimean.com`. It mirrors the current production resource inventory, route layout, storage bindings, secrets expectations, and GitHub Actions deployment behavior.
 
 ---
 
-## Current architecture
+## Architecture overview
 
 ```text
-GitHub repository
-  ├─ public/                         -> GitHub Pages artifact + ASSETS binding
-  ├─ src/index.js                    -> naimeanv2
-  ├─ cloudflare-worker/worker.js     -> barrelrollcounter-worker
-  └─ naimean-api/src/worker.js       -> naimean-api
-
 Browser
-  -> naimeanv2
-      -> /get, /hit, /increment, /auth/*, /go/*, /layout
-         -> barrelrollcounter-worker
-      -> /api/*
-         -> naimean-api
-      -> everything else
-         -> ASSETS / public/
+  │
+  ▼
+naimean.com / www.naimean.com
+  │
+  ▼
+┌─────────────────────────────┐
+│  naimeanv2 (edge router)    │
+│  Route: naimean.com/*       │
+│  Route: www.naimean.com/*   │
+│                             │
+│  PROXY_PATHS:               │
+│    /get  /hit  /increment   │
+│    /auth  /go  /layout      │
+│                             │
+│  path in PROXY_PATHS        │──▶ env.COUNTER ──▶ barrelrollcounter-worker
+│  anything else              │──▶ env.ASSETS  ──▶ static assets from public/
+└─────────────────────────────┘
+
+naimean.com/api/*
+  │
+  ▼
+┌─────────────────────────────┐
+│  naimean-api (REST API)     │
+│  Route: naimean.com/api/*   │
+│                             │
+│  GET  /api/health           │
+│  GET  /api/data             │
+│  POST /api/data             │
+└─────────────────────────────┘
 ```
 
-### Why it is structured this way
-
-Cloudflare is being used as the production control plane:
-
-- the **router Worker** owns domain entrypoint behavior and security headers
-- the **main backend Worker** owns secrets, cookies, redirects, and D1-backed features
-- the **API Worker** isolates `/api/*` into its own deployable unit
-- the **static site** stays simple and framework-free
+Key principle: `naimeanv2` stays intentionally thin. It handles routing, security headers, and static asset serving; business logic lives in `barrelrollcounter-worker` and `naimean-api`.
 
 ---
 
-## Workers and routes
+## Workers
 
-## 1) `naimeanv2`
+## 1) `naimeanv2` — edge router
 
-### Purpose
-
-- primary entrypoint for `naimean.com`
-- serves static assets from `public/`
-- forwards selected routes to the main backend Worker
-- stamps security headers on every response
-
-### Config source
-
-- `wrangler.toml`
-
-### Current worker-first paths
-
-- `/get`
-- `/hit`
-- `/increment`
-- `/auth`
-- `/go`
-- `/layout`
+| Property | Value |
+|---|---|
+| Name | `naimeanv2` |
+| Role | edge router / traffic cop |
+| Source | `src/index.js` |
+| Config | `wrangler.toml` |
+| Routes | `naimean.com/*`, `www.naimean.com/*` |
+| Last deployed | 2026-04-23 |
 
 ### Bindings
 
 | Binding | Type | Target |
 |---|---|---|
-| `ASSETS` | Assets | `./public` |
-| `COUNTER` | Service | `barrelrollcounter-worker` |
+| `ASSETS` | Worker Assets | static files from `public/` |
+| `COUNTER` | Service binding | `barrelrollcounter-worker` |
 
-### Important note
+### Behavior
 
-`run_worker_first` in `wrangler.toml` must match `PROXY_PATHS` in `src/index.js`. CI already checks this.
+- if the request path matches `PROXY_PATHS` (`/get`, `/hit`, `/increment`, `/auth`, `/go`, `/layout`), forward to `env.COUNTER`
+- otherwise, serve from `env.ASSETS`
+- apply CSP and security headers to every response
+- attempt `.html` fallback for extensionless routes
 
----
+### Critical invariant
 
-## 2) `barrelrollcounter-worker`
-
-### Purpose
-
-- rickroll counter API
-- Discord OAuth and signed session cookies
-- email registration/login
-- layout override API
-- authenticated `/go/*` redirects
-- worker-side rate limiting and CORS handling
-
-### Config source
-
-- `cloudflare-worker/wrangler.toml`
-
-### D1 binding
-
-| Binding | Database |
-|---|---|
-| `DB` | `barrelroll-counter-db` |
-
-### Current routes owned by this Worker
-
-| Method | Path |
-|---|---|
-| `GET` | `/get` |
-| `POST` | `/hit` |
-| `POST` | `/increment` |
-| `GET` | `/auth/session` |
-| `POST` | `/auth/register` |
-| `POST` | `/auth/emaillogin` |
-| `GET` | `/auth/discord/login` |
-| `GET` | `/auth/discord/callback` |
-| `POST` | `/auth/logout` |
-| `GET` | `/layout?page=<page>` |
-| `POST` | `/layout` |
-| `GET` | `/go/whiteboard` |
-| `GET` | `/go/capex` |
-| `GET` | `/go/snow` |
-| `OPTIONS` | all of the above |
-
-### Expected secrets / env vars
-
-#### Required in practice
-
-- `SESSION_SECRET`
-- `DISCORD_CLIENT_ID`
-- `DISCORD_CLIENT_SECRET`
-- `DISCORD_REDIRECT_URI`
-- `OWNER_DISCORD_ID` *(needed if layout writes should be restricted to one Discord account)*
-- `TOOL_URL_WHITEBOARD`
-- `TOOL_URL_CAPEX`
-- `TOOL_URL_SNOW`
-
-#### Optional runtime configuration
-
-- `CORS_ALLOWED_ORIGINS`
-- `CORS_ALLOWED_ORIGIN_SUFFIXES`
-- `CORS_ALLOW_PROD_ORIGIN_SUFFIXES`
-- `APP_ENV`
-- `ENVIRONMENT`
-- `RATE_LIMIT_ENABLED`
-
-#### Transitional / caveat item
-
-- `ROUTER_SECRET` is still documented in comments and handoff docs, but the current committed runtime code does **not** read or validate it
+`PROXY_PATHS` in `src/index.js` **must** stay aligned with `run_worker_first` in `wrangler.toml`. CI enforces this with `scripts/check-route-alignment.js`.
 
 ---
 
-## 3) `naimean-api`
+## 2) `barrelrollcounter-worker` — main backend
 
-### Purpose
+| Property | Value |
+|---|---|
+| Name | `barrelrollcounter-worker` |
+| Role | auth, counter, layout, tool redirects |
+| Source | `cloudflare-worker/worker.js` |
+| Config | `cloudflare-worker/wrangler.toml` |
+| Routes | none; called through the `COUNTER` service binding |
+| Last deployed | 2026-04-23 |
 
-- clean `/api/*` surface separate from the legacy fun-site backend
-- currently exposes health and simple D1-backed data routes
+### Binding
 
-### Config source
+| Binding | Type | Target |
+|---|---|---|
+| `DB` | D1 | `barrelroll-counter-db` (`22277fbe-031d-4cad-8937-245309e981cd`) |
 
-- `naimean-api/wrangler.toml`
+### Endpoint surface
 
-### Route
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/get` | read rickroll counter |
+| `POST` | `/hit` | increment counter |
+| `POST` | `/increment` | increment counter alias |
+| `GET` | `/auth/session` | check active session |
+| `POST` | `/auth/register` | email registration |
+| `POST` | `/auth/emaillogin` | email login |
+| `GET` | `/auth/discord/login` | start Discord OAuth PKCE flow |
+| `GET` | `/auth/discord/callback` | Discord OAuth callback |
+| `POST` | `/auth/logout` | CSRF-protected logout |
+| `GET` | `/go/whiteboard` | authenticated redirect |
+| `GET` | `/go/capex` | authenticated redirect |
+| `GET` | `/go/snow` | authenticated redirect |
+| `GET` | `/layout` | get layout overrides |
+| `POST` | `/layout` | save layout overrides |
 
-- `naimean.com/api/*`
+### Secrets status
+
+| Secret | Status | Purpose |
+|---|---|---|
+| `SESSION_SECRET` | ✅ set | HMAC signing for session cookies |
+| `DISCORD_CLIENT_ID` | ✅ set | Discord OAuth client ID |
+| `DISCORD_CLIENT_SECRET` | ✅ set | Discord OAuth client secret |
+| `DISCORD_REDIRECT_URI` | ✅ set | must match `https://naimean.com/auth/discord/callback` |
+| `OWNER_DISCORD_ID` | ❌ missing | owner-specific privileged flows |
+| `TOOL_URL_WHITEBOARD` | ❌ missing | `/go/whiteboard` destination |
+| `TOOL_URL_CAPEX` | ❌ missing | `/go/capex` destination |
+| `TOOL_URL_SNOW` | ❌ missing | `/go/snow` destination |
+| `BACKDOOR_ADMIN_KEY` | ✅ set (undocumented) | admin override key |
+| `DISCORD_WEBHOOK_URL` | ✅ set (undocumented) | Discord notification webhook |
+
+Critical: the four missing secrets must be set for `/go/*` routes and owner checks to work correctly.
+
+---
+
+## 3) `naimean-api` — standalone `/api/*` worker
+
+| Property | Value |
+|---|---|
+| Name | `naimean-api` |
+| Role | standalone REST API |
+| Source | `naimean-api/src/worker.js` |
+| Config | `naimean-api/wrangler.toml` |
+| Routes | `naimean.com/api/*` |
+| Last deployed | 2026-04-23 |
 
 ### Bindings
 
 | Binding | Type | Target |
 |---|---|---|
-| `DB` | D1 | `naimean-db` |
-| `KV` | Workers KV | namespace bound as `KV` |
+| `DB` | D1 | `naimean-db` (`0871f90d-f7e3-467a-a1f9-4e74ac8aef42`) |
+| `KV` | KV namespace | `naimean-kv` (`dff7175059ce478eab8c910949ca330f`) |
 
-### Current endpoints
+### Secret status
 
-| Method | Path | Current response |
+| Secret | Status | Purpose |
 |---|---|---|
-| `GET` | `/api/health` | `{ "status": "ok", "timestamp": "..." }` |
-| `GET` | `/api/data` | latest 50 `entries` rows |
-| `POST` | `/api/data` | creates an entry, returns `{ "success": true }` |
+| `API_TOKEN` | ✅ set (undocumented) | API authentication |
 
-### Important note
+### Endpoints
 
-The KV binding exists today mostly as forward-looking infrastructure. The current committed API worker does not actively use it yet.
-
----
-
-## Cloudflare resources expected
-
-### Domains / routes
-
-| Route / domain | Worker |
-|---|---|
-| `naimean.com` | `naimeanv2` |
-| `www.naimean.com` | `naimeanv2` |
-| `naimean.com/api/*` | `naimean-api` |
-
-### Databases
-
-| Database | Used by |
-|---|---|
-| `barrelroll-counter-db` | `barrelrollcounter-worker` |
-| `naimean-db` | `naimean-api` |
-
-### Additional storage
-
-| Resource | Status |
-|---|---|
-| `KV` for `naimean-api` | required for deploy |
-| `radley-gallery` R2 bucket | referenced in docs as existing, not currently bound in worker configs |
-| `naimean-sessions` KV namespace | referenced in docs as existing, not currently bound in worker configs |
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/health` | health check |
+| `GET` | `/api/data` | fetch entries |
+| `POST` | `/api/data` | create entry |
 
 ---
 
-## GitHub -> Cloudflare deployment flow
+## Storage resources
+
+## D1 databases
+
+### `barrelroll-counter-db`
+
+| Property | Value |
+|---|---|
+| ID | `22277fbe-031d-4cad-8937-245309e981cd` |
+| Binding | `DB` on `barrelrollcounter-worker` |
+| Schema | `cloudflare-worker/schema.sql` |
+
+Tables:
+
+- `rickroll_counter`
+- `layout_overrides`
+- `registered_users`
+
+Initialize or restore with:
+
+```bash
+wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
+```
+
+### `naimean-db`
+
+| Property | Value |
+|---|---|
+| ID | `0871f90d-f7e3-467a-a1f9-4e74ac8aef42` |
+| Binding | `DB` on `naimean-api` |
+| Schema | `naimean-api/migrations/0000_create_entries.sql` |
+
+Table:
+
+- `entries`
+
+Initialize or restore with:
+
+```bash
+wrangler d1 execute naimean-db --file=naimean-api/migrations/0000_create_entries.sql
+```
+
+## KV namespaces
+
+| Namespace | ID | Binding | Status |
+|---|---|---|---|
+| `naimean-kv` | `dff7175059ce478eab8c910949ca330f` | `KV` on `naimean-api` | required for deploy |
+| `naimean-sessions` | `8d766501be57403ab84a9f3a3112e8d5` | none | undocumented legacy resource; current usage unknown |
+
+---
+
+## Route map
+
+| Pattern | Worker | Priority |
+|---|---|---|
+| `naimean.com/api/*` | `naimean-api` | higher / more specific |
+| `naimean.com/*` | `naimeanv2` | lower / catch-all |
+| `www.naimean.com/*` | `naimeanv2` | lower / catch-all |
+
+Cloudflare should naturally pick the more specific `/api/*` route first, but if routes are ever recreated, verify the specific API route still wins.
+
+Critical: `naimean.com` must **not** point directly at GitHub Pages in production. If it bypasses `naimeanv2`, auth, proxy, `/layout`, and `/go/*` flows silently break.
+
+---
+
+## GitHub Actions -> Cloudflare integration
 
 Workflow file:
 
 - `.github/workflows/github-pages.yml`
 
-### What deploys today
+### Required GitHub Actions secrets
 
-- GitHub Pages artifact from `public/`
-- `naimeanv2`
-- `barrelrollcounter-worker`
-- `naimean-api`
+| Secret | Value | Purpose |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | API token with Cloudflare deploy permissions | deploys all three Workers |
+| `CLOUDFLARE_ACCOUNT_ID` | `85d52ed1ca1933df067bf0c167d65a84` | targets the correct account |
 
-### GitHub secrets required
+### Required API token permissions
 
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
+| Permission | Resource | Access |
+|---|---|---|
+| Workers Scripts | Account | Edit |
+| D1 | Account | Edit |
+| Workers KV Storage | Account | Edit |
+| Account Settings | Account | Read |
 
-### Why this matters
+### CI/CD flow
 
-If these are missing, `deploy-workers` fails before anything reaches Cloudflare. If Cloudflare-side resources are missing or mismatched, Wrangler deploys fail even if GitHub auth is correct.
+On push, GitHub Actions currently does the following:
 
----
+1. syntax checks with `node --check`
+2. tests with `node --test cloudflare-worker/worker.test.js`
+3. validates all three `wrangler.toml` files
+4. verifies route alignment with `scripts/check-route-alignment.js`
+5. deploys `public/` to GitHub Pages
+6. deploys Workers from:
+   - repo root -> `naimeanv2`
+   - `cloudflare-worker/` -> `barrelrollcounter-worker`
+   - `naimean-api/` -> `naimean-api`
 
-## Current runtime caveats Felipe should know
+### What GitHub Actions does not manage
 
-### 1. `/layout` is now part of the live route surface
-Some older docs only described `/get`, `/hit`, `/increment`, `/auth`, and `/go`. Current code also proxies `/layout`, and Cloudflare expectations should match that.
-
-### 2. `ROUTER_SECRET` is a docs/runtime mismatch today
-It is still called out in comments and handoff material, but the current main backend Worker does not consume it. Decide whether to implement it or stop presenting it as an active control.
-
-### 3. Client-side tool links are still transitional
-The backend supports `/go/*`, but the browser UI still contains direct hardcoded Whiteboard / CapEx / ServiceNow URLs in `public/script.js`. Operationally, that means Cloudflare-side redirect secrets are not yet the only path users can take.
-
-### 4. `naimean-api` is in this repo and deploys from this repo
-Some older wording implied it was external or separate. It lives under `naimean-api/` here and is deployed by the same GitHub Actions workflow.
-
-### 5. Health-check payload shape should be documented correctly
-Current `GET /api/health` returns `status` + `timestamp`, not the older `ok/service` shape some docs referenced.
-
----
-
-## Cloudflare-side validation checklist
-
-After resources are in place, verify:
-
-- [ ] `naimean.com` loads the C64 homepage through `naimeanv2`
-- [ ] `curl https://naimean.com/get` returns JSON with `value`
-- [ ] `curl -X POST https://naimean.com/hit` increments successfully
-- [ ] `curl https://naimean.com/auth/session` returns a non-500 JSON payload
-- [ ] `curl https://naimean.com/auth/discord/login` redirects to Discord
-- [ ] `curl 'https://naimean.com/layout?page=chapel'` returns JSON, even if empty
-- [ ] `curl https://naimean.com/api/health` returns `{ "status": "ok", "timestamp": "..." }`
-- [ ] the latest `deploy-workers` GitHub Actions run is green
+- D1 schema migrations
+- Worker secrets
+- manual post-deploy validation
+- DNS records
 
 ---
 
-## Local development notes
+## Manual deployment / recovery procedure
 
-- the main site remains dependency-light and build-free
-- `naimean-api/` does include a `package.json` for Wrangler
-- local validation currently relies on `node --check` and `node --test`, not on a full lint/build toolchain
+### Deploy the Workers
+
+```bash
+cd /path/to/repo/root
+npx wrangler deploy
+
+cd cloudflare-worker
+npx wrangler deploy
+
+cd ../naimean-api
+npx wrangler deploy
+```
+
+### First-time database setup
+
+```bash
+npx wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
+npx wrangler d1 execute naimean-db --file=naimean-api/migrations/0000_create_entries.sql
+```
+
+### Secrets to set manually
+
+```bash
+# barrelrollcounter-worker
+npx wrangler secret put SESSION_SECRET
+npx wrangler secret put DISCORD_CLIENT_ID
+npx wrangler secret put DISCORD_CLIENT_SECRET
+npx wrangler secret put DISCORD_REDIRECT_URI
+npx wrangler secret put OWNER_DISCORD_ID
+npx wrangler secret put TOOL_URL_WHITEBOARD
+npx wrangler secret put TOOL_URL_CAPEX
+npx wrangler secret put TOOL_URL_SNOW
+
+# naimean-api
+npx wrangler secret put API_TOKEN
+```
 
 ---
 
-## Prioritized Cloudflare recommendation backlog
+## Security model snapshot
+
+### Headers applied by `naimeanv2`
+
+- HTML responses get the document CSP, Google Fonts allowances, and the looser rules needed by current pages
+- non-HTML responses get the strict API CSP: `default-src 'none'`
+- cache behavior is handled centrally at the router layer
+
+### Auth handled by `barrelrollcounter-worker`
+
+| Mechanism | Details |
+|---|---|
+| Session cookies | HMAC-signed with `SESSION_SECRET` |
+| Discord OAuth | OAuth2 + PKCE + signed temporary OAuth cookie |
+| Email auth | PBKDF2 password hashing in `registered_users` |
+| CSRF | logout requires CSRF validation |
+| Rate limiting | applied to auth and write endpoints |
+
+---
+
+## Known issues and watch-outs
+
+1. Four secrets are still missing on `barrelrollcounter-worker`: `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW`
+2. `ROUTER_SECRET` is still documented in older material but is not consumed by current runtime code
+3. Frontend still has legacy hardcoded tool URLs, so `/go/*` is not yet the sole user-facing path
+4. `naimean-sessions` exists but is unbound and undocumented
+5. `BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`, and `API_TOKEN` need to stay documented even though values remain out-of-band
+6. D1 API metadata reportedly showed `num_tables: 0`; verify actual tables directly if there is any doubt
+7. `/layout` is live and must always be treated as a required proxied route
+
+Recommended verification for the D1 metadata concern:
+
+```bash
+wrangler d1 execute barrelroll-counter-db --command "SELECT name FROM sqlite_master WHERE type='table'"
+wrangler d1 execute naimean-db --command "SELECT name FROM sqlite_master WHERE type='table'"
+```
+
+---
+
+## Recommended hardening backlog
 
 ### P0 — immediate
 
-- [ ] Put Cloudflare WAF managed rules and edge rate limits in front of `/hit`, `/increment`, `/auth/*`, `/layout`, and `/api/*`
-- [ ] Decide whether `ROUTER_SECRET` should become a real worker-to-worker control or be removed from the documented security model
-- [ ] Move all user-facing tool launches to `/go/*` so Cloudflare-side secrets become the single source of truth
-- [ ] Add monitoring / Logpush / alerting for 5xx spikes on `naimeanv2`, `barrelrollcounter-worker`, and `naimean-api`
-- [ ] Put Zero Trust or equivalent access controls in front of privileged internal tool flows
+- [ ] set the four missing `barrelrollcounter-worker` secrets
+- [ ] move all user-facing tool launches behind `/go/*`
+- [ ] enable Cloudflare WAF managed rules on the `naimean.com` zone
+- [ ] add edge rate limits for `/hit`, `/increment`, `/auth/*`, `/layout`, and `/api/*`
+- [ ] put Zero Trust in front of privileged/internal tool destinations
+- [ ] add Worker logging, error alerts, and failure visibility
 
 ### P1 — next
 
-- [ ] Create a staging route or workers.dev validation path for auth and D1 changes before merge-to-main
-- [ ] Add Cloudflare-side smoke checks for `/layout` and `/api/health` to the deployment verification routine
-- [ ] Align all handoff docs so routes, secrets, and payload shapes are consistent
-- [ ] Decide whether the `naimean-api` KV binding should be used soon or removed until needed
-- [ ] Add explicit D1 backup/export cadence and restore drills for both databases
+- [ ] document `BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`, and `API_TOKEN` everywhere handoff docs inventory secrets
+- [ ] verify both D1 schemas directly and record the result in the ops validation flow
+- [ ] decide whether `naimean-sessions` should be rebound, repurposed, or deleted
+- [ ] add a documented D1 backup/export cadence for both databases
+- [ ] keep all Cloudflare/GitHub handoff docs aligned on routes, payloads, and secret inventory
 
 ### P2 — planned
 
-- [ ] Add structured logging / request IDs / error grouping conventions across all Workers
-- [ ] Split prod vs. preview configuration more cleanly if the Cloudflare footprint grows
-- [ ] Add periodic infrastructure review to catch doc/config drift early
-- [ ] Reassess whether some scene-configuration/state features should move into a clearer admin surface over time
+- [ ] add structured logging and request IDs across Workers
+- [ ] maintain a periodic infrastructure review to catch route/doc/config drift early
+- [ ] consider a protected staging or preview route for auth and D1 changes
+
+---
+
+## Quick reference: what lives where
+
+| Concern | Cloudflare resource | GitHub source |
+|---|---|---|
+| Edge routing | `naimeanv2` | `src/index.js` + `wrangler.toml` |
+| Auth + counter + layout | `barrelrollcounter-worker` | `cloudflare-worker/worker.js` + `cloudflare-worker/wrangler.toml` |
+| REST API | `naimean-api` | `naimean-api/src/worker.js` + `naimean-api/wrangler.toml` |
+| Counter/users/layout data | `barrelroll-counter-db` | `cloudflare-worker/schema.sql` |
+| Entries data | `naimean-db` | `naimean-api/migrations/0000_create_entries.sql` |
+| KV storage | `naimean-kv` | `naimean-api/wrangler.toml` |
+| Static site | GitHub Pages + Worker Assets | `public/` |
+| Route config | Worker routes in Cloudflare | each `wrangler.toml` |
+| Secrets | Cloudflare secret store | not committed in repo |
+| CI/CD | GitHub Actions | `.github/workflows/github-pages.yml` |
 
 ---
 

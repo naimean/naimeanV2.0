@@ -2,18 +2,17 @@
 
 # Vision & User Flow
 
-- User freehands naimean.com in browser → lands on C64-themed landing page
-- Entertaining games/experiences to keep user engaged
-- Clear call-to-action: join Discord (main community hub)
-- Discord is used for authentication (OAuth and local email auth both now exist in the repo)
-- Message board / shoutbox remains a future server-side feature
-- Discord join prompt and widget overlay
+- User freehands `naimean.com` in browser -> lands on the C64-themed landing page
+- Entertaining games/experiences keep the user engaged
+- Discord remains the main community/auth hub
+- Discord OAuth and local email auth both exist in the repo today
+- Cloudflare Workers own routing, auth, persistence, and API behavior
 
 # Technical/Design Constraints
 
 - Pure HTML/CSS/JS for the main site (no frontend framework, no bundler, no TypeScript)
 - Cloudflare Workers for routing, auth, persistence, and APIs
-- D1 for small-footprint durable storage
+- D1 for durable storage with small operational footprint
 - Static scenes remain handcrafted and hotspot-driven
 - Minimal dependency footprint; `naimean-api/` carries its own Wrangler `package.json`
 
@@ -26,31 +25,39 @@
 - Static/prank video/audio flow
 - Discord OAuth flow
 - Email registration/login flow
-- D1-backed counter, layout overrides, and registered users
+- D1-backed counter, layout overrides, registered users, and API entries
 - Separate `naimean-api` Worker under `/api/*`
 
 ## In Progress
-- Continuing docs/runtime cleanup around Cloudflare handoff details
-- Closing the gap between server-side `/go/*` redirects and remaining legacy client-side direct tool URLs
-- Expanding recommendation backlog into a more practical operations roadmap
+- Finishing Cloudflare handoff alignment across repo docs
+- Closing the gap between server-side `/go/*` redirects and remaining client-side direct tool URLs
+- Turning the recommendation backlog into a more concrete operations roadmap
 
 ## Next Steps
-1. Finish Cloudflare handoff validation with Felipe
-2. Decide whether `ROUTER_SECRET` should be implemented or retired from docs
-3. Move all tool launches behind `/go/*`
-4. Add stronger Cloudflare monitoring / WAF / Zero Trust controls
-5. Add broader e2e coverage for auth, layout, and API flows
-6. Continue UI/UX, accessibility, and media optimization work
+1. Set the four missing `barrelrollcounter-worker` secrets
+2. Finish Cloudflare handoff validation with Felipe
+3. Decide whether `ROUTER_SECRET` should be implemented or retired from docs
+4. Move all tool launches behind `/go/*`
+5. Add stronger Cloudflare monitoring / WAF / Zero Trust controls
+6. Verify D1 schemas directly if Cloudflare metadata drift continues
 
 # Deployment Plan
 - Ensure all required Cloudflare resources exist before merge-to-main deploys
-- Validate on `naimean.com`, `www.naimean.com`, and `naimean.com/api/*`
-- Keep Worker docs aligned with actual route/config behavior
-- Push changes to `main` only after CI is green
+- Validate on `naimean.com/*`, `www.naimean.com/*`, and `naimean.com/api/*`
+- Keep Worker docs aligned with actual route/config/runtime behavior
+- Push code changes only after existing validation passes
 
 ---
 
 # Update Log
+
+## 2026-04-23 (Cloudflare infrastructure handoff refresh)
+- Rewrote `CLOUDFLARE_README.md` to mirror the current Cloudflare infrastructure handoff: account ID, worker inventory, D1/KV IDs, route priority, GitHub Actions expectations, manual deploy steps, known issues, and hardening recommendations
+- Updated `README.md` so the main repo explainer now reflects the current Cloudflare account, route map, storage inventory, missing secrets, undocumented secrets, and revised recommendation backlog
+- Updated `FELIPE_HANDOFF.md` with explicit production blockers, missing-secret callouts, account/ID references, D1 verification commands, and hardening follow-ups
+- Updated `naimean-README.md` so the repo CV reflects the newer Cloudflare resource inventory and current operational caveats
+- Updated `PLAN.md` to prioritize missing secrets, undocumented secret inventory, D1 verification, `naimean-sessions`, and the production-routing requirement through `naimeanv2`
+- Removed older/outdated assumptions from the docs in favor of the current Cloudflare handoff state
 
 ## 2026-04-23 (documentation and handoff refresh)
 - Rewrote `README.md` as a detailed repository explainer with current runtime architecture, repo structure, Cloudflare setup notes, and current transitional caveats
