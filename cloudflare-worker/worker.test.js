@@ -356,6 +356,13 @@ test('contract: API responses carry required security headers', async () => {
   assert.strictEqual(res.headers.get('X-Frame-Options'), 'DENY');
 });
 
+test('contract: unknown non-backend routes return 404 instead of serving static assets', async () => {
+  const res = await worker.fetch(makeContractRequest('GET', '/'), makeContractEnv());
+  assert.strictEqual(res.status, 404);
+  const body = await res.json();
+  assert.strictEqual(body.error, 'Not found');
+});
+
 // ─── HTTP method enforcement tests ───────────────────────────────────────────
 // Each write/mutation endpoint only accepts a specific method.  Any other
 // method must be rejected with 405.

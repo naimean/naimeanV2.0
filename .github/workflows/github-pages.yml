@@ -36,7 +36,7 @@ jobs:
           node --check naimean-api/src/agents/naimean-agent.js
 
       - name: Run worker unit tests
-        run: node --test cloudflare-worker/worker.test.js
+        run: node --test cloudflare-worker/worker.test.js src/index.test.js
 
       - name: Validate wrangler.toml files are parseable
         run: |
@@ -51,11 +51,14 @@ jobs:
           grep -qE 'compatibility_date = "[0-9]{4}-[0-9]{2}-[0-9]{2}"' wrangler.toml
           grep -qE 'compatibility_date = "[0-9]{4}-[0-9]{2}-[0-9]{2}"' cloudflare-worker/wrangler.toml
           # Confirm run_worker_first is present so proxy routes are worker-handled
-          grep -q 'run_worker_first' wrangler.toml
-          # Confirm D1 database binding is declared in the counter worker config
-          grep -q '\[\[d1_databases\]\]' cloudflare-worker/wrangler.toml
-          # Confirm the D1 schema migration file exists
-          test -f cloudflare-worker/schema.sql
+           grep -q 'run_worker_first' wrangler.toml
+           # Confirm D1 database binding is declared in the counter worker config
+           grep -q '\[\[d1_databases\]\]' cloudflare-worker/wrangler.toml
+           grep -q 'binding = "DB"' cloudflare-worker/wrangler.toml
+           grep -q 'database_name = "barrelroll-counter-db"' cloudflare-worker/wrangler.toml
+           grep -q 'database_id = "22277fbe-031d-4cad-8937-245309e981cd"' cloudflare-worker/wrangler.toml
+           # Confirm the D1 schema migration file exists
+           test -f cloudflare-worker/schema.sql
           # Validate naimean-api wrangler.toml required fields
           grep -q 'name' naimean-api/wrangler.toml
           grep -q 'main' naimean-api/wrangler.toml

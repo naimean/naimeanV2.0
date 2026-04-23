@@ -212,7 +212,7 @@ Workflow file:
 ### What CI does
 
 - `node --check` for repository JS files
-- `node --test cloudflare-worker/worker.test.js`
+- `node --test cloudflare-worker/worker.test.js src/index.test.js`
 - validates all three `wrangler.toml` files
 - checks `PROXY_PATHS` ↔ `run_worker_first` alignment
 - deploys `public/` to GitHub Pages
