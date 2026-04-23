@@ -1010,8 +1010,8 @@
     let activeViewportProbeToken = '';
     let ownerToolsAutoShown = false;
     let ownerToolsManuallyHidden = false;
-    let stopHotspotToolsDrag = function () {};
-    let clearHotspotResizeCursorClasses = function () {};
+    let stopHotspotToolsDrag = null;
+    let clearHotspotResizeCursorClasses = null;
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sauceDrip = document.getElementById('sauce-drip');
     const wrongAudio = new Audio('assets/wrong.mp3');
@@ -1040,8 +1040,10 @@
       try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
       if (!nextToolsActive) {
         const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
-        stopHotspotToolsDrag();
-        if (selectedTarget) {
+        if (typeof stopHotspotToolsDrag === 'function') {
+          stopHotspotToolsDrag();
+        }
+        if (selectedTarget && typeof clearHotspotResizeCursorClasses === 'function') {
           clearHotspotResizeCursorClasses(selectedTarget);
         }
       }
