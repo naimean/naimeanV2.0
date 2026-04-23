@@ -2,7 +2,7 @@
  * barrelroll-counter-worker
  *
  * Cloudflare Worker that tracks the rickroll/barrel-roll counter using D1
- * and provides starter Discord OAuth session routes.
+ * and provides backend-only auth/layout/tool routes behind the edge router.
  *
  * Bindings required (set in wrangler.toml or the Cloudflare dashboard):
  *   DB  →  barrelroll-counter-db  (D1 database)
@@ -1206,9 +1206,9 @@ export default {
     const isLayoutRoute = pathname === '/layout';
     const withApiSecurityHeaders = (response) => applyApiSecurityHeaders(response, isSecureTransport);
 
-    // Serve static assets for all non-counter/non-auth/non-go/non-layout paths.
+    // This worker is backend-only. Non-API routes are owned by the edge router.
     if (!isCounterRoute && !isAuthRoute && !isGoRoute && !isLayoutRoute) {
-      return env.ASSETS.fetch(request);
+      return withApiSecurityHeaders(jsonResponse({ error: 'Not found' }, 404, origin, env));
     }
 
     // Handle CORS pre-flight for API routes.
