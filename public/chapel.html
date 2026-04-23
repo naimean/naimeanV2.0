@@ -2980,8 +2980,22 @@
     });
 
     const TRAPDOOR_DESTINATION_PATH = '/bedroom_antechamber.html';
-    const DISCORD_AUTH_GATE_URL = '/auth/discord/login?returnTo=' + encodeURIComponent(TRAPDOOR_DESTINATION_PATH);
     const FADE_TRANSITION_DURATION_MS = 900;
+
+    function getCurrentChapelPath() {
+      const pathname = window.location.pathname || '/chapel.html';
+      const search = window.location.search || '';
+      const hash = window.location.hash || '';
+      return pathname + search + hash;
+    }
+
+    function buildTrapdoorAuthGateUrl() {
+      const popupReturnTo = '/auth_popup_complete.html?next='
+        + encodeURIComponent(TRAPDOOR_DESTINATION_PATH)
+        + '&from='
+        + encodeURIComponent(getCurrentChapelPath());
+      return '/auth/discord/login?returnTo=' + encodeURIComponent(popupReturnTo);
+    }
 
     function isDiscordAuthSession(session) {
       return Boolean(session && session.authenticated && session.user && session.user.provider === 'discord');
@@ -3014,7 +3028,10 @@
 
     async function requestDiscordAuthSession() {
       if (window.NaimeanAuth && typeof window.NaimeanAuth.requireDiscordAuth === 'function') {
-        const result = await window.NaimeanAuth.requireDiscordAuth({ returnToPath: TRAPDOOR_DESTINATION_PATH });
+        const result = await window.NaimeanAuth.requireDiscordAuth({
+          returnToPath: TRAPDOOR_DESTINATION_PATH,
+          fromPath: getCurrentChapelPath(),
+        });
         const authResult = result && typeof result === 'object' ? result : {};
         return {
           status: authResult.status || 'completed',
@@ -3022,7 +3039,7 @@
           session: authResult.session || { authenticated: false, user: null },
         };
       }
-      window.location.assign(DISCORD_AUTH_GATE_URL);
+      window.location.assign(buildTrapdoorAuthGateUrl());
       return {
         status: 'redirect',
         nextPath: TRAPDOOR_DESTINATION_PATH,
