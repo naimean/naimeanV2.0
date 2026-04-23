@@ -388,6 +388,7 @@
       z-index: 100;
     }
 
+    .fade-overlay.is-visible,
     .fade-overlay.fading {
       opacity: 1;
       pointer-events: auto;
@@ -741,7 +742,7 @@
   </style>
 </head>
 <body>
-  <div class="fade-overlay" id="fade-overlay"></div>
+  <div class="fade-overlay is-visible" id="fade-overlay"></div>
   <audio id="congregation-audio" src="assets/congregation.mp3" preload="auto"></audio>
   <audio id="congregation-audio-crusty" src="assets/krusty_laugh.mp3" preload="auto"></audio>
   <audio id="congregation-audio-goose" src="assets/goose_honk.mp3" preload="auto"></audio>
@@ -2771,25 +2772,60 @@
     startRockRollContinuation(consumeRockRollContinuation());
     bindTorchBloomIntensityUpdates();
 
-    // Fallback reveal in case full window load is delayed by media/network activity.
-    const LOAD_REVEAL_FALLBACK_MS = 1200;
+    // Keep the screen black until the stitched chapel image is ready and the
+    // initial floor-anchored scroll has been applied, with a max wait fallback.
+    const LOAD_REVEAL_FALLBACK_MS = 4000;
+    let initialRevealTimerId = null;
+
+    function clearInitialRevealTimer() {
+      if (initialRevealTimerId !== null) {
+        window.clearTimeout(initialRevealTimerId);
+        initialRevealTimerId = null;
+      }
+    }
+
+    function hideLoadingOverlay() {
+      const overlay = document.getElementById('fade-overlay');
+      if (!overlay || overlay.classList.contains('fading')) {
+        return;
+      }
+      overlay.classList.remove('is-visible');
+    }
 
     function revealPage() {
       if (document.body.classList.contains('loaded')) {
         return;
       }
+      clearInitialRevealTimer();
       requestAnimationFrame(function () {
-        document.body.classList.add('loaded');
+        if (!isLayoutProbeMode) {
+          scrollToCurrentStartPoint();
+        }
+        requestAnimationFrame(function () {
+          document.body.classList.add('loaded');
+          hideLoadingOverlay();
+        });
       });
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function () {
-        window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
-      }, { once: true });
-    } else {
-      window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+    function scheduleInitialReveal() {
+      clearInitialRevealTimer();
+      initialRevealTimerId = window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+      if (!chapelImage) {
+        revealPage();
+        return;
+      }
+
+      if (chapelImage.complete && chapelImage.naturalHeight > 0) {
+        revealPage();
+        return;
+      }
+
+      chapelImage.addEventListener('load', revealPage, { once: true });
+      chapelImage.addEventListener('error', revealPage, { once: true });
     }
+
+    scheduleInitialReveal();
 
     function playDoorOpeningSound() {
       const audioContextCtor = window.AudioContext || window.webkitAudioContext;
