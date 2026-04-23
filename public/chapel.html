@@ -241,6 +241,23 @@
       box-shadow: none;
     }
 
+    /* Invisible hotspot over the ceiling painting used to toggle hotspot tools. */
+    .ceiling-tools-btn {
+      left: 40.5%;
+      top: 13.5%;
+      width: 18.5%;
+      height: 13.5%;
+      border: none;
+      box-shadow: none;
+    }
+
+    .ceiling-tools-btn:focus,
+    .ceiling-tools-btn:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.9);
+      outline-offset: 2px;
+      box-shadow: none;
+    }
+
     .congregation-btn:focus-visible {
       opacity: 1;
       outline: 2px solid rgba(255, 255, 255, 0.9);
@@ -740,6 +757,7 @@
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
       <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
       <button class="invisible-hotspot-btn trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
+      <button class="invisible-hotspot-btn ceiling-tools-btn" id="ceiling-tools-btn" aria-label="Toggle layout tools"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="crusty-button" aria-label="Play Crusty laugh"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="goose-button" aria-label="Play Goose honk"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="morty-button" aria-label="Play Morty aw jeez"></button>
@@ -753,6 +771,7 @@
           <option value="__none__">no hotspot</option>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
+          <option value="ceiling-tools-btn">ceiling tools hotspot</option>
           <option value="crusty-button">crusty hotspot</option>
           <option value="goose-button">goose hotspot</option>
           <option value="morty-button">morty hotspot</option>
@@ -790,6 +809,7 @@
           <option value="__none__">no hotspot</option>
           <option value="chapel-return-btn">return hotspot</option>
           <option value="trapdoor-btn">trapdoor hotspot</option>
+          <option value="ceiling-tools-btn">ceiling tools hotspot</option>
           <option value="crusty-button">crusty hotspot</option>
           <option value="goose-button">goose hotspot</option>
           <option value="morty-button">morty hotspot</option>
@@ -936,6 +956,7 @@
     const HOTSPOT_IDS = [
       'chapel-return-btn',
       'trapdoor-btn',
+      'ceiling-tools-btn',
       'crusty-button',
       'goose-button',
       'morty-button',
@@ -1658,6 +1679,12 @@
           setToolsActive(!isToolsActive());
         }
       });
+      const ceilingToolsButton = document.getElementById('ceiling-tools-btn');
+      if (ceilingToolsButton) {
+        ceilingToolsButton.addEventListener('click', function () {
+          setToolsActive(!isToolsActive());
+        });
+      }
 
       let mobileTripleTapCount = 0;
       let mobileTripleTapLastTimestamp = 0;
