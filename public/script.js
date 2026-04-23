@@ -932,10 +932,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function reloadHomePage() {
-    window.location.replace('/');
-  }
-
   function powerOnScreen() {
     if (screenOn) {
       return;
@@ -1025,7 +1021,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (!isDiscordSession(authSession)) {
-      reloadHomePage();
       return;
     }
 
@@ -1347,7 +1342,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const hasDiscordAuth = await requireDiscordSession(getReturnToPath());
       if (!hasDiscordAuth) {
         setPowerOnAuthPending(false);
-        reloadHomePage();
         return;
       }
       // Clear the marker when the popup flow completes in-place; full-page OAuth
