@@ -230,7 +230,7 @@ body {
   border-radius: 2px;
   color: #c8deff;
   font-family: 'Press Start 2P', 'IBM Plex Mono', 'VT323', monospace;
-  font-size: 0.93em;
+  font-size: 0.83em;
   outline: none;
   width: calc(14em + 75px);
   min-width: calc(14em + 75px);
@@ -389,7 +389,7 @@ body {
     padding-top: 9px;
     padding-bottom: 9px;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.9em;
+    font-size: 0.8em;
     letter-spacing: 0.3px;
   }
 
@@ -963,7 +963,7 @@ body {
     min-width: 14em;
     max-width: 14em;
     font-family: 'VT323', monospace;
-    font-size: calc(0.93em + 1px);
+    font-size: calc(0.83em + 1px);
     font-weight: 400;
     letter-spacing: 0.25px;
   }
