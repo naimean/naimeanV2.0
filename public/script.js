@@ -871,6 +871,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.NaimeanAuth && typeof window.NaimeanAuth.requireDiscordAuth === 'function') {
       try {
         const result = await window.NaimeanAuth.requireDiscordAuth({ returnToPath: targetPath });
+        // When the popup was blocked the auth library falls back to a full-page
+        // redirect.  Return null so callers know NOT to clear their sessionStorage
+        // pending keys — the page is navigating away and resumePowerOnAuthIfNeeded
+        // (or resumeJoinDiscordWorkflowIfNeeded) will pick up where we left off
+        // once the OAuth flow returns the user to this page.
+        if (result && result.status === 'redirect') {
+          return null;
+        }
         if (result && result.session) {
           authSession = result.session;
         } else {
@@ -990,8 +998,11 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!isDiscordSession(session)) {
         setJoinDiscordWorkflowPending(true);
         const hasDiscordAuth = await requireDiscordSession(getReturnToPath());
-        if (!hasDiscordAuth) {
-          setJoinDiscordWorkflowPending(false);
+        if (hasDiscordAuth !== true) {
+          // null = redirect in progress (keep pending key); false = auth cancelled
+          if (hasDiscordAuth === false) {
+            setJoinDiscordWorkflowPending(false);
+          }
           return false;
         }
       }
@@ -1340,12 +1351,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!isDiscordSession(session)) {
       setPowerOnAuthPending(true);
       const hasDiscordAuth = await requireDiscordSession(getReturnToPath());
-      if (!hasDiscordAuth) {
-        setPowerOnAuthPending(false);
+      // null  → full-page OAuth redirect is in progress; keep the pending key so
+      //          resumePowerOnAuthIfNeeded can restore this flow after the page reloads.
+      // false → auth was explicitly cancelled/failed; clear the pending key and bail.
+      // true  → popup auth succeeded in-place; clear the pending key and continue.
+      if (hasDiscordAuth !== true) {
+        if (hasDiscordAuth === false) {
+          setPowerOnAuthPending(false);
+        }
         return;
       }
-      // Clear the marker when the popup flow completes in-place; full-page OAuth
-      // redirects reload before this point and are resumed after the page reloads.
+      // Clear the marker now that the popup flow completed in-place successfully.
       setPowerOnAuthPending(false);
     }
 
