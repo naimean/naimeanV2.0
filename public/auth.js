@@ -458,7 +458,7 @@
 
   async function startDiscordAuth(options = {}) {
     const returnToPath = sanitizeReturnPath(options.returnToPath || getCurrentPath());
-    const popupReturnTo = `/auth_popup_complete.html?next=${encodeURIComponent(returnToPath)}`;
+    const popupReturnTo = `/auth_popup_complete.html?next=${encodeURIComponent(returnToPath)}&from=${encodeURIComponent(getCurrentPath())}`;
     const loginUrl = `${AUTH_DISCORD_LOGIN_PATH}?returnTo=${encodeURIComponent(popupReturnTo)}`;
 
     const existingSession = await refreshAuthSession();
