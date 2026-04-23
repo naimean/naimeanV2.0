@@ -115,8 +115,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
   const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
   const DISCORD_OVERLAY_DISPLAY_DURATION_MS = 5000;
+  const POWER_ON_DISCORD_OVERLAY_DISPLAY_DURATION_MS = 2500;
   const DISCORD_INVITE_REDIRECT_PENDING_KEY = 'naimean-discord-invite-redirect-pending';
   const JOIN_DISCORD_WORKFLOW_PENDING_KEY = 'naimean-join-discord-workflow-pending';
+  const POWER_ON_AUTH_PENDING_KEY = 'naimean-power-on-auth-pending';
   const JOIN_DISCORD_GATE_HOLD_MS = 1200;
   const JOIN_DISCORD_PLEASE_SCREEN_HOLD_MS = 1200;
   const PRANK_REDIRECT_DELAY_MS = 5000;
@@ -910,6 +912,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  function setPowerOnAuthPending(isPending) {
+    try {
+      if (isPending) {
+        window.sessionStorage.setItem(POWER_ON_AUTH_PENDING_KEY, '1');
+        return;
+      }
+      window.sessionStorage.removeItem(POWER_ON_AUTH_PENDING_KEY);
+    } catch (_) {}
+  }
+
+  function consumePowerOnAuthPending() {
+    try {
+      const isPending = window.sessionStorage.getItem(POWER_ON_AUTH_PENDING_KEY) === '1';
+      window.sessionStorage.removeItem(POWER_ON_AUTH_PENDING_KEY);
+      return isPending;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function reloadHomePage() {
+    window.location.replace('/');
+  }
+
   function powerOnScreenForJoinDiscordWorkflow() {
     if (screenOn) {
       return;
@@ -991,6 +1017,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await continueJoinDiscordWorkflow();
+  }
+
+  async function resumePowerOnAuthIfNeeded() {
+    if (!consumePowerOnAuthPending()) {
+      return;
+    }
+
+    if (!isDiscordSession(authSession)) {
+      reloadHomePage();
+      return;
+    }
+
+    powerOnScreenForJoinDiscordWorkflow();
+    await playStaticTransition();
+    showBlueNedryGateScreen();
   }
 
   async function openProtectedTool(toolPath) {
@@ -1293,11 +1334,23 @@ document.addEventListener('DOMContentLoaded', function() {
       discordOverlay.setAttribute('aria-hidden', 'false');
     }
 
-    await delay(3000);
+    await delay(POWER_ON_DISCORD_OVERLAY_DISPLAY_DURATION_MS);
 
     if (discordOverlay) {
       discordOverlay.classList.remove('visible');
       discordOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    const session = await refreshAuthSession();
+    if (!isDiscordSession(session)) {
+      setPowerOnAuthPending(true);
+      const hasDiscordAuth = await requireDiscordSession(getReturnToPath());
+      if (!hasDiscordAuth) {
+        setPowerOnAuthPending(false);
+        reloadHomePage();
+        return;
+      }
+      setPowerOnAuthPending(false);
     }
 
     await playStaticTransition();
@@ -1653,6 +1706,7 @@ document.addEventListener('DOMContentLoaded', function() {
     refreshAuthSession().then(function () {
       applySessionToBootInput();
       renderDiscordAuthChip();
+      resumePowerOnAuthIfNeeded().catch(function () {});
       resumeJoinDiscordWorkflowIfNeeded().catch(function () {});
     }).catch(function () {});
   }
@@ -1767,10 +1821,14 @@ document.addEventListener('DOMContentLoaded', function() {
             updateBootQuickLinkVisibility();
             return;
           }
-          const didStartWorkflow = await beginJoinDiscordWorkflow();
-          if (!didStartWorkflow) {
-            updateBootQuickLinkVisibility();
+          if (joinDiscordWorkflowRunning) {
             return;
+          }
+          joinDiscordWorkflowRunning = true;
+          try {
+            await runNedryGateSequence();
+          } finally {
+            joinDiscordWorkflowRunning = false;
           }
         }
       });
