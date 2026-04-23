@@ -605,9 +605,12 @@ async function getCount(db) {
 }
 
 async function incrementCount(db) {
-  // Use RETURNING to atomically increment and return the new value in one statement.
+  // Upsert so increments still work even if the seed row was never created.
   const row = await db
-    .prepare('UPDATE rickroll_counter SET value = value + 1 WHERE id = ? RETURNING value')
+    .prepare(`INSERT INTO rickroll_counter (id, value)
+      VALUES (?, 1)
+      ON CONFLICT(id) DO UPDATE SET value = value + 1
+      RETURNING value`)
     .bind(COUNTER_ID)
     .first();
   return row ? row.value : 0;
