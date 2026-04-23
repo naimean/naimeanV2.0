@@ -28,14 +28,16 @@
   </style>
 </head>
 <body>
-  <div class="auth-card">
+  <div class="auth-card" id="auth-card">
     Completing Discord sign-in...
   </div>
   <script>
     (function() {
       const params = new URLSearchParams(window.location.search);
       const nextRaw = params.get('next') || '/';
+      const fromRaw = params.get('from') || '/';
       const authOutcome = (params.get('auth') || '').trim().toLowerCase() || 'unknown';
+      const authSuccess = authOutcome === 'success';
 
       function sanitizePath(raw) {
         const fallback = '/';
@@ -54,6 +56,7 @@
       }
 
       const nextPath = sanitizePath(nextRaw);
+      const fromPath = sanitizePath(fromRaw);
       const message = {
         type: 'naimean-auth-result',
         status: authOutcome,
@@ -69,13 +72,29 @@
         setTimeout(() => {
           try { window.close(); } catch (_) {}
         }, 350);
-        setTimeout(() => {
-          window.location.replace(nextPath);
-        }, 1200);
+        // Fallback navigation only on success — on cancel/failure leave the popup
+        // open (user can close it manually) to avoid navigating a protected page
+        // without authentication.
+        if (authSuccess) {
+          setTimeout(() => {
+            window.location.replace(nextPath);
+          }, 1200);
+        } else {
+          const card = document.getElementById('auth-card');
+          if (card) {
+            card.textContent = 'Authentication cancelled. You can close this window.';
+          }
+        }
       } else {
-        const joiner = nextPath.includes('?') ? '&' : '?';
-        const fallbackTarget = authOutcome ? `${nextPath}${joiner}auth=${encodeURIComponent(authOutcome)}` : nextPath;
-        window.location.replace(fallbackTarget);
+        // Full-page redirect fallback (popup was blocked by the browser).
+        // Only proceed to the destination on success; otherwise return to the
+        // page the user came from so they are not sent to a protected page.
+        if (authSuccess) {
+          const joiner = nextPath.includes('?') ? '&' : '?';
+          window.location.replace(`${nextPath}${joiner}auth=${encodeURIComponent(authOutcome)}`);
+        } else {
+          window.location.replace(fromPath);
+        }
       }
     })();
   </script>
