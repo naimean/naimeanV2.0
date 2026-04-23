@@ -430,17 +430,14 @@ test('contract: POST /increment returns an incremented value from D1', async () 
   // Mock a D1 that simulates a real value of 41 before increment → 42 after.
   const mockDbWithValue = {
     prepare(sql) {
-      // The worker uses an UPDATE … RETURNING statement to atomically increment
-      // and read back the new value, and a SELECT statement to read-only fetch.
-      // We detect which query is in flight by checking for the UPDATE keyword so
-      // the mock can return the correct post-increment value.
-      const isUpdate = sql.trim().toUpperCase().startsWith('UPDATE');
+      // The worker uses an INSERT ... ON CONFLICT ... RETURNING upsert to
+      // atomically increment and read back the new value.
+      const isIncrementUpsert = sql.trim().toUpperCase().startsWith('INSERT');
       return {
         bind(..._args) {
           return {
             async first() {
-              // UPDATE … RETURNING returns the new (incremented) value.
-              return { value: isUpdate ? 42 : 41 };
+              return { value: isIncrementUpsert ? 42 : 41 };
             },
           };
         },
@@ -454,6 +451,37 @@ test('contract: POST /increment returns an incremented value from D1', async () 
   assert.strictEqual(res.status, 200);
   const body = await res.json();
   assert.strictEqual(body.value, 42);
+});
+
+test('contract: POST /increment creates and increments when counter seed row is missing', async () => {
+  const mockDbMissingSeedRow = {
+    prepare(sql) {
+      const normalizedSql = sql.trim().toUpperCase();
+      return {
+        bind(..._args) {
+          return {
+            async first() {
+              if (normalizedSql.startsWith('UPDATE')) {
+                return null;
+              }
+              if (normalizedSql.startsWith('INSERT')) {
+                return { value: 1 };
+              }
+              return { value: 0 };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  const res = await worker.fetch(
+    makeContractRequest('POST', '/increment'),
+    makeContractEnv({ DB: mockDbMissingSeedRow }),
+  );
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(body.value, 1);
 });
 
 // ─── /go/:tool unknown path ───────────────────────────────────────────────────
