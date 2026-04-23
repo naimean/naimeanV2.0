@@ -1682,7 +1682,9 @@
         if (!nextToolsActive) {
           const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
           stopSelectedTargetDrag();
-          clearResizeCursorClasses(selectedTarget);
+          if (selectedTarget) {
+            clearResizeCursorClasses(selectedTarget);
+          }
         }
         document.body.classList.toggle('hotspot-tools-active', nextToolsActive);
         syncTransRickPresentation();
@@ -1717,7 +1719,7 @@
         }
         if (isOwnerDiscordSession(session) && !isToolsActive()) {
           ownerToolsAutoShown = true;
-          setToolsActive(true);
+          setToolsActive(true, { manual: false });
         }
       }
       const authApi = window.NaimeanAuth;
