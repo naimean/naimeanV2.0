@@ -20,25 +20,11 @@
     body {
       background: #000;
       min-height: 100vh;
-      opacity: 0;
-      transition: opacity 1s ease;
-      animation: chapel-auto-reveal 0s linear 2.4s forwards;
     }
 
     @supports (min-height: 100dvh) {
       body {
         min-height: 100dvh;
-      }
-    }
-
-    body.loaded {
-      opacity: 1;
-      animation: none;
-    }
-
-    @keyframes chapel-auto-reveal {
-      to {
-        opacity: 1;
       }
     }
 
@@ -48,6 +34,15 @@
       margin: 0 auto;
       display: flex;
       flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.9s ease;
+      will-change: opacity;
+    }
+
+    body.loaded .chapel-outer {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .chapel-wrapper {
@@ -219,6 +214,12 @@
 
     .chapel-return-btn,
     .invisible-hotspot-btn {
+      outline: none;
+      box-shadow: none;
+    }
+
+    body.hotspot-tools-active .chapel-return-btn,
+    body.hotspot-tools-active .invisible-hotspot-btn {
       outline: 2px dashed rgba(255, 255, 255, 0.95);
       outline-offset: -1px;
       box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.8);
