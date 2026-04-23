@@ -1665,11 +1665,19 @@
       // ── Tool activation ──────────────────────────────────────────────────────
       // Toggle visibility with Ctrl+Shift+H or window.NaimeanLayout.toggle().
       const LAYOUT_TOOLS_KEY = 'naimean-hotspot-tools';
+      let ownerToolsAutoShown = false;
+      let ownerToolsManuallyHidden = false;
       function isToolsActive() {
         try { return localStorage.getItem(LAYOUT_TOOLS_KEY) === '1'; } catch (_) { return false; }
       }
-      function setToolsActive(on) {
+      function setToolsActive(on, options) {
         const nextToolsActive = Boolean(on);
+        const isManualToggle = Boolean(options && options.manual);
+        if (isManualToggle) {
+          ownerToolsManuallyHidden = !nextToolsActive;
+        } else if (nextToolsActive) {
+          ownerToolsManuallyHidden = false;
+        }
         try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
         if (!nextToolsActive) {
           const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
@@ -1683,13 +1691,13 @@
       document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.shiftKey && !e.altKey && e.key === 'H') {
           e.preventDefault();
-          setToolsActive(!isToolsActive());
+          setToolsActive(!isToolsActive(), { manual: true });
         }
       });
       const ceilingToolsButton = document.getElementById('ceiling-tools-btn');
       if (ceilingToolsButton) {
         ceilingToolsButton.addEventListener('click', function () {
-          setToolsActive(!isToolsActive());
+          setToolsActive(!isToolsActive(), { manual: true });
         });
       }
 
@@ -1704,7 +1712,11 @@
         return HOTSPOT_OWNER_DISCORD_ALIASES.has(username) || HOTSPOT_OWNER_DISCORD_ALIASES.has(displayName);
       }
       function showToolsByDefaultForOwner(session) {
+        if (!session || ownerToolsAutoShown || ownerToolsManuallyHidden) {
+          return;
+        }
         if (isOwnerDiscordSession(session) && !isToolsActive()) {
+          ownerToolsAutoShown = true;
           setToolsActive(true);
         }
       }
@@ -1748,7 +1760,7 @@
         getLatestAuthSession()
           .then(function (session) {
             if (isOwnerDiscordSession(session)) {
-              setToolsActive(true);
+              setToolsActive(true, { manual: true });
             }
           })
           .catch(function (error) {
@@ -2098,7 +2110,7 @@
         const hideToolsBtn = fontTool.querySelector('[data-hotspot-tools-hide]');
         if (hideToolsBtn) {
           hideToolsBtn.addEventListener('click', function () {
-            setToolsActive(false);
+            setToolsActive(false, { manual: true });
           });
         }
       }
@@ -2253,12 +2265,12 @@
     }
 
     // ── Public API ───────────────────────────────────────────────────────────────
-    window.NaimeanLayout = {
-      toggle: function () {
-        const isActive = document.body.classList.contains('hotspot-tools-active');
-        setToolsActive(!isActive);
-      },
-    };
+      window.NaimeanLayout = {
+        toggle: function () {
+          const isActive = document.body.classList.contains('hotspot-tools-active');
+          setToolsActive(!isActive, { manual: true });
+        },
+      };
 
     function syncTransRickPresentation() {
       if (!chapelTransRick) {
