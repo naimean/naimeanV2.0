@@ -1402,8 +1402,9 @@ document.addEventListener('DOMContentLoaded', function() {
       await prankVideo.play();
     } catch (_) {}
 
+    const incrementPromise = incrementRickrollCount();
     await delay(PRANK_REDIRECT_DELAY_MS);
-    await incrementRickrollCount();
+    await incrementPromise;
     persistRockRollPlaybackState();
     window.location.assign('chapel.html');
   }
@@ -1433,8 +1434,9 @@ document.addEventListener('DOMContentLoaded', function() {
       // Continue to redirect even if autoplay is blocked.
     }
 
+    const incrementPromise = incrementRickrollCount();
     await delay(PRANK_REDIRECT_DELAY_MS);
-    await incrementRickrollCount();
+    await incrementPromise;
     persistRockRollPlaybackState();
     try {
       window.sessionStorage.setItem(DISCORD_INVITE_REDIRECT_PENDING_KEY, '1');
