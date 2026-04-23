@@ -75,7 +75,7 @@ It keeps Cloudflare domain control centralized without mixing business logic int
 ---
 
 ### 2) Router config (`wrangler.toml`)
-**Role:** binds `ASSETS`, `COUNTER`, and worker-first routes.
+**Role:** binds `ASSETS`, `COUNTER`, repo-managed custom-domain routes, and worker-first paths.
 
 **Important fact:**
 `run_worker_first` must match `PROXY_PATHS`, and CI checks that with `scripts/check-route-alignment.js`.
@@ -95,7 +95,7 @@ It keeps Cloudflare domain control centralized without mixing business logic int
 - rate limiting, CORS, payload validation, and API security headers
 
 **Important operational fact:**
-The Worker depends on D1 plus secrets, and four secrets are still missing in the current Cloudflare handoff: `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW`.
+The Worker depends on D1 plus auth secrets. `OWNER_DISCORD_ID` and `TOOL_URL_*` are optional overrides in current repo code.
 
 ---
 
@@ -150,7 +150,7 @@ It is the repo's cleaner API lane and owns its own D1 + KV footprint.
 **Current infra facts:**
 - D1: `naimean-db` (`0871f90d-f7e3-467a-a1f9-4e74ac8aef42`)
 - KV: `naimean-kv` (`dff7175059ce478eab8c910949ca330f`)
-- secret: `API_TOKEN` exists operationally and should stay documented in handoff docs
+- no runtime API secret is enforced by `naimean-api/src/worker.js`
 
 ---
 
@@ -177,10 +177,10 @@ It is the repo's cleaner API lane and owns its own D1 + KV footprint.
 - mini-game behavior
 - prank/rickroll flow
 - scene transitions
-- legacy direct tool-button URLs
+- authenticated `/go/*` tool-button launches
 
 **Important caveat:**
-The UI still contains direct hardcoded tool destinations even though `/go/*` exists server-side.
+The UI now launches tools through `/go/*`, so backend auth gates and frontend behavior are aligned.
 
 ---
 
@@ -212,7 +212,8 @@ These pages show the frontend is organized around scenes and hotspots, not compo
 - `node --check`
 - `node --test cloudflare-worker/worker.test.js`
 - wrangler field checks
-- route-alignment checks
+- route-alignment checks for proxy paths and expected worker routes
+- schema-file sanity checks for expected tables
 - GitHub Pages deploy
 - Worker deploys for all three Workers
 
@@ -238,15 +239,15 @@ These pages show the frontend is organized around scenes and hotspots, not compo
 ### Main backend runtime
 - config: `cloudflare-worker/wrangler.toml`
 - D1 binding: `DB` -> `barrelroll-counter-db`
-- missing secrets to set: `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW`
-- undocumented-but-live secrets: `BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`
+- optional overrides: `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW`
+- operational/out-of-band secrets not consumed by current repo code: `BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`
 
 ### API runtime
 - config: `naimean-api/wrangler.toml`
 - route: `naimean.com/api/*`
 - D1 binding: `DB` -> `naimean-db`
 - KV binding: `KV` -> `naimean-kv`
-- secret: `API_TOKEN`
+- auth model: public `/api/*` endpoints; no runtime `API_TOKEN` enforcement in repo code
 
 ---
 
@@ -270,8 +271,8 @@ Current hardening already present in code:
 ## Recommendation highlights
 
 ### Immediate
-- set the four missing backend secrets
-- finish moving tool launches to `/go/*`
+- decide whether `OWNER_DISCORD_ID` should be configured for stricter `/layout` writes
+- set `TOOL_URL_*` only if the built-in `/go/*` destinations should be overridden
 - add WAF, edge rate limits, monitoring, and Zero Trust protections
 
 ### Next

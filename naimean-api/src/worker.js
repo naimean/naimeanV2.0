@@ -3,6 +3,7 @@
  *
  * Cloudflare Worker serving the REST API at naimean.com/api/*.
  * Backed by D1 (SQLite at the edge) with KV available for future use.
+ * Current repo behavior keeps /api/* public; no API token is enforced here.
  *
  * Bindings required (configured in wrangler.toml):
  *   DB  →  naimean-db  (D1 database)
@@ -21,16 +22,26 @@ const SECURITY_HEADERS = {
   "Content-Security-Policy": API_CSP,
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Referrer-Policy": "no-referrer",
+  "Permissions-Policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()",
 };
 
-function jsonResponse(body, status = 200) {
+function jsonResponse(body, status = 200, isSecureTransport = false) {
+  const headers = {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+    ...SECURITY_HEADERS,
+  };
+
+  if (isSecureTransport) {
+    headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
+  }
+
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      "Content-Type": "application/json",
-      ...SECURITY_HEADERS,
-    },
+    headers,
   });
 }
 
@@ -39,17 +50,18 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
     const method = request.method;
+    const isSecureTransport = url.protocol === "https:";
 
     try {
       if (pathname === "/api/health" && method === "GET") {
-        return jsonResponse({ status: "ok", timestamp: new Date().toISOString() });
+        return jsonResponse({ status: "ok", timestamp: new Date().toISOString() }, 200, isSecureTransport);
       }
 
       if (pathname === "/api/data" && method === "GET") {
         const result = await env.DB.prepare(
           "SELECT id, title, content, created_at FROM entries ORDER BY created_at DESC LIMIT 50"
         ).all();
-        return jsonResponse(result.results);
+        return jsonResponse(result.results, 200, isSecureTransport);
       }
 
       if (pathname === "/api/data" && method === "POST") {
@@ -57,25 +69,25 @@ export default {
         try {
           body = await request.json();
         } catch {
-          return jsonResponse({ error: "invalid JSON body" }, 400);
+          return jsonResponse({ error: "invalid JSON body" }, 400, isSecureTransport);
         }
 
         const title = body && typeof body.title === "string" ? body.title.trim() : "";
         if (!title) {
-          return jsonResponse({ error: "title is required" }, 400);
+          return jsonResponse({ error: "title is required" }, 400, isSecureTransport);
         }
 
         const content = body && typeof body.content === "string" ? body.content : null;
 
         await env.DB.prepare("INSERT INTO entries (title, content) VALUES (?, ?)").bind(title, content).run();
 
-        return jsonResponse({ success: true }, 201);
+        return jsonResponse({ success: true }, 201, isSecureTransport);
       }
 
-      return jsonResponse("naimean.com API — use /api/health or /api/data", 404);
+      return jsonResponse("naimean.com API — use /api/health or /api/data", 404, isSecureTransport);
     } catch (err) {
       console.error("naimean-api request failed", err);
-      return jsonResponse({ error: "internal server error" }, 500);
+      return jsonResponse({ error: "internal server error" }, 500, isSecureTransport);
     }
   },
 };

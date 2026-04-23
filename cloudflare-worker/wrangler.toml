@@ -8,10 +8,7 @@ compatibility_date = "2026-04-18"
 # Then run once to initialise all tables (counter, layout overrides, registered users):
 #   wrangler d1 execute barrelroll-counter-db --file=cloudflare-worker/schema.sql
 #
-# Set ALL required secrets before first deploy (never commit values — stored by Cloudflare):
-#
-#   Shared internal-routing secret (must match the naimeanv2 edge router):
-#     wrangler secret put ROUTER_SECRET
+# Set required secrets before first deploy (never commit values — stored by Cloudflare):
 #
 #   Session token signing key (generate a long random string, e.g. openssl rand -hex 32):
 #     wrangler secret put SESSION_SECRET
@@ -21,10 +18,10 @@ compatibility_date = "2026-04-18"
 #     wrangler secret put DISCORD_CLIENT_SECRET
 #     wrangler secret put DISCORD_REDIRECT_URI   # e.g. https://naimean.com/auth/discord/callback
 #
-#   Restrict POST /layout to a single Discord account (your numeric Discord user ID):
+#   Optional: restrict POST /layout to a single Discord account (your numeric Discord user ID):
 #     wrangler secret put OWNER_DISCORD_ID
 #
-#   Authenticated redirect targets for the /go/* tool launcher:
+#   Optional: override the built-in HTTPS defaults for the authenticated /go/* tool launcher:
 #     wrangler secret put TOOL_URL_WHITEBOARD
 #     wrangler secret put TOOL_URL_CAPEX
 #     wrangler secret put TOOL_URL_SNOW

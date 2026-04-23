@@ -117,9 +117,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const DISCORD_INVITE_REDIRECT_PENDING_KEY = 'naimean-discord-invite-redirect-pending';
   const PRANK_REDIRECT_DELAY_MS = 5000;
   const RICKROLL_COUNT_UNAVAILABLE_TEXT = '--';
-  const WHITEBOARD_URL = 'https://whiteboard.cloud.microsoft/me/whiteboards/p/c3BvOmh0dHBzOi8vcmVjb3ZlcnlvY2EtbXkuc2hhcmVwb2ludC5jb20vcGVyc29uYWwvanlhbWFtb3RvX3JlY292ZXJ5Y29hX2NvbQ%3D%3D/b!JAozP9NiJUiopo4tHC_mia8ih9rBB_BJuDHqlIhdrMR7ZnPtQaRFRYzWdkPa-N26/01KVGIHGKPDXSBM3SGFBGYGXQECIZHFEFE';
-  const CAP_EX_URL = 'https://app.smartsheet.com/b/form/70b07591b76a4289bc6f5d5e1aabac91?';
-  const SNOW_URL = 'https://recoverycoa.service-now.com/now/nav/ui/classic/params/target/incident_list.do?sysparm_query=stateNOT%20IN6%2C7%2C8%5Eassigned_to%3D7fc866ea1b1d7110153886a7624bcbc0&sysparm_first_row=1&sysparm_view=';
+  const WHITEBOARD_URL = '/go/whiteboard';
+  const CAP_EX_URL = '/go/capex';
+  const SNOW_URL = '/go/snow';
   const AUTH_SESSION_API_URL = '/auth/session';
   const AUTH_DISCORD_LOGIN_PATH = '/auth/discord/login';
   const AUTH_LOGOUT_API_URL = '/auth/logout';
@@ -885,6 +885,25 @@ document.addEventListener('DOMContentLoaded', function() {
     return false;
   }
 
+  async function openProtectedTool(toolPath) {
+    const popup = window.open('', '_blank', 'noopener');
+    const session = await refreshAuthSession();
+    if (!session || !session.authenticated) {
+      if (popup && !popup.closed) {
+        popup.close();
+      }
+      beginDiscordLogin();
+      return;
+    }
+
+    if (popup && !popup.closed) {
+      popup.location = toolPath;
+      return;
+    }
+
+    window.location.assign(toolPath);
+  }
+
   // ─── Email auth form ──────────────────────────────────────────────────────
   // 'register' mode shows the username field; 'emaillogin' mode hides it.
 
@@ -1460,20 +1479,20 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('pointerdown', primeWrongAudio, { once: true });
 
   if (bootWhiteboardBtn) {
-    bootWhiteboardBtn.addEventListener('click', function() {
-      window.open(WHITEBOARD_URL, '_blank', 'noopener,noreferrer');
+    bootWhiteboardBtn.addEventListener('click', async function() {
+      await openProtectedTool(WHITEBOARD_URL);
     });
   }
 
   if (bootCapExBtn) {
-    bootCapExBtn.addEventListener('click', function() {
-      window.open(CAP_EX_URL, '_blank', 'noopener,noreferrer');
+    bootCapExBtn.addEventListener('click', async function() {
+      await openProtectedTool(CAP_EX_URL);
     });
   }
 
   if (bootSnowBtn) {
-    bootSnowBtn.addEventListener('click', function() {
-      window.open(SNOW_URL, '_blank', 'noopener,noreferrer');
+    bootSnowBtn.addEventListener('click', async function() {
+      await openProtectedTool(SNOW_URL);
     });
   }
 

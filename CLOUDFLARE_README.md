@@ -55,7 +55,7 @@ Key principle: `naimeanv2` stays intentionally thin. It handles routing, securit
 | Role | edge router / traffic cop |
 | Source | `src/index.js` |
 | Config | `wrangler.toml` |
-| Routes | `naimean.com/*`, `www.naimean.com/*` |
+| Routes | `naimean.com/*`, `www.naimean.com/*` (declared in root `wrangler.toml`) |
 | Last deployed | 2026-04-23 |
 
 ### Bindings
@@ -122,14 +122,14 @@ Key principle: `naimeanv2` stays intentionally thin. It handles routing, securit
 | `DISCORD_CLIENT_ID` | ✅ set | Discord OAuth client ID |
 | `DISCORD_CLIENT_SECRET` | ✅ set | Discord OAuth client secret |
 | `DISCORD_REDIRECT_URI` | ✅ set | must match `https://naimean.com/auth/discord/callback` |
-| `OWNER_DISCORD_ID` | ❌ missing | owner-specific privileged flows |
-| `TOOL_URL_WHITEBOARD` | ❌ missing | `/go/whiteboard` destination |
-| `TOOL_URL_CAPEX` | ❌ missing | `/go/capex` destination |
-| `TOOL_URL_SNOW` | ❌ missing | `/go/snow` destination |
-| `BACKDOOR_ADMIN_KEY` | ✅ set (undocumented) | admin override key |
-| `DISCORD_WEBHOOK_URL` | ✅ set (undocumented) | Discord notification webhook |
+| `OWNER_DISCORD_ID` | optional | restricts `POST /layout` to one Discord account when set |
+| `TOOL_URL_WHITEBOARD` | optional | overrides the built-in HTTPS fallback for `/go/whiteboard` |
+| `TOOL_URL_CAPEX` | optional | overrides the built-in HTTPS fallback for `/go/capex` |
+| `TOOL_URL_SNOW` | optional | overrides the built-in HTTPS fallback for `/go/snow` |
+| `BACKDOOR_ADMIN_KEY` | operational/out-of-band | not consumed by current repo code |
+| `DISCORD_WEBHOOK_URL` | operational/out-of-band | not consumed by current repo code |
 
-Critical: the four missing secrets must be set for `/go/*` routes and owner checks to work correctly.
+`SESSION_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, and `DISCORD_REDIRECT_URI` are the required runtime secrets in repo code. `OWNER_DISCORD_ID` and `TOOL_URL_*` are optional behavior overrides.
 
 ---
 
@@ -151,11 +151,9 @@ Critical: the four missing secrets must be set for `/go/*` routes and owner chec
 | `DB` | D1 | `naimean-db` (`0871f90d-f7e3-467a-a1f9-4e74ac8aef42`) |
 | `KV` | KV namespace | `naimean-kv` (`dff7175059ce478eab8c910949ca330f`) |
 
-### Secret status
+### Runtime auth model
 
-| Secret | Status | Purpose |
-|---|---|---|
-| `API_TOKEN` | ✅ set (undocumented) | API authentication |
+`naimean-api/src/worker.js` does not consume `API_TOKEN`. As currently implemented in the repo, `/api/*` is public and relies on validation plus security headers rather than token auth.
 
 ### Endpoints
 
@@ -307,13 +305,11 @@ npx wrangler secret put SESSION_SECRET
 npx wrangler secret put DISCORD_CLIENT_ID
 npx wrangler secret put DISCORD_CLIENT_SECRET
 npx wrangler secret put DISCORD_REDIRECT_URI
+# Optional overrides:
 npx wrangler secret put OWNER_DISCORD_ID
 npx wrangler secret put TOOL_URL_WHITEBOARD
 npx wrangler secret put TOOL_URL_CAPEX
 npx wrangler secret put TOOL_URL_SNOW
-
-# naimean-api
-npx wrangler secret put API_TOKEN
 ```
 
 ---
@@ -336,17 +332,26 @@ npx wrangler secret put API_TOKEN
 | CSRF | logout requires CSRF validation |
 | Rate limiting | applied to auth and write endpoints |
 
+### Headers handled by `naimean-api`
+
+- strict API CSP (`default-src 'none'`)
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: no-referrer`
+- `Permissions-Policy` deny list
+- `Cache-Control: no-store, no-cache, must-revalidate, max-age=0`
+- HSTS on HTTPS responses
+
 ---
 
 ## Known issues and watch-outs
 
-1. Four secrets are still missing on `barrelrollcounter-worker`: `OWNER_DISCORD_ID`, `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW`
-2. `ROUTER_SECRET` is still documented in older material but is not consumed by current runtime code
-3. Frontend still has legacy hardcoded tool URLs, so `/go/*` is not yet the sole user-facing path
-4. `naimean-sessions` exists but is unbound and undocumented
-5. `BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`, and `API_TOKEN` need to stay documented even though values remain out-of-band
-6. D1 API metadata reportedly showed `num_tables: 0`; verify actual tables directly if there is any doubt
-7. `/layout` is live and must always be treated as a required proxied route
+1. `ROUTER_SECRET` is still documented in some older material but is not consumed by current runtime code
+2. `naimean-sessions` exists but is unbound and undocumented
+3. `BACKDOOR_ADMIN_KEY` and `DISCORD_WEBHOOK_URL` are tracked operationally, but they are not consumed by current repo code
+4. D1 API metadata reportedly showed `num_tables: 0`; verify actual tables directly if there is any doubt
+5. `/layout` is live and must always be treated as a required proxied route
+6. `/go/*` now routes through the backend worker from the homepage, so frontend and backend behavior are aligned
 
 Recommended verification for the D1 metadata concern:
 
@@ -361,8 +366,8 @@ wrangler d1 execute naimean-db --command "SELECT name FROM sqlite_master WHERE t
 
 ### P0 — immediate
 
-- [ ] set the four missing `barrelrollcounter-worker` secrets
-- [ ] move all user-facing tool launches behind `/go/*`
+- [ ] decide whether `OWNER_DISCORD_ID` should be configured for stricter `/layout` write access
+- [ ] set `TOOL_URL_*` only if the default `/go/*` destinations should be overridden
 - [ ] enable Cloudflare WAF managed rules on the `naimean.com` zone
 - [ ] add edge rate limits for `/hit`, `/increment`, `/auth/*`, `/layout`, and `/api/*`
 - [ ] put Zero Trust in front of privileged/internal tool destinations
@@ -370,9 +375,10 @@ wrangler d1 execute naimean-db --command "SELECT name FROM sqlite_master WHERE t
 
 ### P1 — next
 
-- [ ] document `BACKDOOR_ADMIN_KEY`, `DISCORD_WEBHOOK_URL`, and `API_TOKEN` everywhere handoff docs inventory secrets
+- [ ] document `BACKDOOR_ADMIN_KEY` and `DISCORD_WEBHOOK_URL` everywhere handoff docs inventory secrets
 - [ ] verify both D1 schemas directly and record the result in the ops validation flow
 - [ ] decide whether `naimean-sessions` should be rebound, repurposed, or deleted
+- [ ] keep root and API worker route declarations in `wrangler.toml` aligned with the Cloudflare dashboard state
 - [ ] add a documented D1 backup/export cadence for both databases
 - [ ] keep all Cloudflare/GitHub handoff docs aligned on routes, payloads, and secret inventory
 
