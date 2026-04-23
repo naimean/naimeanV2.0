@@ -250,13 +250,6 @@
       box-shadow: none;
     }
 
-    .trapdoor-btn:focus,
-    .trapdoor-btn:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.9);
-      outline-offset: 2px;
-      box-shadow: none;
-    }
-
     /* Invisible hotspot over the ceiling painting used to toggle hotspot tools. */
     .ceiling-tools-btn {
       left: 40.5%;
@@ -264,13 +257,6 @@
       width: 18.5%;
       height: 13.5%;
       border: none;
-      box-shadow: none;
-    }
-
-    .ceiling-tools-btn:focus,
-    .ceiling-tools-btn:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.9);
-      outline-offset: 2px;
       box-shadow: none;
     }
 
@@ -2993,10 +2979,18 @@
     async function requestDiscordAuthSession() {
       if (window.NaimeanAuth && typeof window.NaimeanAuth.requireDiscordAuth === 'function') {
         const result = await window.NaimeanAuth.requireDiscordAuth({ returnToPath: TRAPDOOR_DESTINATION_PATH });
-        return result && result.session ? result.session : { authenticated: false, user: null };
+        return {
+          status: result && result.status ? result.status : 'completed',
+          nextPath: result && typeof result.nextPath === 'string' ? result.nextPath : TRAPDOOR_DESTINATION_PATH,
+          session: result && result.session ? result.session : { authenticated: false, user: null },
+        };
       }
       window.location.assign(DISCORD_AUTH_GATE_URL);
-      return { authenticated: false, user: null };
+      return {
+        status: 'redirect',
+        nextPath: TRAPDOOR_DESTINATION_PATH,
+        session: { authenticated: false, user: null },
+      };
     }
 
     function playWrongAuthSound() {
@@ -3021,7 +3015,7 @@
       });
     }
 
-    function proceedToTrapdoorDestination() {
+    function proceedToTrapdoorDestination(destinationPath) {
       clearSauceDripTimer();
       playDoorOpeningSound();
       congregationAudio.pause();
@@ -3031,7 +3025,7 @@
       const overlay = document.getElementById('fade-overlay');
       overlay.classList.add('fading');
       setTimeout(function () {
-        window.location.assign(TRAPDOOR_DESTINATION_PATH);
+        window.location.assign(typeof destinationPath === 'string' && destinationPath ? destinationPath : TRAPDOOR_DESTINATION_PATH);
       }, FADE_TRANSITION_DURATION_MS);
     }
 
@@ -3050,9 +3044,9 @@
 
           return playWrongAuthSound().then(function () {
             return requestDiscordAuthSession();
-          }).then(function (resultSession) {
-            if (isDiscordAuthSession(resultSession)) {
-              proceedToTrapdoorDestination();
+          }).then(function (authResult) {
+            if (authResult && isDiscordAuthSession(authResult.session)) {
+              proceedToTrapdoorDestination(authResult.nextPath);
               return;
             }
             isNavigatingFromChapel = false;
