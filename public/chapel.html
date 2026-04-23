@@ -148,7 +148,9 @@
       left: calc(44.6% - 22px);
       top: calc(52.0% + 52px);
       width: calc(12% + 12px);
-      height: calc(7% - 110px);
+      min-width: 44px;
+      height: 4%;
+      min-height: 36px;
       background: transparent;
       opacity: 1;
       pointer-events: auto;
@@ -156,7 +158,20 @@
       cursor: pointer;
       z-index: 10;
       padding: 0;
+      display: block;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
 
     .chapel-tv-counter {
@@ -756,7 +771,7 @@
           <span class="chapel-power-light"></span>
         </div>
       <div class="chapel-tv-counter" id="chapel-tv-counter" aria-live="polite">01</div>
-      <button class="chapel-return-btn" id="chapel-return-btn" aria-label="Return to home"></button>
+      <a class="chapel-return-btn" id="chapel-return-btn" href="index.html"><span class="sr-only">Return to home</span></a>
       <button class="invisible-hotspot-btn trapdoor-btn" id="trapdoor-btn" aria-label="Enter the descent"></button>
       <button class="invisible-hotspot-btn ceiling-tools-btn" id="ceiling-tools-btn" aria-label="Toggle layout tools"></button>
       <button class="invisible-hotspot-btn congregation-btn" id="crusty-button" aria-label="Play Crusty laugh"></button>
@@ -3017,7 +3032,10 @@
     }
 
     if (!isLayoutProbeMode) {
-      document.getElementById('chapel-return-btn').addEventListener('click', navigateBackToIndex);
+      document.getElementById('chapel-return-btn').addEventListener('click', function (event) {
+        event.preventDefault();
+        navigateBackToIndex();
+      });
     }
     setupViewportProbeMessaging();
     setupLayoutProbeMode();
