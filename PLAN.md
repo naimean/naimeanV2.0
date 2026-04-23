@@ -1,160 +1,154 @@
 # Development Plan: naimeanV2.0
 
-# Vision & User Flow
+## Vision
 
-- User freehands naimean.com in browser → lands on C64-themed landing page
-- Entertaining games/experiences to keep user engaged
-- Clear call-to-action: join Discord (main community hub)
-- Discord is used for authentication (Auth0 or OAuth)
-- Message board (shoutbox): only registered (Discord-authenticated) users can post
-- Discord join prompt and widget overlay
-
-# Technical/Design Constraints
-
-- Pure HTML/CSS/JS (no frameworks)
-- All overlays (shadow, power button, data light) absolutely positioned within fixed-size, relatively positioned container
-- No flexbox for overlays; fixed pixel sizes for C64 image and overlays
-- All media assets optimized for fast load
-
-# Features (Current & Planned)
-
-## Current
-- Commodore 64-themed landing page
-- Interactive power button with CRT-on effect
-- Animated shadow layer
-- Data (flicker) light next to power button
-- Static video/audio overlay (merged with FFmpeg)
-
-## In Progress
-- Debug overlay alignment and button clickability
-- Shrink and center shadow box, align overlays
-- Integrate Discord OAuth foundation routes and shoutbox auth command flow
-- Enforce edge security headers baseline (CSP/HSTS and strict browser headers)
-
-## Next Steps
-1. Add entertaining mini-games or interactive experiences
-2. Integrate Discord OAuth for registration/authentication ✅ (PKCE/state/session/logout hardening complete)
-3. Implement message board (shoutbox) for registered users (server-side backend TBD)
-4. Discord widget overlay and join prompt
-5. Video/sound/static overlay sequencing (beyond current static/audio)
-6. Final UI/UX polish based on user feedback ✅ (focus-visible, aria-labels, main landmark added)
-7. Accessibility review (keyboard, ARIA, color contrast) ✅ (role=log, aria-live, focus-visible styles)
-8. Add more C64-style effects (optional)
-9. Prepare for deployment (static hosting) ✅ (CI guardrails, route alignment, cache headers)
-10. Update documentation ✅
-
-## Planned Feature Spec — Bedroom Selector (Dark Fantasy Scene)
-
-### Goal
-- Build an interactive **Bedroom Selector** directly inside the `bedroom_antechamber` scene at the foot of the stairs (between the stair landing and bedroom doorway) so it feels diegetic and in-world.
-
-### Tech Stack / Scope
-- Plain HTML, CSS, and JavaScript only
-- No frameworks
-- No backend logic yet
-- Submit action placeholder: play `assets/wrong.mp3`
-
-### Files / Context
-- Background image: `assets/bedroom_antechamber.png`
-- Placeholder sound: `assets/wrong.mp3`
-
-### Build Requirements
-1. Scene container using the `bedroom_antechamber` image
-2. Interactive Bedroom Selector hotspot near the bedroom door area
-3. Hidden/collapsible selector panel that opens from hotspot/door click
-4. Panel content:
-   - Dropdown label: **Bedroom Style**
-   - Textarea label: **Bedroom Creator**
-   - Submit button
-5. Submit behavior:
-   - Play `assets/wrong.mp3`
-   - `console.log` dropdown + textarea values
-6. Support desktop and mobile
-7. Build notes must account for each screen layout explicitly (solve each screen independently across the supported layouts)
-
-### Visual/Interaction Direction
-- Dark cave/fantasy tone
-- Warm gold/amber near bedroom, deep blue/purple elsewhere
-- Door should feel interactive with subtle glow/shimmer/pulse
-- Optional lightweight floating particles near doorway on active state
-- Clicking door opens panel
-- Panel can emerge from doorway/floor/unfold like magical plaque/rune slab
-- Smooth, atmospheric transitions (not tacky)
-- Avoid generic floating modern-form look
-
-### Form Content
-- Bedroom Style options:
-  - Cozy Modern
-  - Gothic Stone
-  - Royal Chamber
-  - Ruined Cell
-  - Fungal Sanctuary
-  - Torchlit Monk Cell
-- Textarea placeholder:
-  - `Describe the bedroom you want... colors, mood, furniture, candles, windows, drapery, creepy details, whatever.`
-- Button text: **Submit**
-
-### UX Requirements
-- Door hotspot is easy to tap on mobile
-- Panel remains readable on small screens
-- Animations degrade gracefully on mobile
-- Click outside panel closes it
-- Escape key closes it on desktop
-- Panel should not cover full artwork unless screen size requires
-
-### Deliverables
-1. Full HTML
-2. Full CSS
-3. Full JavaScript
-4. No placeholder snippets
-5. Intuitive class/id names
-6. Copy/paste ready output
-7. Brief comments only where needed
-
-# Deployment Plan
-- Ensure all assets are present and optimized
-- Test on major browsers and mobile
-- Deploy to static hosting (e.g., GitHub Pages, Vercel, Netlify)
-- Push all changes to GitHub main branch
-
-# Recommendations for Naimean.com
-
-## P0 — Immediate Priority (Security + Abuse Prevention)
-- Enforce strict Content Security Policy (CSP), HSTS, and secure headers at the edge (Cloudflare). ✅
-- Use Discord OAuth with PKCE/state validation and short-lived session tokens. ✅
-- Add Cloudflare WAF + bot protections (managed rules, rate limits, and Turnstile where user input/upload endpoints exist).
-- Add rate limiting and bot protection for shoutbox/auth endpoints. ✅ (worker-side IP-keyed sliding-window rate limits: 10/min on writes, 5/min on auth flows, 60/min on reads; 429 + Retry-After responses)
-- Sanitize and escape all user-generated shoutbox content to prevent XSS. ✅
-- Add secret management and dependency vulnerability scanning in CI. ✅ (dependency-review-action added to PR workflow)
-- Move privileged external tool links and role logic out of public client code; enforce authorization server-side for any internal resources. ✅ (hardcoded tool URLs removed from client; /go/* routes added with session auth gate)
-- Wire up automated `wrangler deploy` for both workers in GitHub Actions CI. ✅ (deploy-workers job using cloudflare/wrangler-action@v3.15.0; requires CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID secrets)
-- Add Cloudflare One / Zero Trust Access policies for admin/backdoor operations and any non-public dashboards/endpoints.
-
-## P1 — Near-Term Priority (Stability + Delivery Confidence)
-- ✅ Align Cloudflare route documentation/config with actual proxy behavior (`/board*` and `/uploads/*` routes removed; docs now match `src/index.js` PROXY_PATHS and `wrangler.toml` `run_worker_first`).
-- Replace state-changing `GET` counter endpoints (`/hit`, `/increment`) with `POST` (or require signed requests) to reduce abuse and accidental triggering. ✅
-- Tighten CORS allowlisting by environment and remove broad wildcard origins (e.g., unrestricted `*.pages.dev`) unless strictly required. ✅ (production suffix matching now requires explicit opt-in)
-- Add Cloudflare-focused CI checks (wrangler config validation, route smoke tests, and endpoint contract checks) on pull requests.
-- Add automated test coverage for core flows (boot, overlays, auth, shoutbox posting). ✅ (method enforcement, Discord OAuth redirect, counter increment, /go route auth all covered in worker.test.js)
-- Set up linting/formatting checks for HTML/CSS/JS in pull requests.
-- Add error logging and performance monitoring (client + edge) with alerting.
-- Use a defined release checklist (cross-browser, mobile, accessibility, regression checks). ✅
-- Add clear ownership and issue templates for bug reporting/triage.
-
-## P2 — Planned Priority (Performance + Product Quality)
-- Convert heavy images/video to modern formats (WebP/AVIF, optimized MP4/WebM).
-- Enable CDN caching with versioned assets and long cache-control headers.
-- Minify/compress CSS/JS and defer non-critical scripts.
-- Lazy-load non-critical media and overlays after first meaningful render.
-- Preload critical assets (hero image, key CSS, essential audio) to improve startup time.
-- Improve onboarding with a short “how to interact” prompt on first visit.
-- Add clearer loading/boot feedback states so users know what is happening.
-- Optimize mobile touch targets and spacing around interactive controls.
-- Provide keyboard-accessible interaction paths and visible focus indicators.
-- Add lightweight in-context hints for puzzles/interactions to reduce drop-off.
-- Standardize Worker compatibility dates and deployment controls across frontend/backend workers to reduce drift.
-- Define D1/R2 operational safeguards: migration strategy, scheduled backups/exports, and restore runbooks.
-- Add edge observability baselines (Worker logs, latency/error SLOs, and alerting for counter/API failures).
+- Keep `naimean.com` feeling like a memorable interactive experience rather than a generic app shell
+- Preserve the no-build, vanilla-web stack where it still helps speed and control
+- Use Cloudflare Workers only for the parts that truly need state, auth, routing, secrets, or persistence
+- Make the Cloudflare handoff clean enough that Felipe can operate and extend the stack without reverse-engineering the repo first
 
 ---
-_Last updated: 2026-04-21_
+
+## Current state snapshot
+
+### Working today
+- C64 homepage, prank flow, chapel, bedroom, and level sequence
+- edge router Worker (`naimeanv2`)
+- main backend Worker (`barrelrollcounter-worker`)
+- separate `/api/*` Worker (`naimean-api`)
+- D1-backed counter, layout overrides, and registered users
+- Discord OAuth PKCE flow and email auth flow
+- worker-side rate limiting and CI-backed route-alignment checks
+- GitHub Actions deployment of Pages + all three Workers
+
+### Current rough edges
+- frontend still contains legacy hardcoded tool URLs even though `/go/*` exists server-side
+- `ROUTER_SECRET` is documented in infra docs/comments but not used by current runtime code
+- docs had drifted around `/layout`, `naimean-api`, and `/api/health` response shape
+- scene logic remains intentionally monolithic in places, especially `public/script.js`
+
+---
+
+## Active documentation objective
+
+- Keep `README.md`, `CLOUDFLARE_README.md`, `FELIPE_HANDOFF.md`, and `naimean-README.md` aligned with the current code
+- Keep the recommendation backlog current enough that it can be used as an actual follow-up list rather than historical notes
+
+---
+
+## Detailed recommendation backlog
+
+## P0 — Immediate priority (security, operational clarity, handoff risk)
+
+- [ ] **Finish the `/go/*` migration**
+  - Remove the remaining direct hardcoded Whiteboard / CapEx / ServiceNow URLs from `public/script.js`
+  - Make server-controlled redirects the single production path
+  - Confirm the secrets in Cloudflare are the only source of truth for destinations
+
+- [ ] **Resolve the `ROUTER_SECRET` ambiguity**
+  - Either implement real worker-to-worker validation with it
+  - Or remove it from the documented security model and handoff instructions
+  - Update all docs once the decision is made
+
+- [ ] **Add Cloudflare edge controls on dynamic routes**
+  - WAF managed rules
+  - edge rate limits for `/hit`, `/increment`, `/auth/*`, `/layout`, and `/api/*`
+  - bot controls where future write-heavy or user-input routes are introduced
+
+- [ ] **Add monitoring that matches how the repo deploys**
+  - alert on Worker 5xx spikes
+  - alert on failed deploys
+  - add lightweight log retention / Logpush / aggregation
+  - explicitly watch `naimeanv2`, `barrelrollcounter-worker`, and `naimean-api`
+
+- [ ] **Lock down privileged/internal flows further**
+  - put Zero Trust or similar controls in front of `/go/*`
+  - plan the same for any future admin or layout-management surface
+
+## P1 — Near-term priority (stability, test confidence, ops maturity)
+
+- [ ] **Add end-to-end auth coverage**
+  - Discord popup login completion flow
+  - `auth_popup_complete.html` postMessage + fallback navigation behavior
+  - chapel trapdoor auth gate
+  - logout flow and session refresh behavior
+
+- [ ] **Add end-to-end layout coverage**
+  - `GET /layout` for valid and invalid pages
+  - `POST /layout` with owner restriction enabled
+  - chapel load/save behavior across viewport changes
+
+- [ ] **Add test coverage for `naimean-api`**
+  - `/api/health`
+  - `/api/data` list/create behavior
+  - failure handling around D1 binding and bad input
+
+- [ ] **Create a real preview/staging path**
+  - workers.dev smoke-test path or staging hostname
+  - validate auth, D1, and route changes before merge-to-main
+  - optionally require protected environment approval for production deploys
+
+- [ ] **Normalize docs and validation payloads**
+  - keep all docs aligned on `/layout`
+  - keep all docs aligned on `naimean-api`
+  - keep all docs aligned on `GET /api/health` payload shape
+  - keep GitHub/Cloudflare handoff docs synchronized with current runtime reality
+
+- [ ] **Decide the fate of the `naimean-api` KV binding**
+  - use it for a concrete feature
+  - or remove it until it is actually needed to reduce infra surface area
+
+## P2 — Planned priority (maintainability, product quality, performance)
+
+- [ ] **Refactor large scene logic carefully**
+  - split out some `public/script.js` responsibilities without introducing unnecessary bundling/tooling
+  - keep the no-build developer experience if possible
+
+- [ ] **Improve content and media delivery**
+  - modern image/video formats
+  - preload only the assets that truly help first interaction
+  - lazy-load scene media that is not needed on first paint
+
+- [ ] **Strengthen data operations**
+  - formalize export cadence for both D1 databases
+  - document restore runbooks
+  - document migration sequencing and rollback expectations
+
+- [ ] **Improve observability conventions**
+  - add request IDs / correlation hints where useful
+  - standardize error logging shape across Workers
+  - document what “healthy” looks like for each deployed service
+
+- [ ] **Revisit client-exposed role logic**
+  - decide whether `BOOT_ROLE_VISIBILITY_BY_USER` can remain public
+  - or move visibility logic behind a session-authenticated API if it becomes sensitive
+
+- [ ] **Keep the experience polished**
+  - better onboarding/hinting for first-time users
+  - mobile interaction refinement
+  - accessibility pass across scene hotspots and keyboard flows
+
+---
+
+## Optional future options
+
+These are not must-do items, but they are reasonable options if the repo grows:
+
+- [ ] add a dedicated admin or scene-layout management UI instead of relying on in-scene tooling alone
+- [ ] create environment-specific Wrangler configs if preview/prod divergence increases
+- [ ] move some static scene metadata into JSON/config files if hotspot complexity keeps growing
+- [ ] add a small smoke-test harness for key public routes after every deploy
+- [ ] consider an explicit incident/runbook doc if Cloudflare operations become shared among multiple people
+
+---
+
+## Success criteria for the next documentation/ops phase
+
+- Felipe can configure Cloudflare from the docs without guessing
+- the docs match the current runtime behavior
+- the recommendation backlog reflects the actual highest-risk gaps, not historical assumptions
+- future contributors can tell which issues are product polish vs. real operational/security work
+
+---
+
+_Last updated: 2026-04-23_

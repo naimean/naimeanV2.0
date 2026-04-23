@@ -1,426 +1,300 @@
 # naimean — Repository Curriculum Vitae
 
 ## Identity
-- **Name:** `naimeanV2.0`
-- **GitHub repository slug:** `naimean/naimeanV2.0`
-- **Type:** Personal website + interactive experience + edge API integration
-- **Primary runtime:** Cloudflare Workers (edge)
-- **Primary frontend:** Static vanilla HTML/CSS/JavaScript
-- **Static asset host target:** GitHub Pages (`public/`)
-- **Repository role:** Contains both:
-  1. **Frontend/router worker** (`src/index.js`) that serves static content and proxies API/auth routes
-  2. **Backend API/auth worker** (`cloudflare-worker/worker.js`) that manages counter state, OAuth session flow, and protected redirects
+- **Repository:** `naimean/naimeanV2.0`
+- **Type:** interactive personal website + Cloudflare edge application
+- **Frontend style:** vanilla HTML/CSS/JS scene pages
+- **Primary platform:** Cloudflare Workers + D1
+- **Static delivery:** GitHub Pages artifact served through Cloudflare `ASSETS`
 
 ---
 
-## Professional Summary (What this repo does for users)
-This repository delivers a **retro Commodore 64-style web experience** for visitors, with cinematic interactions (power-on boot flow, static/video/audio overlays, puzzle-like command input, chapel and level navigation), while also providing practical backend capabilities:
-- persistent counter tracking (rickroll/barrel-roll count),
-- Discord OAuth login/session/logout,
-- authenticated redirects to internal tools,
-- strict edge and API response security headers.
+## Professional summary
 
-For end users, the main function is: **visit the site, experience an interactive game-like interface, optionally authenticate via Discord, and navigate themed scenes while the backend safely tracks and serves state.**
+`naimeanV2.0` is a hybrid repo that combines a hand-built interactive web experience with production-minded Cloudflare edge services.
 
----
+For visitors, it feels like a retro Commodore 64-themed puzzle site.
+For operators, it behaves like a small edge application with:
 
-## Core User Experience Journey
-1. User visits `index.html` (C64 interface).
-2. User powers on the screen and interacts with boot/shoutbox commands (`C:\Naimean\...`).
-3. User can:
-   - trigger mini-game logic,
-   - trigger Discord OAuth (`login/logout` commands),
-   - run the unlock command (`please`) to continue scene progression.
-4. User transitions to `chapel.html`, `bedroom_antechamber.html`, `bedroom.html`, and the numbered level pages.
-5. Counter values are read/incremented through `/get` and `/increment` (POST for writes).
-6. Optional authenticated redirects are available via `/go/*` routes.
+- Worker-based routing
+- D1-backed persistence
+- Discord OAuth + email auth
+- authenticated redirect handling
+- route/config validation in CI
+- Cloudflare deployment automation
 
 ---
 
-## Skills & Technical Stack
-- **Runtime:** Cloudflare Workers (V8 isolate runtime)
-- **Worker compatibility mode:** `nodejs_compat` (router worker)
-- **Data store:** Cloudflare D1 (SQLite)
-- **Frontend:** Vanilla HTML, CSS, JS (no framework, no bundler, no TypeScript)
-- **Testing:** Node built-in test runner (`node --test`)
-- **Syntax validation:** `node --check`
-- **CI/CD:** GitHub Actions (syntax checks, tests, Pages deployment)
+## Core story of the codebase
+
+This repository did **not** start life as a conventional app. The frontend scenes came first, and the Workers were added as the site needed durable state, auth, and deploy-time control.
+
+That history explains the structure:
+
+- the **frontend** remains static, handcrafted, and scene-driven
+- the **Workers** own the parts that need secrets, cookies, redirects, or storage
+- the **docs** matter more than usual because Cloudflare bindings/routes are part of the architecture, not just deployment details
 
 ---
 
-## Component CV (Detailed)
+## User journey snapshot
 
-### 1) Edge Router Worker (`/src/index.js`)
-**Role:** Secure edge entrypoint and dispatcher.
+1. User lands on `public/index.html`
+2. User powers on the C64 scene and interacts with the boot/shoutbox flow
+3. User can trigger Discord/email auth, a mini-game, or the prank/rickroll path
+4. The flow transitions into `chapel.html`, then `bedroom_antechamber.html`, then `bedroom.html` or the level chain
+5. Persistent state is served through Workers rather than embedded directly in the static site
+
+---
+
+## Technical stack
+
+- **Runtime:** Cloudflare Workers
+- **Databases:** Cloudflare D1 (`barrelroll-counter-db`, `naimean-db`)
+- **Additional binding:** Workers KV for `naimean-api`
+- **Frontend:** vanilla HTML/CSS/JavaScript
+- **Tests:** Node built-in test runner
+- **Validation:** `node --check`
+- **CI/CD:** GitHub Actions + Wrangler deploys + GitHub Pages deploy
+
+---
+
+## Component inventory
+
+### 1) Edge router Worker (`src/index.js`)
+**Role:** production entrypoint for most traffic.
 
 **Responsibilities:**
-- Defines proxy routes via `PROXY_PATHS`:
-  - `/get`
-  - `/hit`
-  - `/increment`
-  - `/auth`
-  - `/go`
-- Routes requests:
-  - matching proxy paths ➜ `env.COUNTER.fetch(request)` (service binding)
-  - all others ➜ `env.ASSETS.fetch(request)` (static asset serving)
-- Applies security headers to *every* response.
+- proxies `/get`, `/hit`, `/increment`, `/auth`, `/go`, and `/layout`
+- serves all other paths from `ASSETS`
+- adds document/API CSP and baseline browser hardening headers
+- provides extensionless HTML fallback for static pages
 
-**Security configuration implemented:**
-- `Content-Security-Policy`:
-  - HTML: document CSP (`DOCUMENT_CSP`)
-  - Non-HTML/API: strict API CSP (`API_CSP`)
-- Baseline headers:
-  - `X-Content-Type-Options: nosniff`
-  - `X-Frame-Options: DENY`
-  - `Referrer-Policy: strict-origin-when-cross-origin`
-  - `Permissions-Policy` (restrictive)
-- `Strict-Transport-Security` on HTTPS responses.
-
-**Caching policy behavior:**
-- HTML: `no-cache, must-revalidate` (if absent)
-- Immutable static media/font extensions: `public, max-age=31536000, immutable` (if absent and status `200`)
-
-**Primary configuration source:** `/wrangler.toml`
+**Why it matters:**
+This Worker keeps the domain controlled at the edge without mixing business logic into the static site.
 
 ---
 
-### 2) Router Worker Configuration (`/wrangler.toml`)
-**Purpose:** Binds the edge router worker, static assets, and backend service.
+### 2) Router config (`wrangler.toml`)
+**Role:** binds `ASSETS`, `COUNTER`, and worker-first paths.
 
-**Key fields:**
-- `name = "naimeanv2"`
-- `main = "src/index.js"`
-- `compatibility_date = "2026-04-18"`
-- `compatibility_flags = ["nodejs_compat"]`
-
-**Assets binding:**
-- `[assets]`
-  - `directory = "./public"`
-  - `binding = "ASSETS"`
-  - `run_worker_first = ["/get", "/hit", "/increment", "/auth", "/go"]`
-
-**Service binding:**
-- `[[services]]`
-  - `binding = "COUNTER"`
-  - `service = "barrelrollcounter-worker"`
-
-**Important alignment rule:**
-- `run_worker_first` paths must stay in sync with `PROXY_PATHS` in `src/index.js`.
+**Important current fact:**
+`run_worker_first` must match `PROXY_PATHS` in `src/index.js`, and CI checks that with `scripts/check-route-alignment.js`.
 
 ---
 
-### 3) Backend Counter/Auth Worker (`/cloudflare-worker/worker.js`)
-**Role:** API backend for counter, Discord OAuth session flow, and authenticated tool redirects.
+### 3) Main backend Worker (`cloudflare-worker/worker.js`)
+**Role:** counter/auth/layout/tool backend.
 
-**Responsibilities:**
-- Counter API:
-  - `GET /get` ➜ read counter value
-  - `POST /hit` and `POST /increment` ➜ increment + return value
-- OAuth/session API:
-  - `GET /auth/session`
-  - `GET /auth/discord/login`
-  - `GET /auth/discord/callback`
-  - `POST /auth/logout`
-- Authenticated redirect API:
-  - `GET /go/whiteboard`
-  - `GET /go/capex`
-  - `GET /go/snow`
-- CORS handling and `OPTIONS` preflight support
-- Applies strict API security headers on responses
+**Current responsibilities:**
+- counter reads/writes
+- Discord OAuth PKCE flow
+- email registration/login
+- signed session cookies
+- `/layout` get/save
+- authenticated `/go/*` redirects
+- rate limiting, CORS, payload validation, and API security headers
 
-**Security and auth controls present:**
-- Signed token approach for session and OAuth-state cookies
-- PKCE (`code_verifier`, `code_challenge`) and `state` validation
-- Cookie handling with `HttpOnly`, `SameSite`, optional `Secure`
-- Return-path sanitization to block open redirects/CRLF injection
-- CORS allowlist logic with environment-aware suffix behavior
-- CSRF-oriented origin check for logout
-- HTTPS-only redirect destination enforcement for `/go/*`
-
-**Error handling behavior:**
-- Unsupported methods/routes return JSON error with proper status
-- Try/catch around runtime dispatch returns `500` JSON error on failures
+**Why it matters:**
+This is where the repo stopped being “just a static site” and became a real edge app.
 
 ---
 
-### 4) Backend Worker Configuration (`/cloudflare-worker/wrangler.toml`)
-**Purpose:** Defines backend worker deployment and D1 binding.
+### 4) Main backend config (`cloudflare-worker/wrangler.toml`)
+**Role:** binds D1 and documents required secrets.
 
-**Key fields:**
-- `name = "barrelrollcounter-worker"`
-- `main = "worker.js"`
-- `compatibility_date = "2026-04-18"`
-
-**D1 binding:**
-- `[[d1_databases]]`
-  - `binding = "DB"`
-  - `database_name = "barrelroll-counter-db"`
-  - `database_id = "22277fbe-031d-4cad-8937-245309e981cd"`
-
-**Operational notes embedded in file:**
-- reminders for `wrangler d1 execute ...schema.sql`
-- reminders for setting secrets (`ROUTER_SECRET`, tool URLs, etc.)
+**Important caveat:**
+`ROUTER_SECRET` is still documented here, but current runtime code does not consume it.
 
 ---
 
-### 5) D1 Schema (`/cloudflare-worker/schema.sql`)
-**Data model:**
-- Table `rickroll_counter`
-  - `id TEXT PRIMARY KEY`
-  - `value INTEGER NOT NULL DEFAULT 0`
-- Seed row:
-  - `('rickrolls', 0)` via `INSERT OR IGNORE`
+### 5) Main D1 schema (`cloudflare-worker/schema.sql`)
+**Tables:**
+- `rickroll_counter`
+- `layout_overrides`
+- `registered_users`
 
-**Purpose:** ensures increment logic has a guaranteed existing row.
-
----
-
-### 6) Backend Tests (`/cloudflare-worker/worker.test.js`)
-**Role:** Regression tests for pure helper logic.
-
-**Coverage areas:**
-- hostname suffix validation
-- cookie parsing and serialization
-- return-path sanitization
-- base64url encode/decode helpers
-- origin normalization and CORS suffix policy behavior
-
-**Run command:**
-- `node --test cloudflare-worker/worker.test.js`
+**Why it matters:**
+This schema shows the three durable concerns the main backend currently owns: metric state, scene layout state, and local account state.
 
 ---
 
-### 7) Static Frontend Entry (`/public/index.html`)
-**Role:** Main interactive shell for visitors.
+### 6) Main backend tests (`cloudflare-worker/worker.test.js`)
+**Role:** regression tests for auth/counter/layout helpers and endpoint contracts.
+
+**Coverage themes:**
+- cookies and token helpers
+- CORS/origin logic
+- method enforcement
+- rate limiting
+- Discord login redirect behavior
+- layout read/write contracts
+- email auth contracts
+
+---
+
+### 7) API Worker (`naimean-api/src/worker.js`)
+**Role:** separate `/api/*` service.
+
+**Current endpoints:**
+- `GET /api/health`
+- `GET /api/data`
+- `POST /api/data`
+
+**Why it matters:**
+This is the repo’s cleaner API lane and signals a move toward separating fun-site backend logic from general app API logic.
+
+---
+
+### 8) API Worker config (`naimean-api/wrangler.toml` + `naimean-api/package.json`)
+**Role:** defines route, D1, KV, and Wrangler tooling for `naimean-api`.
+
+**Important current fact:**
+The repo is still lightweight, but it is no longer accurate to describe it as having no package manifests anywhere because `naimean-api/package.json` exists.
+
+---
+
+### 9) Static homepage (`public/index.html`)
+**Role:** main interactive shell.
 
 **Contains:**
-- C64 artwork and overlays
-- power button controls
-- boot screen + command form
-- shoutbox command interface
-- Discord widget iframe overlay
-- quick-link buttons (whiteboard/capex/snow)
-- static/video overlays for transitions
-- script includes for:
-  - `diagnostics.js`
-  - `script.js`
-
-**Accessibility additions visible in markup:**
-- `main` landmark
-- `aria-live` on status/counter areas
-- role-based labels for command feed and controls
+- C64 artwork
+- power button
+- boot screen
+- shoutbox area
+- Discord overlay/widget frame
+- media overlays
+- auth/debug/main script includes
 
 ---
 
-### 8) Frontend Behavior Engine (`/public/script.js`)
-**Role:** Main client-side application logic.
+### 10) Main scene logic (`public/script.js`)
+**Role:** orchestrates the homepage state machine.
 
-**Major functional domains:**
-- boot/power state orchestration
-- media transitions (static, power-off, prank video)
-- command parser for `C:\Naimean\...`
-- mini-game lifecycle (start/guess/attempts/win/loss)
-- auth command wiring (`login`, `logout`) to `/auth/*`
-- rickroll count read/increment sync with network + local fallback
-- role-based visibility for quick-link controls
-- chapel scene transition triggers and persisted playback handoff
-- guarded input prefix behavior for boot and shoutbox commands
+**Current domains of logic:**
+- power state
+- boot/shoutbox command parsing
+- counter sync with local fallback
+- Discord/email auth integration hooks
+- mini-game behavior
+- prank/rickroll flow
+- scene transitions
+- legacy direct tool-button URLs
 
-**API calls from this file:**
-- `/get`
-- `/increment` (POST)
-- `/auth/session`
-- `/auth/logout`
-- `/auth/discord/login` (redirect flow)
-- `/go/whiteboard`, `/go/capex`, `/go/snow` (opened in new tab)
+**Important caveat:**
+The UI still contains direct hardcoded tool destinations even though `/go/*` exists server-side.
 
 ---
 
-### 9) Frontend Diagnostics Console (`/public/diagnostics.js`)
-**Role:** Optional in-browser diagnostics panel for runtime troubleshooting.
+### 11) Shared auth UI (`public/auth.js`)
+**Role:** floating auth chip, popup login flow, session refresh hooks, logout interaction.
 
-**Activation options:**
+**Why it matters:**
+This keeps auth behavior reusable across otherwise-static pages.
+
+---
+
+### 12) Diagnostics (`public/diagnostics.js`)
+**Role:** hidden terminal-style in-browser diagnostics panel.
+
+**Activation:**
 - `?diag=1`
-- keyboard shortcut `Ctrl+Shift+D`
-- `localStorage['naimean-diag']='1'`
-- `NaimeanDiag.toggle()` from console
-
-**Capabilities:**
-- timestamped runtime logs
-- key-value state panel
-- show/hide/minimize controls
-- lightweight injected terminal-style overlay
+- `Ctrl+Shift+D`
+- `localStorage['naimean-diag'] = '1'`
+- `NaimeanDiag.toggle()`
 
 ---
 
-### 10) Frontend Styling (`/public/styles.css`)
-**Role:** Presentation layer for C64-themed interface and transitions.
-
-**Key style systems:**
-- C64 screen geometry variables (`--screen-left/top/width/height`)
-- overlay stack ordering (`z-index` strategy)
-- boot/shoutbox control styling
-- focus-visible accessibility styles
-- fallback styling when base image fails to load (`.base-image-missing`)
-
----
-
-### 11) Narrative/Scene Pages (`/public/*.html`)
-**Role:** Themed navigation experience beyond the main C64 shell.
-
+### 13) Scene pages (`public/*.html`)
 **Notable pages:**
-- `chapel.html`:
-  - long stitched scene with hotspot navigation
-  - ambient congregation audio
-  - continuation media behavior and invite redirect logic
-  - local + remote counter display
-- `bedroom_antechamber.html`:
-  - hotspot-based navigation to chapel/bedroom/levels
-  - fade transitions and generated door audio
-- `bedroom.html`:
-  - horizontally scrollable scene with doorway hotspot
-- level chain:
-  - `level_one.html` redirect helper to `first_level.html`
-  - `first_level.html` through `ninth_level.html` provide linear forward/back navigation across level images
+- `chapel.html` — counter display, continuation behavior, layout tooling hooks
+- `bedroom_antechamber.html` — transition scene and route split to bedroom / level path
+- `bedroom.html` — horizontal-scroll room scene
+- `first_level.html` through `ninth_level.html` — image + nav progression
+
+**Why they matter:**
+These pages show that the frontend is organized around scenes and hotspots, not components.
 
 ---
 
-### 12) Static Media (`/public/assets`)
-**Role:** Core user-facing visual/audio/video payloads.
+### 14) CI/CD (`.github/workflows/github-pages.yml`)
+**Role:** validates and deploys the repo.
 
-**Includes:**
-- hero/environment images (`commodore64.jpg`, `chapel_stacked.png`, `bedroom*.png`, `*_level.png`)
-- transition and effect videos (`joinourdiscord.mp4`, `static.mp4`, `power-off.mp4`, `notarickroll.mp4`)
-- sound assets (`wrong.mp3`, `congregation.mp3`, `zelda-secret.mp3`)
-
----
-
-### 13) CI/CD Workflow (`/.github/workflows/github-pages.yml`)
-**Role:** Enforces basic quality checks and deploys Pages.
-
-**Triggers:** push, pull_request, workflow_dispatch
-
-**Jobs:**
-- `lint-and-check`:
-  - syntax checks (`node --check`) for worker/frontend JS
-  - worker unit tests
-  - wrangler file field assertions
-  - route alignment checks (`/auth` presence)
-  - asset existence checks
-- `deployment-check` (PR)
-- `dependency-review` (PR)
-- `deploy` (non-PR) to GitHub Pages using uploaded `public/` artifact
+**Current jobs cover:**
+- `node --check`
+- `node --test cloudflare-worker/worker.test.js`
+- wrangler field checks
+- route alignment checks
+- GitHub Pages deployment
+- Worker deploys for all three Workers
 
 ---
 
-### 14) Copilot Setup Workflow (`/.github/workflows/copilot-setup-steps.yml`)
-**Role:** Minimal setup workflow for Copilot coding agent readiness.
-
-**Current setup actions:**
-- checkout repository
-- install Node.js 22
-
----
-
-### 15) Development Container (`/.devcontainer/devcontainer.json`)
-**Role:** Standardized cloud/local containerized dev environment.
-
-**Configuration highlights:**
-- Base image: Ubuntu devcontainer
-- post-start sync command pulls latest repo state with rebase/autostash
+### 15) Documentation set
+- `README.md` — main repository explanation and current recommendation backlog
+- `CLOUDFLARE_README.md` — Cloudflare runbook and infra notes
+- `FELIPE_HANDOFF.md` — practical ops handoff for Felipe
+- `PLAN.md` — roadmap + recommendation list
+- `UPDATE.md` — change log
 
 ---
 
-### 16) Repository Policy/Docs Files
-- `README.md`: project summary and high-level updates
-- `CLOUDFLARE_README.md`: infrastructure mapping, Cloudflare architecture and hardening notes
-- `PLAN.md`: roadmap and planned work items
-- `UPDATE.md`: change log and progression history
-- `.gitignore`: excludes environment and Wrangler local state files (`.wrangler`, `.env*`, `.dev.vars*`)
+## Configuration quick reference
 
----
+### Router runtime
+- config: `wrangler.toml`
+- static assets: `public/`
+- service binding: `COUNTER` -> `barrelrollcounter-worker`
+- worker-first paths: `/get`, `/hit`, `/increment`, `/auth`, `/go`, `/layout`
 
-## Configuration Inventory (Quick Reference)
-
-### Router Worker Runtime Config
-- File: `/wrangler.toml`
-- Main script: `src/index.js`
-- Static binding: `ASSETS` -> `./public`
-- Service binding: `COUNTER` -> `barrelrollcounter-worker`
-- Worker-first paths: `/get`, `/hit`, `/increment`, `/auth`, `/go`
-
-### Backend Worker Runtime Config
-- File: `/cloudflare-worker/wrangler.toml`
-- Main script: `cloudflare-worker/worker.js`
+### Main backend runtime
+- config: `cloudflare-worker/wrangler.toml`
 - D1 binding: `DB` -> `barrelroll-counter-db`
+- optional owner restriction secret: `OWNER_DISCORD_ID`
 
-### Backend Secret/Env Inputs (expected by code/runtime setup)
-- `ROUTER_SECRET` (documented deployment secret in Wrangler setup comments; currently not consumed by committed runtime code)
-- `SESSION_SECRET`
-- `DISCORD_CLIENT_ID`
-- `DISCORD_CLIENT_SECRET`
-- `DISCORD_REDIRECT_URI`
-- `TOOL_URL_WHITEBOARD`
-- `TOOL_URL_CAPEX`
-- `TOOL_URL_SNOW`
-- `CORS_ALLOWED_ORIGINS`
-- `CORS_ALLOWED_ORIGIN_SUFFIXES`
-- `CORS_ALLOW_PROD_ORIGIN_SUFFIXES`
-- `APP_ENV` / `ENVIRONMENT`
+### API runtime
+- config: `naimean-api/wrangler.toml`
+- route: `naimean.com/api/*`
+- D1 binding: `DB` -> `naimean-db`
+- KV binding: `KV`
 
 ---
 
-## API Contract Snapshot
+## Security posture snapshot
 
-### Counter
-- `GET /get` -> `{ "value": <number> }`
-- `POST /hit` -> `{ "value": <number> }`
-- `POST /increment` -> `{ "value": <number> }`
+Current hardening already present in code:
 
-### Auth
-- `GET /auth/session` -> authenticated status + optional user profile
-- `GET /auth/discord/login` -> redirects to Discord OAuth authorize endpoint
-- `GET /auth/discord/callback` -> validates flow, sets/clears cookies, redirects back with auth result query
-- `POST /auth/logout` -> clears session cookie
-
-### Tool Redirects
-- `GET /go/whiteboard`
-- `GET /go/capex`
-- `GET /go/snow`
-
-(Requires authenticated session; redirects are server-controlled and HTTPS-validated.)
+- edge-enforced security headers
+- separate document/API CSP strategy
+- signed cookies for session and OAuth state
+- Discord PKCE + state validation
+- PBKDF2 password hashing for email auth
+- same-origin logout guard
+- environment-aware CORS allowlisting
+- POST-only counter writes
+- worker-side rate limiting
+- HTTPS-only validation for redirect destinations
 
 ---
 
-## Security Posture Snapshot
-- Edge-enforced security headers for all responses
-- Distinct CSP for HTML vs API/non-HTML
-- HSTS on secure transport
-- OAuth PKCE + state model for Discord flow
-- Signed token cookies for session/OAuth state
-- Return path sanitization and strict redirect constraints
-- CORS allowlisting with production-safe defaults
-- POST-only counter write operations
+## Recommendation highlights
+
+### Immediate
+- finish moving tool launches to `/go/*`
+- resolve the `ROUTER_SECRET` docs/runtime mismatch
+- add edge WAF/rate limits and monitoring
+
+### Next
+- add e2e coverage for auth + layout flows
+- align all docs on payload shapes and required secrets
+- decide whether the API KV binding should be used or removed
+
+### Planned
+- improve observability and restore runbooks
+- continue media optimization and scene maintainability work
 
 ---
 
-## Local Validation Commands
-```bash
-node --check src/index.js
-node --check cloudflare-worker/worker.js
-node --check public/script.js
-node --check public/diagnostics.js
-node --test cloudflare-worker/worker.test.js
-```
+## Closing statement
 
----
-
-## Deployment Summary
-- **Static frontend content:** deployed as GitHub Pages artifact from `public/`
-- **Router worker:** deployed via Wrangler using root `wrangler.toml`
-- **Backend worker:** deployed via Wrangler using `cloudflare-worker/wrangler.toml`
-
----
-
-## CV Closing Statement
-`naimeanV2.0` is a hybrid entertainment + edge-application repository that combines immersive front-end storytelling with secure Cloudflare Worker routing, API, and OAuth session capabilities. It is intentionally lightweight (vanilla web stack, minimal dependencies) while still implementing production-minded concerns: route control, response hardening, CORS discipline, authenticated redirects, and testable utility logic.
+`naimeanV2.0` is best understood as a small Cloudflare application wrapped around a handcrafted interactive website: static where that keeps the experience nimble, dynamic only where persistence, auth, and operational control are actually needed.
