@@ -22,6 +22,7 @@
       min-height: 100vh;
       opacity: 0;
       transition: opacity 1s ease;
+      animation: chapel-auto-reveal 0s linear 2.4s forwards;
     }
 
     @supports (min-height: 100dvh) {
@@ -32,6 +33,13 @@
 
     body.loaded {
       opacity: 1;
+      animation: none;
+    }
+
+    @keyframes chapel-auto-reveal {
+      to {
+        opacity: 1;
+      }
     }
 
     .chapel-outer {
