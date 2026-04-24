@@ -64,27 +64,30 @@
         fromPath,
       };
 
+      const card = document.getElementById('auth-card');
       const hasOpener = typeof window.opener === 'object' && window.opener && window.opener !== window;
       if (hasOpener) {
         try {
           window.opener.postMessage(message, window.location.origin);
         } catch (_) {}
+        if (card) {
+          card.textContent = authSuccess
+            ? 'Authentication complete. Closing this window...'
+            : 'Authentication did not complete. You can close this window.';
+        }
         // Give the opener time to receive the message before closing.
         setTimeout(() => {
           try { window.close(); } catch (_) {}
         }, 350);
-        // Fallback navigation only on success — on cancel/failure leave the popup
-        // open (user can close it manually) to avoid navigating a protected page
-        // without authentication.
         if (authSuccess) {
+          // Some browsers ignore window.close() even for popup windows. In that case,
+          // leave the popup on this completion page instead of navigating it away from
+          // the opener-controlled workflow.
           setTimeout(() => {
-            window.location.replace(nextPath);
+            if (card && !window.closed) {
+              card.textContent = 'Authentication complete. You can close this window.';
+            }
           }, 1200);
-        } else {
-          const card = document.getElementById('auth-card');
-          if (card) {
-            card.textContent = 'Authentication did not complete. You can close this window.';
-          }
         }
       } else {
         // Full-page redirect fallback (popup was blocked or opener is unavailable).
