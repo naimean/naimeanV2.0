@@ -3320,35 +3320,48 @@
       ]
     };
 
-    const congregationHotspotAudioPlayersByButton = {};
-    Object.keys(congregationHotspotAudioPathsByButton).forEach(function (buttonId) {
-      congregationHotspotAudioPlayersByButton[buttonId] = congregationHotspotAudioPathsByButton[buttonId].map(function (audioPath) {
-        const audioElement = new Audio(audioPath);
-        audioElement.preload = 'auto';
-        audioElement.load();
-        return audioElement;
-      });
-    });
+    const congregationHotspotAudioPlayersByPath = {};
 
-    function getRandomAudioElement(audioElements) {
-      if (!Array.isArray(audioElements) || audioElements.length === 0) {
+    function getRandomAudioPath(audioPaths) {
+      if (!Array.isArray(audioPaths) || audioPaths.length === 0) {
         return null;
       }
 
-      const randomIndex = Math.floor(Math.random() * audioElements.length);
-      return audioElements[randomIndex];
+      const randomIndex = Math.floor(Math.random() * audioPaths.length);
+      return audioPaths[randomIndex];
     }
 
-    function playHotspotAudio(audioElements) {
-      const audioElement = getRandomAudioElement(audioElements);
+    function getHotspotAudioPlayer(audioPath) {
+      if (!audioPath) {
+        return null;
+      }
+
+      if (!congregationHotspotAudioPlayersByPath[audioPath]) {
+        const audioElement = new Audio(audioPath);
+        audioElement.preload = 'auto';
+        congregationHotspotAudioPlayersByPath[audioPath] = audioElement;
+      }
+
+      return congregationHotspotAudioPlayersByPath[audioPath];
+    }
+
+    function playHotspotAudio(buttonId) {
+      const audioPath = getRandomAudioPath(congregationHotspotAudioPathsByButton[buttonId]);
+      const audioElement = getHotspotAudioPlayer(audioPath);
       if (!audioElement) {
         return;
       }
 
-      audioElements.forEach(function (queuedAudioElement) {
+      Object.keys(congregationHotspotAudioPlayersByPath).forEach(function (queuedAudioPath) {
+        if (queuedAudioPath === audioPath) {
+          return;
+        }
+
+        const queuedAudioElement = congregationHotspotAudioPlayersByPath[queuedAudioPath];
         queuedAudioElement.pause();
         queuedAudioElement.currentTime = 0;
       });
+      audioElement.currentTime = 0;
       const playPromise = audioElement.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(function () {});
@@ -3364,7 +3377,7 @@
       'rick-button'
     ].forEach(function (buttonId) {
       document.getElementById(buttonId).addEventListener('click', function () {
-        playHotspotAudio(congregationHotspotAudioPlayersByButton[buttonId]);
+        playHotspotAudio(buttonId);
       });
     });
 
