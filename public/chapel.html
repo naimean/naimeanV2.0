@@ -930,7 +930,7 @@
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
-    const ROCK_ROLL_CONTINUATION_OFFSET_SECONDS = 0.5;
+    const RICK_ROLL_CONTINUATION_OFFSET_SECONDS = 0.5;
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.5;
     const ROCK_ROLL_START_DELAY_MS = 5000;
     const ROCK_ROLL_FADE_DURATION_MS = 3000;
@@ -2692,7 +2692,7 @@
         ? playbackState.currentTime
         : 0;
 
-      return Math.max(0, sourceTime + ROCK_ROLL_CONTINUATION_OFFSET_SECONDS);
+      return Math.max(0, sourceTime + RICK_ROLL_CONTINUATION_OFFSET_SECONDS);
     }
 
     function bindRockRollContinuationRetry() {
