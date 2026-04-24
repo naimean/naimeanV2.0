@@ -96,6 +96,8 @@ document.addEventListener('DOMContentLoaded', function() {
   let prankRunning = false;
   let joinDiscordWorkflowRunning = false;
   let powerButtonCooldownUntil = 0;
+  let bootScreenUnlockAt = 0;
+  const BOOT_SCREEN_SUBMIT_DELAY_MS = 3000;
   let hintRevealProgress = 0;
   let lastPointerPosition = null;
   let miniGameActive = false;
@@ -1384,9 +1386,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (bootSubmit) {
       bootSubmit.style.display = 'inline-flex';
+      bootSubmit.disabled = true;
     }
     if (bootInlineSubmit) {
       bootInlineSubmit.style.display = 'inline-flex';
+      bootInlineSubmit.disabled = true;
     }
     if (bootQuickLinks) {
       bootQuickLinks.style.display = 'none';
@@ -1395,6 +1399,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootScreen) {
       bootScreen.classList.add('visible');
     }
+    bootScreenUnlockAt = Date.now() + BOOT_SCREEN_SUBMIT_DELAY_MS;
+    setTimeout(function() {
+      if (bootSubmit) bootSubmit.disabled = false;
+      if (bootInlineSubmit) bootInlineSubmit.disabled = false;
+    }, BOOT_SCREEN_SUBMIT_DELAY_MS);
   }
 
   function playStaticTransition() {
@@ -1851,6 +1860,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootForm && bootVideo && bootSubmit) {
       bootForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        if (Date.now() < bootScreenUnlockAt) {
+          return;
+        }
         if (screenOn && !puzzleSolved) {
           const normalizedUser = getNormalizedBootUser();
           if (!isKnownBootUser(normalizedUser)) {
