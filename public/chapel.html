@@ -2707,7 +2707,10 @@
 
       const applyPlaybackPosition = function () {
         try {
-          rockRollContinuationMedia.currentTime = playbackState.currentTime;
+          const elapsed = Number.isFinite(playbackState.savedAt)
+            ? Math.max(0, (Date.now() - playbackState.savedAt) / 1000)
+            : 0;
+          rockRollContinuationMedia.currentTime = playbackState.currentTime + elapsed;
         } catch (_) {}
       };
 

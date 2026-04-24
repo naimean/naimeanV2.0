@@ -468,7 +468,8 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const playbackState = {
         currentTime: Number.isFinite(prankVideo.currentTime) && prankVideo.currentTime >= 0 ? prankVideo.currentTime : 0,
-        volume: Number.isFinite(prankVideo.volume) ? prankVideo.volume : 1
+        volume: Number.isFinite(prankVideo.volume) ? prankVideo.volume : 1,
+        savedAt: Date.now()
       };
       window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_KEY, JSON.stringify(playbackState));
       window.sessionStorage.setItem(ROCK_ROLL_CONTINUATION_PENDING_KEY, '1');
