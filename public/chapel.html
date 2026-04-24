@@ -2596,9 +2596,26 @@
 
       setTimeout(async function () {
         const inviteUrl = await resolveDiscordInviteUrl();
-        if (inviteUrl) {
-          window.open(inviteUrl, '_blank', 'noopener,noreferrer');
+        if (!inviteUrl) {
+          return;
         }
+
+        // Open without noopener so we retain a reference and can close the window
+        // when the user returns to chapel after accepting the Discord invite.
+        const discordWindow = window.open(inviteUrl, '_blank');
+        if (!discordWindow || discordWindow === window) {
+          return;
+        }
+
+        function onChapelFocus() {
+          window.removeEventListener('focus', onChapelFocus);
+          try {
+            if (!discordWindow.closed) {
+              discordWindow.close();
+            }
+          } catch (_) {}
+        }
+        window.addEventListener('focus', onChapelFocus);
       }, DISCORD_INVITE_LAUNCH_DELAY_MS);
     }
 
