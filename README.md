@@ -210,7 +210,8 @@ The link is defined as `DISCORD_FALLBACK_INVITE_URL` in `public/script.js` and t
 ### Reserved static asset path
 
 - `public/assets/uploads/` is scaffolded in-repo as the reserved public path for upload-tool output.
-- Live upload writes and rename behavior still depend on the pending Cloudflare storage/binding setup; this repo change only keeps the published asset tree ready for that path.
+- Live upload writes and rename behavior still depend on the pending Cloudflare storage/binding setup.
+- This repo change only keeps the published asset tree ready for that path.
 
 ---
 
