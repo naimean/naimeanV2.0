@@ -926,6 +926,7 @@
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.5;
     const ROCK_ROLL_START_DELAY_MS = 5000;
     const ROCK_ROLL_FADE_DURATION_MS = 3000;
+    const ROCK_ROLL_SEEK_THRESHOLD_SECONDS = 0.1;
     const LUMINANCE_RED_WEIGHT = 0.2126;
     const LUMINANCE_GREEN_WEIGHT = 0.7152;
     const LUMINANCE_BLUE_WEIGHT = 0.0722;
@@ -2727,8 +2728,27 @@
           bindRockRollContinuationRetry();
         });
         playPromise.then(function () {
-          rockRollContinuationMedia.muted = false;
-          rockRollContinuationMedia.volume = startVolume;
+          // Re-apply position with the most up-to-date elapsed time and wait
+          // for the seek to land before unmuting, so the song never audibly
+          // starts from the beginning (position 0).
+          var doUnmute = function () {
+            rockRollContinuationMedia.muted = false;
+            rockRollContinuationMedia.volume = startVolume;
+          };
+          try {
+            var seekElapsed = Number.isFinite(playbackState.savedAt)
+              ? Math.max(0, (Date.now() - playbackState.savedAt) / 1000)
+              : 0;
+            var targetTime = playbackState.currentTime + seekElapsed;
+            if (Math.abs(rockRollContinuationMedia.currentTime - targetTime) > ROCK_ROLL_SEEK_THRESHOLD_SECONDS) {
+              rockRollContinuationMedia.addEventListener('seeked', doUnmute, { once: true });
+              rockRollContinuationMedia.currentTime = targetTime;
+            } else {
+              doUnmute();
+            }
+          } catch (_) {
+            doUnmute();
+          }
         });
       } else {
         rockRollContinuationMedia.muted = false;
