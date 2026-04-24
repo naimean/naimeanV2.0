@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function markRockRollTransitionPending() {
+  function persistRockRollTransitionState() {
     if (!prankVideo) {
       return;
     }
@@ -1605,7 +1605,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     incrementRickrollCount();
     await waitForVideoToEnd(prankVideo, PRANK_REDIRECT_MAX_WAIT_MS);
-    markRockRollTransitionPending();
+    persistRockRollTransitionState();
     window.location.assign('chapel.html');
   }
 
@@ -1637,7 +1637,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     incrementRickrollCount();
     await waitForVideoToEnd(prankVideo, PRANK_REDIRECT_MAX_WAIT_MS);
-    markRockRollTransitionPending();
+    persistRockRollTransitionState();
     try {
       window.sessionStorage.setItem(DISCORD_INVITE_REDIRECT_PENDING_KEY, '1');
     } catch (_) {}
