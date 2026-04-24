@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const BOOT_ROLE_VISIBILITY_BY_USER = {
     RCA: BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY
   };
-  const wrongAudio = new Audio('assets/wrong.mp3');
+  const wrongAudio = new Audio('assets/audio/wrong.v20260424.mp3');
   wrongAudio.preload = 'auto';
   wrongAudio.load();
   let screenOn = false;
@@ -205,9 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const baseImageCandidates = Array.from(
       new Set([
         c64Image.getAttribute('src'),
-        'assets/commodore64.jpg',
-        'assets/commodore64.jpeg',
-        'assets/commodore64.png'
+        'assets/images/commodore64.v20260424.jpg'
       ].filter(Boolean))
     );
     let baseImageCandidateIndex = Math.max(baseImageCandidates.indexOf(c64Image.getAttribute('src')), 0);
@@ -1901,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 });
-const zeldaSecretAudio = new Audio('assets/zelda-secret.mp3');
+const zeldaSecretAudio = new Audio('assets/audio/zelda-secret.v20260424.mp3');
 zeldaSecretAudio.preload = 'auto';
 
 function playZeldaSecretSound() {
