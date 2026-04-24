@@ -946,7 +946,7 @@ body {
 
   .boot-form {
     left: 12px;
-    right: 12px;
+    right: 1px; /* boot-input-row right edge = shadow-layer right − 1px */
     bottom: 14px;
     gap: 8px;
     align-items: flex-start;
@@ -1025,6 +1025,7 @@ body {
 
   .shoutbox-entry {
     width: 100%;
+    max-width: calc(90.11vw - 14px); /* shadow-layer right − 1px */
   }
 
   .c64-screen {
@@ -1042,6 +1043,8 @@ body {
 
   .shoutbox-hint-shell {
     padding: 4px 8px;
+    box-sizing: border-box;
+    max-width: calc(90.11vw - 14px); /* shadow-layer right − 1px (90.11vw = --screen-width × 100vw; 14px = c64-screen margin(1)+border(4)+padding(8)+1px gap) */
   }
 
   .shoutbox-hint {
