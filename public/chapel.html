@@ -118,6 +118,16 @@
       animation: chapel-trans-rick-flicker-fade var(--rock-roll-trans-rick-exit-duration) ease-out forwards;
     }
 
+    .rock-roll-continuation-media {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
     @keyframes chapel-trans-rick-flicker-fade {
       0%,
       10% {
@@ -785,7 +795,7 @@
 <body>
   <div class="fade-overlay is-visible" id="fade-overlay"></div>
   <audio id="congregation-audio" src="assets/audio/congregation.v20260424.mp3" preload="auto"></audio>
-  <video id="rock-roll-continuation-media" src="assets/video/notarickroll-piece-2.v20260424.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
+  <video id="rock-roll-continuation-media" class="rock-roll-continuation-media" src="assets/video/notarickroll-piece-2.v20260424.mp4" playsinline muted preload="auto" aria-hidden="true" tabindex="-1"></video>
 
     <div class="chapel-outer">
       <div class="chapel-wrapper">
@@ -2841,6 +2851,7 @@
       const startVolume = getRockRollContinuationStartVolume(playbackState);
       rockRollContinuationMedia.pause();
       rockRollContinuationMedia.preload = 'auto';
+      rockRollContinuationMedia.defaultMuted = true;
       rockRollContinuationMedia.muted = true;
       rockRollContinuationMedia.volume = 0;
       const continuationStartTime = getRockRollContinuationStartTime(playbackState);
@@ -2888,6 +2899,7 @@
           return;
         }
 
+        rockRollContinuationMedia.defaultMuted = false;
         rockRollContinuationMedia.muted = false;
         rockRollContinuationMedia.volume = startVolume;
         startFadeOut();
