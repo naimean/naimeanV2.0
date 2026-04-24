@@ -33,6 +33,7 @@
   </div>
   <script>
     (function() {
+      const POPUP_CLOSE_DELAY_MS = 350;
       const POPUP_CLOSE_STATUS_DELAY_MS = 1200;
       const params = new URLSearchParams(window.location.search);
       const nextRaw = params.get('next') || '/';
@@ -83,15 +84,13 @@
         // Give the opener time to receive the message before closing.
         setTimeout(() => {
           try { window.close(); } catch (_) {}
-        }, 350);
+        }, POPUP_CLOSE_DELAY_MS);
         if (authSuccess) {
           // Some browsers ignore window.close() even for popup windows. In that case,
           // leave the popup on this completion page instead of navigating it away from
           // the opener-controlled workflow.
           setTimeout(() => {
-            if (!window.closed) {
-              setCardText('Authentication complete. You can close this window.');
-            }
+            setCardText('Authentication complete. You can close this window.');
           }, POPUP_CLOSE_STATUS_DELAY_MS);
         }
       } else {
