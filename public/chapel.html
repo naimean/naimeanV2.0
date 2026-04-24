@@ -995,8 +995,6 @@
     let activeLayoutLoadRequestId = 0;
     let activeViewportProbeMessage = null;
     let activeViewportProbeToken = '';
-    let ownerToolsAutoShown = false;
-    let ownerToolsManuallyHidden = false;
     let stopHotspotToolsDrag = null;
     let clearHotspotResizeCursorClasses = null;
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -1018,12 +1016,6 @@
 
     function setToolsActive(on, options) {
       const nextToolsActive = Boolean(on);
-      const isManualToggle = Boolean(options && options.manual);
-      if (isManualToggle) {
-        ownerToolsManuallyHidden = !nextToolsActive;
-      } else if (nextToolsActive) {
-        ownerToolsManuallyHidden = false;
-      }
       try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
       if (!nextToolsActive) {
         const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
@@ -1720,7 +1712,7 @@
 
       // ── Tool activation ──────────────────────────────────────────────────────
       // Toggle visibility with Ctrl+Shift+H or window.NaimeanLayout.toggle().
-      setToolsActive(isToolsActive());
+      setToolsActive(false);
       document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.shiftKey && !e.altKey && e.key === 'H') {
           e.preventDefault();
@@ -1743,26 +1735,6 @@
         const username = typeof session.user.username === 'string' ? session.user.username.trim().toLowerCase() : '';
         const displayName = typeof session.user.displayName === 'string' ? session.user.displayName.trim().toLowerCase() : '';
         return HOTSPOT_OWNER_DISCORD_ALIASES.has(username) || HOTSPOT_OWNER_DISCORD_ALIASES.has(displayName);
-      }
-      function showToolsByDefaultForOwner(session) {
-        if (!session || ownerToolsAutoShown || ownerToolsManuallyHidden) {
-          return;
-        }
-        if (isOwnerDiscordSession(session) && !isToolsActive()) {
-          ownerToolsAutoShown = true;
-          setToolsActive(true, { manual: false });
-        }
-      }
-      const authApi = window.NaimeanAuth;
-      if (authApi) {
-        if (typeof authApi.getSession === 'function') {
-          showToolsByDefaultForOwner(authApi.getSession());
-        }
-        if (typeof authApi.onSessionChange === 'function') {
-          authApi.onSessionChange(function (session) {
-            showToolsByDefaultForOwner(session);
-          });
-        }
       }
       function hasTouchCapability() {
         if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
