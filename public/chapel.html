@@ -1303,30 +1303,46 @@
         transRickHideTimerId = null;
       }
 
+      if (isTransRick) {
+        setTransRickVisibility(target, visible);
+        return;
+      }
+
       if (visible) {
         if (target.hidden) {
           target.hidden = false;
         }
         target.style.visibility = 'visible';
         target.style.pointerEvents = 'auto';
-        if (isTransRick) {
-          target.classList.add('is-visible');
-        }
       } else {
         target.style.pointerEvents = 'none';
-        if (isTransRick) {
-          target.classList.remove('is-visible');
-          target.style.visibility = 'visible';
-          transRickHideTimerId = window.setTimeout(function () {
-            transRickHideTimerId = null;
-            if (!target.classList.contains('is-visible')) {
-              target.hidden = true;
-              target.style.visibility = 'hidden';
-            }
-          }, TRANS_RICK_FADE_OUT_MS);
-        } else {
-          target.style.visibility = 'hidden';
+        target.style.visibility = 'hidden';
+      }
+    }
+
+    function setTransRickVisibility(target, visible) {
+      if (!target) {
+        return;
+      }
+
+      if (visible) {
+        if (target.hidden) {
+          target.hidden = false;
         }
+        target.style.visibility = 'visible';
+        target.style.pointerEvents = 'auto';
+        target.classList.add('is-visible');
+      } else {
+        target.style.pointerEvents = 'none';
+        target.classList.remove('is-visible');
+        target.style.visibility = 'visible';
+        transRickHideTimerId = window.setTimeout(function () {
+          transRickHideTimerId = null;
+          if (!target.classList.contains('is-visible')) {
+            target.hidden = true;
+            target.style.visibility = 'hidden';
+          }
+        }, TRANS_RICK_FADE_OUT_MS);
       }
     }
 
@@ -2735,7 +2751,7 @@
       rockRollContinuationMedia.muted = true;
       rockRollContinuationMedia.volume = 0;
       const continuationStartTime = getRockRollContinuationStartTime(playbackState);
-      let fadeLoopStarted = false;
+      let fadeOutStarted = false;
 
       const applyPlaybackPosition = function () {
         try {
@@ -2744,11 +2760,11 @@
       };
 
       const startFadeOut = function () {
-        if (fadeLoopStarted) {
+        if (fadeOutStarted) {
           return;
         }
 
-        fadeLoopStarted = true;
+        fadeOutStarted = true;
         const fadeStart = performance.now();
         function fadeStep(now) {
           if (!rockRollContinuationMedia || !rockRollContinuationActive) {
