@@ -105,12 +105,47 @@
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
+      opacity: 1;
     }
 
     .chapel-trans-rick.is-visible {
       opacity: 1;
       visibility: visible;
       z-index: 21;
+    }
+
+    .chapel-trans-rick.is-fading-out {
+      animation: chapel-trans-rick-flicker-fade var(--rock-roll-trans-rick-exit-duration) ease-out forwards;
+    }
+
+    @keyframes chapel-trans-rick-flicker-fade {
+      0%,
+      10% {
+        opacity: 1;
+      }
+
+      18%,
+      28% {
+        opacity: 0;
+      }
+
+      36%,
+      46% {
+        opacity: 1;
+      }
+
+      54%,
+      64% {
+        opacity: 0;
+      }
+
+      72% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+      }
     }
 
     /* Pulsing power button — positioned over the C64's power button on the altar */
@@ -754,7 +789,7 @@
   <audio id="congregation-audio-goose" src="assets/audio/goose_honk.v20260424.mp3" preload="auto"></audio>
   <audio id="congregation-audio-rick" src="assets/audio/rick_nope.v20260424.mp3" preload="auto"></audio>
   <audio id="congregation-audio-morty" src="assets/audio/morty_aw_jeez.v20260424.mp3" preload="auto"></audio>
-  <video id="rock-roll-continuation-media" src="assets/video/notarickroll.v20260424.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
+  <video id="rock-roll-continuation-media" src="assets/video/notarickroll-piece-2.v20260424.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
 
     <div class="chapel-outer">
       <div class="chapel-wrapper">
@@ -930,12 +965,18 @@
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
-    const RICK_ROLL_CONTINUATION_OFFSET_SECONDS = 0.5;
-    const ROCK_ROLL_START_VOLUME_FACTOR = 0.5;
-    const ROCK_ROLL_START_DELAY_MS = 5000;
+    // Piece 2 is pre-rendered at half volume, so chapel can start it at full media volume.
+    const ROCK_ROLL_START_VOLUME_FACTOR = 1;
+    // Piece 2 begins at the chapel transition already, so continuation playback starts from its first frame.
+    const RICK_ROLL_CONTINUATION_OFFSET_SECONDS = 0;
+    // Start the fade 2 seconds into piece 2 so the chapel clip lands briefly, then quickly drops into the trans_rick exit beat.
+    const ROCK_ROLL_START_DELAY_MS = 2000;
     const ROCK_ROLL_FADE_DURATION_MS = 3000;
     const ROCK_ROLL_SEEK_THRESHOLD_SECONDS = 0.1;
     const TRANS_RICK_FADE_OUT_MS = 800;
+    const ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS = 1600;
+    const ROCK_ROLL_TRANS_RICK_REDUCED_MOTION_DELAY_MS = 250;
+    const ROCK_ROLL_TRANS_RICK_ANIMATION_FALLBACK_BUFFER_MS = 150;
     const LUMINANCE_RED_WEIGHT = 0.2126;
     const LUMINANCE_GREEN_WEIGHT = 0.7152;
     const LUMINANCE_BLUE_WEIGHT = 0.0722;
@@ -993,6 +1034,7 @@
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
+    let rockRollTransRickExitActive = false;
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
     let rockRollContinuationPending = false;
@@ -1013,6 +1055,9 @@
     const wrongAudio = new Audio('assets/audio/wrong.v20260424.mp3');
     wrongAudio.preload = 'auto';
     wrongAudio.load();
+    if (chapelWrapper) {
+      chapelWrapper.style.setProperty('--rock-roll-trans-rick-exit-duration', `${ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS}ms`);
+    }
     const defaultLayoutInlineStyles = new Map();
     const isLayoutProbeMode = new URLSearchParams(window.location.search).get(HOTSPOT_LAYOUT_PROBE_QUERY_PARAM) === '1';
 
@@ -2354,8 +2399,10 @@
       if (!chapelTransRick) {
         return;
       }
-      const shouldReveal = rockRollContinuationActive || isToolsActive();
+      const shouldReveal = rockRollContinuationActive || rockRollTransRickExitActive || isToolsActive();
       applyHotspotElementVisibility(chapelTransRick, shouldReveal);
+      chapelTransRick.classList.toggle('is-visible', rockRollContinuationActive || rockRollTransRickExitActive);
+      chapelTransRick.classList.toggle('is-fading-out', rockRollTransRickExitActive);
     }
 
     function clampValue(value, min, max) {
@@ -2568,6 +2615,8 @@
     function clearRockRollContinuationState() {
       rockRollContinuationPending = false;
       rockRollContinuationPlaybackState = null;
+      rockRollTransRickExitActive = false;
+      syncTransRickPresentation();
 
       try {
         window.sessionStorage.removeItem(ROCK_ROLL_CONTINUATION_KEY);
@@ -2723,6 +2772,7 @@
 
     function finishRockRollContinuation() {
       rockRollContinuationActive = false;
+      rockRollTransRickExitActive = false;
       syncTransRickPresentation();
       clearRockRollContinuationState();
 
@@ -2733,9 +2783,55 @@
       startCongregationAudio();
     }
 
+    function runTransRickExitAnimation() {
+      if (rockRollTransRickExitActive) {
+        return;
+      }
+
+      rockRollContinuationActive = false;
+      rockRollTransRickExitActive = true;
+      syncTransRickPresentation();
+
+      const finishAfterAnimation = function () {
+        if (!rockRollTransRickExitActive) {
+          return;
+        }
+        finishRockRollContinuation();
+      };
+
+      if (!chapelTransRick || reducedMotionQuery.matches) {
+        window.setTimeout(
+          finishAfterAnimation,
+          reducedMotionQuery.matches ? ROCK_ROLL_TRANS_RICK_REDUCED_MOTION_DELAY_MS : ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS
+        );
+        return;
+      }
+
+      let animationFinished = false;
+      let animationFallbackTimerId = null;
+      const handleAnimationFinished = function () {
+        if (animationFinished) {
+          return;
+        }
+        animationFinished = true;
+        if (animationFallbackTimerId !== null) {
+          window.clearTimeout(animationFallbackTimerId);
+        }
+        finishAfterAnimation();
+      };
+
+      chapelTransRick.addEventListener('animationend', handleAnimationFinished, { once: true });
+      // Fallback in case animationend is skipped because the element is hidden or reflowed mid-animation.
+      animationFallbackTimerId = window.setTimeout(
+        handleAnimationFinished,
+        ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS + ROCK_ROLL_TRANS_RICK_ANIMATION_FALLBACK_BUFFER_MS
+      );
+    }
+
     function startRockRollContinuation(playbackState) {
       if (!playbackState || !rockRollContinuationMedia) {
         rockRollContinuationActive = false;
+        rockRollTransRickExitActive = false;
         syncTransRickPresentation();
         clearRockRollContinuationState();
         return;
@@ -2744,6 +2840,7 @@
       rockRollContinuationPending = true;
       rockRollContinuationPlaybackState = playbackState;
       rockRollContinuationActive = true;
+      rockRollTransRickExitActive = false;
       syncTransRickPresentation();
       const startVolume = getRockRollContinuationStartVolume(playbackState);
       rockRollContinuationMedia.pause();
@@ -2780,7 +2877,7 @@
           if (progress >= 1) {
             rockRollContinuationMedia.pause();
             rockRollContinuationMedia.volume = 0;
-            finishRockRollContinuation();
+            runTransRickExitAnimation();
             return;
           }
 
