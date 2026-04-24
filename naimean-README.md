@@ -41,8 +41,9 @@ The static scenes came first. Workers were added only where the site needed secr
 1. User lands on `public/index.html`
 2. User interacts with the power-on / boot / shoutbox flow
 3. User can trigger Discord auth, email auth, mini-game flows, or the prank/rickroll path
-4. The experience moves through chapel, bedroom antechamber, bedroom, and level pages
-5. Persistent state and privileged redirects are served through Workers instead of embedded in the static site
+4. "Join our Discord" opens `https://discord.gg/kTkD7N3JN` (30-day Guest invite); new members start as Guests and get upgraded to the Peon role after accepting the play-nice policy
+5. The experience moves through chapel, bedroom antechamber, bedroom, and level pages
+6. Persistent state and privileged redirects are served through Workers instead of embedded in the static site
 
 ---
 
@@ -160,6 +161,7 @@ It is the repo's cleaner API lane and owns its own D1 + KV footprint.
 **Contains:**
 - C64 artwork and overlays
 - power button / boot screen
+- "Join our Discord" button (uses `DISCORD_FALLBACK_INVITE_URL = 'https://discord.gg/kTkD7N3JN'` as fallback when the widget API has no `instant_invite`)
 - shoutbox area
 - Discord overlay/widget frame
 - auth/debug/main script includes

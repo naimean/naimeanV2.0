@@ -4,7 +4,7 @@
 
 - User freehands `naimean.com` in browser -> lands on the C64-themed landing page
 - Entertaining games/experiences keep the user engaged
-- Discord remains the main community/auth hub
+- Discord remains the main community/auth hub — current invite: `https://discord.gg/kTkD7N3JN` (30-day Guest invite; accepted guests get upgraded to Peon role)
 - Discord OAuth and local email auth both exist in the repo today
 - Cloudflare Workers own routing, auth, persistence, and API behavior
 
@@ -50,6 +50,17 @@
 ---
 
 # Update Log
+
+## 2026-04-24 (Discord invite refresh + polish backlog)
+- Updated Discord invite link to `https://discord.gg/kTkD7N3JN` (30-day Guest invite); added `DISCORD_FALLBACK_INVITE_URL` constant in `public/script.js` and `public/chapel.html` so the invite link is always reachable even if the Discord widget API does not return an `instant_invite`.
+- Fix: chapel roll audio now seeks to compensate for the navigation delay so the rickroll audio continuation feels seamless (#322).
+- Fix: rock roll continuation timing set to 5 s at 50 % volume followed by a 3 s fade-out (#321).
+- Fix: `incrementRickrollCount` is now fire-and-forget so the rickroll redirect is not delayed by a slow network (#319).
+- Fix: mobile submit and hint bars now constrain to shadow-layer right-1px; boot-input-row extended to shadow-layer right-1px (#320).
+- Fix: zelda secret audio volume set to 50 % (#318).
+- Feat: Discord invite window is automatically closed when the user returns to chapel after following the invite link (#317).
+- Fix: 3-second submit delay added when the boot screen opens from the static-video transition (#316).
+- Fix: chapel trapdoor Discord auth popup no longer hijacks the post-login redirect route (#315).
 
 ## 2026-04-23 (Cloudflare infrastructure handoff refresh)
 - Rewrote `CLOUDFLARE_README.md` to mirror the current Cloudflare infrastructure handoff: account ID, worker inventory, D1/KV IDs, route priority, GitHub Actions expectations, manual deploy steps, known issues, and hardening recommendations

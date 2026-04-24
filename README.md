@@ -192,6 +192,12 @@ The frontend is scene-based, not framework/component-based.
 - `public/auth.js` — shared auth chip / popup login flow
 - `public/diagnostics.js` — diagnostics panel
 
+### Discord invite
+
+Current invite link: `https://discord.gg/kTkD7N3JN` (30-day Guest invite).
+New members land as Guests; accepting the play-nice policy upgrades them to the Peon role (non-expiring).
+The link is defined as `DISCORD_FALLBACK_INVITE_URL` in `public/script.js` and the inline script in `public/chapel.html`.
+
 ### Core pages
 
 - `public/index.html`
