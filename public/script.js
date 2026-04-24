@@ -1913,6 +1913,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 const zeldaSecretAudio = new Audio('assets/audio/zelda-secret.v20260424.mp3');
 zeldaSecretAudio.preload = 'auto';
+zeldaSecretAudio.volume = 0.5;
 
 function playZeldaSecretSound() {
   return new Promise((resolve) => {
