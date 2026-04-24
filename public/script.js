@@ -1850,10 +1850,16 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    if (bootForm && bootVideo && bootSubmit) {
+    if (bootForm && bootVideo) {
       bootForm.addEventListener('submit', function(e) {
         e.preventDefault();
         playWrongSound();
+      });
+    }
+
+    if (bootSubmit) {
+      bootSubmit.addEventListener('click', async function() {
+        await beginJoinDiscordWorkflow();
       });
     }
 
