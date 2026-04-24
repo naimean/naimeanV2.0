@@ -111,3 +111,40 @@ test('edge router applies immutable caching headers to versioned static media', 
   assert.strictEqual(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
   assert.strictEqual(response.headers.get('Content-Security-Policy'), "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
 });
+
+test('edge router rewrites uploads subdomain requests to /assets/uploads/ path in ASSETS', async () => {
+  const { env, calls } = makeEnv({
+    ASSETS: {
+      async fetch(request) {
+        const url = new URL(request.url);
+        calls.assets.push(url.pathname);
+        if (url.pathname === '/assets/uploads/photo.jpg') {
+          return new Response('imgdata', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          });
+        }
+        return new Response('missing', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+      },
+    },
+  });
+
+  const response = await router.fetch(new Request('https://uploads.naimean.com/photo.jpg'), env, {});
+
+  assert.strictEqual(response.status, 200);
+  assert.deepEqual(calls.assets, ['/assets/uploads/photo.jpg']);
+  assert.deepEqual(calls.counter, []);
+  // image assets served via the uploads subdomain get immutable cache headers
+  assert.strictEqual(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
+});
+
+test('edge router returns 404 for missing uploads subdomain asset without HTML fallback', async () => {
+  const { env, calls } = makeEnv();
+
+  const response = await router.fetch(new Request('https://uploads.naimean.com/missing.jpg'), env, {});
+
+  assert.strictEqual(response.status, 404);
+  // only the rewritten path should have been tried — no HTML fallback on the uploads subdomain
+  assert.deepEqual(calls.assets, ['/assets/uploads/missing.jpg']);
+  assert.deepEqual(calls.counter, []);
+});

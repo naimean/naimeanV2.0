@@ -1,5 +1,7 @@
 const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"];
 
+const UPLOADS_HOSTNAME = 'uploads.naimean.com';
+
 const DOCUMENT_CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -86,7 +88,12 @@ export default {
     const isSecureTransport = url.protocol === 'https:';
     let upstreamResponse;
 
-    if (PROXY_PATHS.some((path) => url.pathname.startsWith(path))) {
+    if (url.hostname === UPLOADS_HOSTNAME) {
+      // Rewrite uploads.naimean.com/<path> → ASSETS at /assets/uploads/<path>
+      const rewritten = new URL(request.url);
+      rewritten.pathname = `/assets/uploads${url.pathname}`;
+      upstreamResponse = await env.ASSETS.fetch(new Request(rewritten.toString(), request));
+    } else if (PROXY_PATHS.some((path) => url.pathname.startsWith(path))) {
       upstreamResponse = await env.COUNTER.fetch(request);
     } else {
       upstreamResponse = await env.ASSETS.fetch(request);
