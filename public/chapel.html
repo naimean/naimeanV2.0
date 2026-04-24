@@ -3358,7 +3358,13 @@
     }
 
     function playHotspotAudio(buttonId) {
-      const audioPath = getRandomAudioPath(congregationHotspotAudioPathsByButton[buttonId]);
+      const audioPaths = congregationHotspotAudioPathsByButton[buttonId];
+      if (!audioPaths) {
+        console.warn('Missing congregation audio configuration for button:', buttonId);
+        return;
+      }
+
+      const audioPath = getRandomAudioPath(audioPaths);
       const audioElement = getHotspotAudioPlayer(audioPath);
       if (!audioElement) {
         return;
