@@ -33,6 +33,8 @@
   </div>
   <script>
     (function() {
+      const POPUP_CLOSE_DELAY_MS = 350;
+      const POPUP_CLOSE_STATUS_DELAY_MS = 1200;
       const params = new URLSearchParams(window.location.search);
       const nextRaw = params.get('next') || '/';
       const fromRaw = params.get('from') || '/';
@@ -64,27 +66,32 @@
         fromPath,
       };
 
+      const card = document.getElementById('auth-card');
+      function setCardText(text) {
+        if (card) {
+          card.textContent = text;
+        }
+      }
+
       const hasOpener = typeof window.opener === 'object' && window.opener && window.opener !== window;
       if (hasOpener) {
         try {
           window.opener.postMessage(message, window.location.origin);
         } catch (_) {}
+        setCardText(authSuccess
+          ? 'Authentication complete. Closing this window...'
+          : 'Authentication did not complete. You can close this window.');
         // Give the opener time to receive the message before closing.
         setTimeout(() => {
           try { window.close(); } catch (_) {}
-        }, 350);
-        // Fallback navigation only on success — on cancel/failure leave the popup
-        // open (user can close it manually) to avoid navigating a protected page
-        // without authentication.
+        }, POPUP_CLOSE_DELAY_MS);
         if (authSuccess) {
+          // Some browsers ignore window.close() even for popup windows. In that case,
+          // leave the popup on this completion page instead of navigating it away from
+          // the opener-controlled workflow.
           setTimeout(() => {
-            window.location.replace(nextPath);
-          }, 1200);
-        } else {
-          const card = document.getElementById('auth-card');
-          if (card) {
-            card.textContent = 'Authentication did not complete. You can close this window.';
-          }
+            setCardText('Authentication complete. You can close this window.');
+          }, POPUP_CLOSE_STATUS_DELAY_MS);
         }
       } else {
         // Full-page redirect fallback (popup was blocked or opener is unavailable).
