@@ -34,6 +34,12 @@ function makeEnv(overrides = {}) {
             headers: { 'Content-Type': 'image/png' },
           });
         }
+        if (url.pathname.startsWith('/assets/uploads/')) {
+          return new Response('upload-data', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          });
+        }
         return new Response('missing', { status: 404, headers: { 'Content-Type': 'text/plain' } });
       },
     },
@@ -112,39 +118,48 @@ test('edge router applies immutable caching headers to versioned static media', 
   assert.strictEqual(response.headers.get('Content-Security-Policy'), "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
 });
 
-test('edge router rewrites uploads subdomain requests to /assets/uploads/ path in ASSETS', async () => {
-  const { env, calls } = makeEnv({
-    ASSETS: {
-      async fetch(request) {
-        const url = new URL(request.url);
-        calls.assets.push(url.pathname);
-        if (url.pathname === '/assets/uploads/photo.jpg') {
-          return new Response('imgdata', {
-            status: 200,
-            headers: { 'Content-Type': 'image/jpeg' },
-          });
-        }
-        return new Response('missing', { status: 404, headers: { 'Content-Type': 'text/plain' } });
-      },
-    },
-  });
+test('uploads subdomain rewrites path to /assets/uploads and serves from ASSETS', async () => {
+  const { env, calls } = makeEnv();
 
   const response = await router.fetch(new Request('https://uploads.naimean.com/photo.jpg'), env, {});
 
   assert.strictEqual(response.status, 200);
   assert.deepEqual(calls.assets, ['/assets/uploads/photo.jpg']);
   assert.deepEqual(calls.counter, []);
-  // image assets served via the uploads subdomain get immutable cache headers
   assert.strictEqual(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
 });
 
-test('edge router returns 404 for missing uploads subdomain asset without HTML fallback', async () => {
+test('uploads subdomain does not route proxy paths to COUNTER', async () => {
   const { env, calls } = makeEnv();
+
+  const response = await router.fetch(new Request('https://uploads.naimean.com/get'), env, {});
+
+  assert.deepEqual(calls.counter, []);
+  assert.deepEqual(calls.assets, ['/assets/uploads/get']);
+});
+
+test('uploads subdomain preserves nested path segments', async () => {
+  const { env, calls } = makeEnv();
+
+  await router.fetch(new Request('https://uploads.naimean.com/2026/april/image.jpg'), env, {});
+
+  assert.deepEqual(calls.assets, ['/assets/uploads/2026/april/image.jpg']);
+});
+
+test('uploads subdomain returns 404 for missing assets without HTML fallback', async () => {
+  const { env, calls } = makeEnv({
+    ASSETS: {
+      async fetch(request) {
+        const url = new URL(request.url);
+        calls.assets.push(url.pathname);
+        return new Response('missing', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+      },
+    },
+  });
 
   const response = await router.fetch(new Request('https://uploads.naimean.com/missing.jpg'), env, {});
 
   assert.strictEqual(response.status, 404);
-  // only the rewritten path should have been tried — no HTML fallback on the uploads subdomain
   assert.deepEqual(calls.assets, ['/assets/uploads/missing.jpg']);
   assert.deepEqual(calls.counter, []);
 });
