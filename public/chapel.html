@@ -98,12 +98,18 @@
       height: auto;
       transform: translate(-50%, -100%);
       z-index: 11;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.8s ease;
+      will-change: opacity;
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
     }
 
     .chapel-trans-rick.is-visible {
+      opacity: 1;
+      visibility: visible;
       z-index: 21;
     }
 
@@ -924,10 +930,12 @@
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
+    const RICK_ROLL_CONTINUATION_OFFSET_SECONDS = 0.5;
     const ROCK_ROLL_START_VOLUME_FACTOR = 0.5;
     const ROCK_ROLL_START_DELAY_MS = 5000;
     const ROCK_ROLL_FADE_DURATION_MS = 3000;
     const ROCK_ROLL_SEEK_THRESHOLD_SECONDS = 0.1;
+    const TRANS_RICK_FADE_OUT_MS = 800;
     const LUMINANCE_RED_WEIGHT = 0.2126;
     const LUMINANCE_GREEN_WEIGHT = 0.7152;
     const LUMINANCE_BLUE_WEIGHT = 0.0722;
@@ -988,6 +996,7 @@
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
     let rockRollContinuationPending = false;
+    let transRickHideTimerId = null;
     let torchBloomSampleCanvas = null;
     let torchBloomSampleContext = null;
     let torchBloomIntensityBound = false;
@@ -1289,23 +1298,51 @@
       }
 
       const isTransRick = target.id === 'chapel-trans-rick';
+      if (isTransRick && transRickHideTimerId !== null) {
+        window.clearTimeout(transRickHideTimerId);
+        transRickHideTimerId = null;
+      }
+
       if (isTransRick) {
-        target.hidden = !visible;
+        setTransRickVisibility(target, visible);
+        return;
       }
 
       if (visible) {
-        if (!isTransRick && target.hidden) {
+        if (target.hidden) {
           target.hidden = false;
         }
         target.style.visibility = 'visible';
         target.style.pointerEvents = 'auto';
       } else {
-        target.style.visibility = 'hidden';
         target.style.pointerEvents = 'none';
+        target.style.visibility = 'hidden';
+      }
+    }
+
+    function setTransRickVisibility(target, visible) {
+      if (!target) {
+        return;
       }
 
-      if (isTransRick) {
-        target.classList.toggle('is-visible', visible);
+      if (visible) {
+        if (target.hidden) {
+          target.hidden = false;
+        }
+        target.style.visibility = 'visible';
+        target.style.pointerEvents = 'auto';
+        target.classList.add('is-visible');
+      } else {
+        target.style.pointerEvents = 'none';
+        target.classList.remove('is-visible');
+        target.style.visibility = 'visible';
+        transRickHideTimerId = window.setTimeout(function () {
+          transRickHideTimerId = null;
+          if (!target.classList.contains('is-visible')) {
+            target.hidden = true;
+            target.style.visibility = 'hidden';
+          }
+        }, TRANS_RICK_FADE_OUT_MS);
       }
     }
 
@@ -2319,7 +2356,6 @@
       }
       const shouldReveal = rockRollContinuationActive || isToolsActive();
       applyHotspotElementVisibility(chapelTransRick, shouldReveal);
-      chapelTransRick.classList.toggle('is-visible', rockRollContinuationActive);
     }
 
     function clampValue(value, min, max) {
@@ -2651,6 +2687,14 @@
       return Math.max(0, Math.min(1, sourceVolume * ROCK_ROLL_START_VOLUME_FACTOR));
     }
 
+    function getRockRollContinuationStartTime(playbackState) {
+      const sourceTime = playbackState && Number.isFinite(playbackState.currentTime)
+        ? playbackState.currentTime
+        : 0;
+
+      return Math.max(0, sourceTime + RICK_ROLL_CONTINUATION_OFFSET_SECONDS);
+    }
+
     function bindRockRollContinuationRetry() {
       if (rockRollContinuationRetryBound) {
         return;
@@ -2706,14 +2750,54 @@
       rockRollContinuationMedia.preload = 'auto';
       rockRollContinuationMedia.muted = true;
       rockRollContinuationMedia.volume = 0;
+      const continuationStartTime = getRockRollContinuationStartTime(playbackState);
+      let fadeOutStarted = false;
 
       const applyPlaybackPosition = function () {
         try {
-          const elapsed = Number.isFinite(playbackState.savedAt)
-            ? Math.max(0, (Date.now() - playbackState.savedAt) / 1000)
-            : 0;
-          rockRollContinuationMedia.currentTime = playbackState.currentTime + elapsed;
+          rockRollContinuationMedia.currentTime = continuationStartTime;
         } catch (_) {}
+      };
+
+      const startFadeOut = function () {
+        if (fadeOutStarted) {
+          return;
+        }
+
+        fadeOutStarted = true;
+        const fadeStart = performance.now();
+        function fadeStep(now) {
+          if (!rockRollContinuationMedia || !rockRollContinuationActive) {
+            return;
+          }
+
+          const elapsed = now - fadeStart;
+          const fadeElapsed = Math.max(0, elapsed - ROCK_ROLL_START_DELAY_MS);
+          const progress = Math.min(fadeElapsed / ROCK_ROLL_FADE_DURATION_MS, 1);
+          const nextVolume = startVolume * (1 - progress);
+          rockRollContinuationMedia.volume = Math.max(0, nextVolume);
+
+          if (progress >= 1) {
+            rockRollContinuationMedia.pause();
+            rockRollContinuationMedia.volume = 0;
+            finishRockRollContinuation();
+            return;
+          }
+
+          requestAnimationFrame(fadeStep);
+        }
+
+        requestAnimationFrame(fadeStep);
+      };
+
+      const beginAudiblePlayback = function () {
+        if (!rockRollContinuationActive) {
+          return;
+        }
+
+        rockRollContinuationMedia.muted = false;
+        rockRollContinuationMedia.volume = startVolume;
+        startFadeOut();
       };
 
       if (rockRollContinuationMedia.readyState > 0) {
@@ -2733,14 +2817,10 @@
           // for the seek to land before unmuting, so the song never audibly
           // starts from the beginning (position 0).
           var doUnmute = function () {
-            rockRollContinuationMedia.muted = false;
-            rockRollContinuationMedia.volume = startVolume;
+            beginAudiblePlayback();
           };
           try {
-            var seekElapsed = Number.isFinite(playbackState.savedAt)
-              ? Math.max(0, (Date.now() - playbackState.savedAt) / 1000)
-              : 0;
-            var targetTime = playbackState.currentTime + seekElapsed;
+            var targetTime = continuationStartTime;
             if (Math.abs(rockRollContinuationMedia.currentTime - targetTime) > ROCK_ROLL_SEEK_THRESHOLD_SECONDS) {
               rockRollContinuationMedia.addEventListener('seeked', doUnmute, { once: true });
               rockRollContinuationMedia.currentTime = targetTime;
@@ -2752,33 +2832,8 @@
           }
         });
       } else {
-        rockRollContinuationMedia.muted = false;
-        rockRollContinuationMedia.volume = startVolume;
+        beginAudiblePlayback();
       }
-
-      const fadeStart = performance.now();
-      function fadeStep(now) {
-        if (!rockRollContinuationMedia || !rockRollContinuationActive) {
-          return;
-        }
-
-        const elapsed = now - fadeStart;
-        const fadeElapsed = Math.max(0, elapsed - ROCK_ROLL_START_DELAY_MS);
-        const progress = Math.min(fadeElapsed / ROCK_ROLL_FADE_DURATION_MS, 1);
-        const nextVolume = startVolume * (1 - progress);
-        rockRollContinuationMedia.volume = Math.max(0, nextVolume);
-
-        if (progress >= 1) {
-          rockRollContinuationMedia.pause();
-          rockRollContinuationMedia.volume = 0;
-          finishRockRollContinuation();
-          return;
-        }
-
-        requestAnimationFrame(fadeStep);
-      }
-
-      requestAnimationFrame(fadeStep);
     }
 
     renderRickrollCount();
