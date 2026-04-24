@@ -109,7 +109,7 @@
     }
 
     .chapel-trans-rick.is-fading-out {
-      animation: chapel-trans-rick-flicker-fade 1.6s ease-out forwards;
+      animation: chapel-trans-rick-flicker-fade var(--rock-roll-trans-rick-exit-duration) ease-out forwards;
     }
 
     @keyframes chapel-trans-rick-flicker-fade {
@@ -959,11 +959,15 @@
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
+    // Piece 2 is pre-rendered at half volume, so chapel can start it at full media volume.
     const ROCK_ROLL_START_VOLUME_FACTOR = 1;
+    // Start the fade a couple seconds into the chapel-only continuation clip.
     const ROCK_ROLL_START_DELAY_MS = 2000;
     const ROCK_ROLL_FADE_DURATION_MS = 3000;
     const ROCK_ROLL_SEEK_THRESHOLD_SECONDS = 0.1;
     const ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS = 1600;
+    const ROCK_ROLL_TRANS_RICK_REDUCED_MOTION_DELAY_MS = 250;
+    const ROCK_ROLL_TRANS_RICK_ANIMATION_FALLBACK_BUFFER_MS = 150;
     const LUMINANCE_RED_WEIGHT = 0.2126;
     const LUMINANCE_GREEN_WEIGHT = 0.7152;
     const LUMINANCE_BLUE_WEIGHT = 0.0722;
@@ -1041,6 +1045,9 @@
     const wrongAudio = new Audio('assets/audio/wrong.v20260424.mp3');
     wrongAudio.preload = 'auto';
     wrongAudio.load();
+    if (chapelWrapper) {
+      chapelWrapper.style.setProperty('--rock-roll-trans-rick-exit-duration', `${ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS}ms`);
+    }
     const defaultLayoutInlineStyles = new Map();
     const isLayoutProbeMode = new URLSearchParams(window.location.search).get(HOTSPOT_LAYOUT_PROBE_QUERY_PARAM) === '1';
 
@@ -2747,12 +2754,32 @@
       };
 
       if (!chapelTransRick || reducedMotionQuery.matches) {
-        window.setTimeout(finishAfterAnimation, reducedMotionQuery.matches ? 250 : ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS);
+        window.setTimeout(
+          finishAfterAnimation,
+          reducedMotionQuery.matches ? ROCK_ROLL_TRANS_RICK_REDUCED_MOTION_DELAY_MS : ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS
+        );
         return;
       }
 
-      chapelTransRick.addEventListener('animationend', finishAfterAnimation, { once: true });
-      window.setTimeout(finishAfterAnimation, ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS + 150);
+      let animationFinished = false;
+      let animationFallbackTimerId = null;
+      const handleAnimationFinished = function () {
+        if (animationFinished) {
+          return;
+        }
+        animationFinished = true;
+        if (animationFallbackTimerId !== null) {
+          window.clearTimeout(animationFallbackTimerId);
+        }
+        finishAfterAnimation();
+      };
+
+      chapelTransRick.addEventListener('animationend', handleAnimationFinished, { once: true });
+      // Fallback in case animationend is skipped because the element is hidden or reflowed mid-animation.
+      animationFallbackTimerId = window.setTimeout(
+        handleAnimationFinished,
+        ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS + ROCK_ROLL_TRANS_RICK_ANIMATION_FALLBACK_BUFFER_MS
+      );
     }
 
     function startRockRollContinuation(playbackState) {
