@@ -87,6 +87,7 @@ jobs:
           test -f public/index.html
           test -f public/script.js
           test -f public/styles.css
+          test -d public/assets/uploads
           ls public/assets/video/joinourdiscord.*.mp4
 
   deployment-check:
@@ -103,6 +104,7 @@ jobs:
       - name: Verify site assets
         run: |
           test -f public/index.html
+          test -d public/assets/uploads
           ls public/assets/video/joinourdiscord.*.mp4
 
       - name: Setup Pages
@@ -135,6 +137,7 @@ jobs:
       - name: Verify site assets
         run: |
           test -f public/index.html
+          test -d public/assets/uploads
           ls public/assets/video/joinourdiscord.*.mp4
 
       - name: Setup Pages
