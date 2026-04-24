@@ -3307,16 +3307,16 @@
 
     const congregationHotspotAudioPathsByButton = {
       'crusty-button': [
-        'assets/audio/Crusty/krusty_laugh.v20260424.mp3'
+        'assets/audio/crusty/krusty_laugh.v20260424.mp3'
       ],
       'goose-button': [
-        'assets/audio/Goose/goose_honk.v20260424.mp3'
+        'assets/audio/goose/goose_honk.v20260424.mp3'
       ],
       'morty-button': [
-        'assets/audio/Morty/morty_aw_jeez.v20260424.mp3'
+        'assets/audio/morty/morty_aw_jeez.v20260424.mp3'
       ],
       'rick-button': [
-        'assets/audio/Rick/rick_nope.v20260424.mp3'
+        'assets/audio/rick/rick_nope.v20260424.mp3'
       ]
     };
 
@@ -3345,15 +3345,9 @@
       return congregationHotspotAudioPlayersByPath[audioPath];
     }
 
-    function playHotspotAudio(buttonId) {
-      const audioPath = getRandomAudioPath(congregationHotspotAudioPathsByButton[buttonId]);
-      const audioElement = getHotspotAudioPlayer(audioPath);
-      if (!audioElement) {
-        return;
-      }
-
+    function resetOtherHotspotAudioPlayers(activeAudioPath) {
       Object.keys(congregationHotspotAudioPlayersByPath).forEach(function (queuedAudioPath) {
-        if (queuedAudioPath === audioPath) {
+        if (queuedAudioPath === activeAudioPath) {
           return;
         }
 
@@ -3361,6 +3355,16 @@
         queuedAudioElement.pause();
         queuedAudioElement.currentTime = 0;
       });
+    }
+
+    function playHotspotAudio(buttonId) {
+      const audioPath = getRandomAudioPath(congregationHotspotAudioPathsByButton[buttonId]);
+      const audioElement = getHotspotAudioPlayer(audioPath);
+      if (!audioElement) {
+        return;
+      }
+
+      resetOtherHotspotAudioPlayers(audioPath);
       audioElement.currentTime = 0;
       const playPromise = audioElement.play();
       if (playPromise && typeof playPromise.catch === 'function') {
