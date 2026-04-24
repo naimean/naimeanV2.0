@@ -977,6 +977,7 @@
     const RICK_ROLL_CONTINUATION_OFFSET_SECONDS = 0;
     // Start the fade 2 seconds into piece 2 so the chapel clip lands briefly, then quickly drops into the trans_rick exit beat.
     const ROCK_ROLL_START_DELAY_MS = 2000;
+    const ROCK_ROLL_AUTOPLAY_RETRY_BIND_TIMEOUT_MS = 1500;
     const ROCK_ROLL_FADE_DURATION_MS = 3000;
     const ROCK_ROLL_SEEK_THRESHOLD_SECONDS = 0.1;
     const TRANS_RICK_FADE_OUT_MS = 800;
@@ -1040,6 +1041,7 @@
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
+    let rockRollContinuationAttemptId = 0;
     let rockRollTransRickExitActive = false;
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
@@ -2846,6 +2848,7 @@
       rockRollContinuationPending = true;
       rockRollContinuationPlaybackState = playbackState;
       rockRollContinuationActive = true;
+      const continuationAttemptId = ++rockRollContinuationAttemptId;
       rockRollTransRickExitActive = false;
       syncTransRickPresentation();
       const startVolume = getRockRollContinuationStartVolume(playbackState);
@@ -2856,11 +2859,38 @@
       rockRollContinuationMedia.volume = 0;
       const continuationStartTime = getRockRollContinuationStartTime(playbackState);
       let fadeOutStarted = false;
+      let playbackAttemptSettled = false;
+      let playbackStartFallbackTimerId = null;
 
       const applyPlaybackPosition = function () {
         try {
           rockRollContinuationMedia.currentTime = continuationStartTime;
         } catch (_) {}
+      };
+
+      const clearPlaybackStartFallbackTimer = function () {
+        if (playbackStartFallbackTimerId !== null) {
+          window.clearTimeout(playbackStartFallbackTimerId);
+          playbackStartFallbackTimerId = null;
+        }
+      };
+
+      const isCurrentContinuationAttempt = function () {
+        return continuationAttemptId === rockRollContinuationAttemptId;
+      };
+
+      const queueRetryAfterInteraction = function () {
+        clearPlaybackStartFallbackTimer();
+        if (!isCurrentContinuationAttempt()) {
+          return;
+        }
+        rockRollContinuationActive = false;
+        rockRollTransRickExitActive = false;
+        syncTransRickPresentation();
+        rockRollContinuationMedia.pause();
+        rockRollContinuationMedia.muted = true;
+        rockRollContinuationMedia.volume = 0;
+        bindRockRollContinuationRetry();
       };
 
       const startFadeOut = function () {
@@ -2911,13 +2941,32 @@
         rockRollContinuationMedia.addEventListener('loadedmetadata', applyPlaybackPosition, { once: true });
       }
 
+      playbackStartFallbackTimerId = window.setTimeout(function () {
+        clearPlaybackStartFallbackTimer();
+        if (!isCurrentContinuationAttempt() || playbackAttemptSettled || !rockRollContinuationActive) {
+          return;
+        }
+        queueRetryAfterInteraction();
+      }, ROCK_ROLL_AUTOPLAY_RETRY_BIND_TIMEOUT_MS);
+
       const playPromise = rockRollContinuationMedia.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(function () {
-          rockRollContinuationActive = false;
-          bindRockRollContinuationRetry();
+          if (!isCurrentContinuationAttempt()) {
+            return;
+          }
+          playbackAttemptSettled = true;
+          queueRetryAfterInteraction();
         });
         playPromise.then(function () {
+          if (!isCurrentContinuationAttempt()) {
+            return;
+          }
+          playbackAttemptSettled = true;
+          clearPlaybackStartFallbackTimer();
+          if (!rockRollContinuationActive) {
+            return;
+          }
           // Re-apply position with the most up-to-date elapsed time and wait
           // for the seek to land before unmuting, so the song never audibly
           // starts from the beginning (position 0).
@@ -2937,6 +2986,7 @@
           }
         });
       } else {
+        clearPlaybackStartFallbackTimer();
         beginAudiblePlayback();
       }
     }
