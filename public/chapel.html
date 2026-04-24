@@ -1041,6 +1041,7 @@
     let congregationStarted = false;
     let isNavigatingFromChapel = false;
     let rockRollContinuationActive = false;
+    let rockRollContinuationAttemptId = 0;
     let rockRollTransRickExitActive = false;
     let rockRollContinuationPlaybackState = null;
     let rockRollContinuationRetryBound = false;
@@ -2847,6 +2848,7 @@
       rockRollContinuationPending = true;
       rockRollContinuationPlaybackState = playbackState;
       rockRollContinuationActive = true;
+      const continuationAttemptId = ++rockRollContinuationAttemptId;
       rockRollTransRickExitActive = false;
       syncTransRickPresentation();
       const startVolume = getRockRollContinuationStartVolume(playbackState);
@@ -2873,13 +2875,19 @@
         }
       };
 
+      const isCurrentContinuationAttempt = function () {
+        return continuationAttemptId === rockRollContinuationAttemptId;
+      };
+
       const queueRetryAfterInteraction = function () {
         clearPlaybackStartFallbackTimer();
+        if (!isCurrentContinuationAttempt()) {
+          return;
+        }
         rockRollContinuationActive = false;
         rockRollTransRickExitActive = false;
         syncTransRickPresentation();
         rockRollContinuationMedia.pause();
-        rockRollContinuationMedia.defaultMuted = true;
         rockRollContinuationMedia.muted = true;
         rockRollContinuationMedia.volume = 0;
         bindRockRollContinuationRetry();
@@ -2934,22 +2942,29 @@
       }
 
       playbackStartFallbackTimerId = window.setTimeout(function () {
-        if (!playbackAttemptSettled && rockRollContinuationActive) {
-          queueRetryAfterInteraction();
+        clearPlaybackStartFallbackTimer();
+        if (!isCurrentContinuationAttempt() || playbackAttemptSettled || !rockRollContinuationActive) {
+          return;
         }
+        queueRetryAfterInteraction();
       }, ROCK_ROLL_AUTOPLAY_RETRY_BIND_TIMEOUT_MS);
 
       const playPromise = rockRollContinuationMedia.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(function () {
+          if (!isCurrentContinuationAttempt()) {
+            return;
+          }
           playbackAttemptSettled = true;
           queueRetryAfterInteraction();
         });
         playPromise.then(function () {
+          if (!isCurrentContinuationAttempt()) {
+            return;
+          }
           playbackAttemptSettled = true;
           clearPlaybackStartFallbackTimer();
           if (!rockRollContinuationActive) {
-            rockRollContinuationMedia.pause();
             return;
           }
           // Re-apply position with the most up-to-date elapsed time and wait
