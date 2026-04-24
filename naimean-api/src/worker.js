@@ -2,12 +2,11 @@
  * naimean-api Worker
  *
  * Cloudflare Worker serving the REST API at naimean.com/api/*.
- * Backed by D1 (SQLite at the edge) with KV available for future use.
+ * Backed by D1 (SQLite at the edge).
  * Current repo behavior keeps /api/* public; no API token is enforced here.
  *
  * Bindings required (configured in wrangler.toml):
  *   DB  →  naimean-db  (D1 database)
- *   KV  →  naimean-kv  (Workers KV — create namespace first, see wrangler.toml)
  *
  * Endpoints:
  *   GET  /api/health  – health check
