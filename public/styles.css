@@ -305,12 +305,14 @@ body {
 }
 
 .boot-capex-label {
-  font-size: 0.72em;
+  font-size: 0.9em;
+  font-weight: 700;
   letter-spacing: 0.6px;
 }
 
 .boot-snow-icon {
-  font-size: 1.2em;
+  font-size: 1.6em;
+  font-weight: 700;
   line-height: 1;
 }
 
