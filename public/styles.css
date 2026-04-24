@@ -827,12 +827,12 @@ body {
   align-items: stretch;
   gap: 10px;
   margin: 0;
+  padding-right: 15px;
 }
 
 .shoutbox-hint-shell {
   --hint-reveal: 0;
   display: inline-block;
-  align-self: flex-start;
   position: relative;
   overflow: hidden;
   max-width: 100%;
