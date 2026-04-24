@@ -12,13 +12,14 @@ This is the Cloudflare-side runbook for `naimean.com`. It mirrors the current pr
 Browser
   │
   ▼
-naimean.com / www.naimean.com
+naimean.com / www.naimean.com / uploads.naimean.com
   │
   ▼
 ┌─────────────────────────────┐
 │  naimeanv2 (edge router)    │
 │  Route: naimean.com/*       │
 │  Route: www.naimean.com/*   │
+│  Route: uploads.naimean.com/* │
 │                             │
 │  PROXY_PATHS:               │
 │    /get  /hit  /increment   │
@@ -55,7 +56,7 @@ Key principle: `naimeanv2` stays intentionally thin. It handles routing, securit
 | Role | edge router / traffic cop |
 | Source | `src/index.js` |
 | Config | `wrangler.toml` |
-| Routes | `naimean.com/*`, `www.naimean.com/*` (declared in root `wrangler.toml`) |
+| Routes | `naimean.com/*`, `www.naimean.com/*`, `uploads.naimean.com/*` (declared in root `wrangler.toml`) |
 | Last deployed | 2026-04-23 |
 
 ### Bindings
@@ -223,6 +224,7 @@ wrangler d1 execute naimean-db --file=naimean-api/migrations/0000_create_entries
 | `naimean.com/api/*` | `naimean-api` | higher / more specific |
 | `naimean.com/*` | `naimeanv2` | lower / catch-all |
 | `www.naimean.com/*` | `naimeanv2` | lower / catch-all |
+| `uploads.naimean.com/*` | `naimeanv2` | lower / catch-all |
 
 Cloudflare should naturally pick the more specific `/api/*` route first, but if routes are ever recreated, verify the specific API route still wins.
 

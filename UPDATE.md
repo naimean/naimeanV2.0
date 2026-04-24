@@ -43,7 +43,7 @@
 
 # Deployment Plan
 - Ensure all required Cloudflare resources exist before merge-to-main deploys
-- Validate on `naimean.com/*`, `www.naimean.com/*`, and `naimean.com/api/*`
+- Validate on `naimean.com/*`, `www.naimean.com/*`, `uploads.naimean.com/*`, and `naimean.com/api/*`
 - Keep Worker docs aligned with actual route/config/runtime behavior
 - Push code changes only after existing validation passes
 
