@@ -126,6 +126,7 @@ test('uploads subdomain rewrites path to /assets/uploads and serves from ASSETS'
   assert.strictEqual(response.status, 200);
   assert.deepEqual(calls.assets, ['/assets/uploads/photo.jpg']);
   assert.deepEqual(calls.counter, []);
+  assert.strictEqual(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
 });
 
 test('uploads subdomain does not route proxy paths to COUNTER', async () => {
@@ -143,4 +144,22 @@ test('uploads subdomain preserves nested path segments', async () => {
   await router.fetch(new Request('https://uploads.naimean.com/2026/april/image.jpg'), env, {});
 
   assert.deepEqual(calls.assets, ['/assets/uploads/2026/april/image.jpg']);
+});
+
+test('uploads subdomain returns 404 for missing assets without HTML fallback', async () => {
+  const { env, calls } = makeEnv({
+    ASSETS: {
+      async fetch(request) {
+        const url = new URL(request.url);
+        calls.assets.push(url.pathname);
+        return new Response('missing', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+      },
+    },
+  });
+
+  const response = await router.fetch(new Request('https://uploads.naimean.com/missing.jpg'), env, {});
+
+  assert.strictEqual(response.status, 404);
+  assert.deepEqual(calls.assets, ['/assets/uploads/missing.jpg']);
+  assert.deepEqual(calls.counter, []);
 });
