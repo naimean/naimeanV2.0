@@ -971,8 +971,8 @@
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
     const INDEX_FADE_IN_KEY = 'naimean-index-fade-in';
-    // Piece 2 is pre-rendered at half volume, so chapel can start it at full media volume.
-    const ROCK_ROLL_START_VOLUME_FACTOR = 1;
+    // Play piece 2 at half media volume.
+    const ROCK_ROLL_START_VOLUME_FACTOR = 0.5;
     // Piece 2 begins at the chapel transition already, so continuation playback starts from its first frame.
     const RICK_ROLL_CONTINUATION_OFFSET_SECONDS = 0;
     // Start the fade 2 seconds into piece 2 so the chapel clip lands briefly, then quickly drops into the trans_rick exit beat.
