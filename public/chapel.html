@@ -3336,7 +3336,7 @@
       }
 
       const randomIndex = Math.floor(Math.random() * audioElements.length);
-      return audioElements[randomIndex] || null;
+      return audioElements[randomIndex];
     }
 
     function playHotspotAudio(audioElements) {
@@ -3349,7 +3349,6 @@
         queuedAudioElement.pause();
         queuedAudioElement.currentTime = 0;
       });
-      audioElement.currentTime = 0;
       const playPromise = audioElement.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(function () {});
