@@ -23,3 +23,12 @@ run_worker_first = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"]
 [[services]]
 binding = "COUNTER"
 service = "barrelrollcounter-worker"
+
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "radley-gallery"
+
+[[d1_databases]]
+binding = "naimean-db"
+database_name = "naimean-db"
+database_id = "0871f90d-f7e3-467a-a1f9-4e74ac8aef42"
