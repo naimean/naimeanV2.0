@@ -919,6 +919,7 @@
     const DISCORD_WIDGET_ID = '1487898909224341534';
     const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
     const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
+    const DISCORD_FALLBACK_INVITE_URL = 'https://discord.gg/kTkD7N3JN';
     const DISCORD_INVITE_LAUNCH_DELAY_MS = 1000;
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
@@ -2579,9 +2580,9 @@
         const instantInvite = typeof payload?.instant_invite === 'string'
           ? payload.instant_invite.trim()
           : '';
-        return instantInvite || null;
+        return instantInvite || DISCORD_FALLBACK_INVITE_URL;
       } catch (_) {
-        return null;
+        return DISCORD_FALLBACK_INVITE_URL;
       } finally {
         if (timeoutId) {
           clearTimeout(timeoutId);

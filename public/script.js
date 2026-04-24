@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const DISCORD_WIDGET_ID = '1487898909224341534';
   const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
   const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
+  const DISCORD_FALLBACK_INVITE_URL = 'https://discord.gg/kTkD7N3JN';
   const DISCORD_OVERLAY_DISPLAY_DURATION_MS = 5000;
   const POWER_ON_DISCORD_OVERLAY_DISPLAY_DURATION_MS = 2500;
   const DISCORD_INVITE_REDIRECT_PENDING_KEY = 'naimean-discord-invite-redirect-pending';
@@ -1550,9 +1551,9 @@ document.addEventListener('DOMContentLoaded', function() {
       const instantInvite = typeof payload?.instant_invite === 'string'
         ? payload.instant_invite.trim()
         : '';
-      return instantInvite || null;
+      return instantInvite || DISCORD_FALLBACK_INVITE_URL;
     } catch (_) {
-      return null;
+      return DISCORD_FALLBACK_INVITE_URL;
     } finally {
       if (timeoutId) {
         clearTimeout(timeoutId);
