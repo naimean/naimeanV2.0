@@ -34,6 +34,12 @@ function makeEnv(overrides = {}) {
             headers: { 'Content-Type': 'image/png' },
           });
         }
+        if (url.pathname.startsWith('/assets/uploads/')) {
+          return new Response('upload-data', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          });
+        }
         return new Response('missing', { status: 404, headers: { 'Content-Type': 'text/plain' } });
       },
     },
@@ -110,4 +116,31 @@ test('edge router applies immutable caching headers to versioned static media', 
   assert.strictEqual(response.status, 200);
   assert.strictEqual(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
   assert.strictEqual(response.headers.get('Content-Security-Policy'), "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+});
+
+test('uploads subdomain rewrites path to /assets/uploads and serves from ASSETS', async () => {
+  const { env, calls } = makeEnv();
+
+  const response = await router.fetch(new Request('https://uploads.naimean.com/photo.jpg'), env, {});
+
+  assert.strictEqual(response.status, 200);
+  assert.deepEqual(calls.assets, ['/assets/uploads/photo.jpg']);
+  assert.deepEqual(calls.counter, []);
+});
+
+test('uploads subdomain does not route proxy paths to COUNTER', async () => {
+  const { env, calls } = makeEnv();
+
+  const response = await router.fetch(new Request('https://uploads.naimean.com/get'), env, {});
+
+  assert.deepEqual(calls.counter, []);
+  assert.deepEqual(calls.assets, ['/assets/uploads/get']);
+});
+
+test('uploads subdomain preserves nested path segments', async () => {
+  const { env, calls } = makeEnv();
+
+  await router.fetch(new Request('https://uploads.naimean.com/2026/april/image.jpg'), env, {});
+
+  assert.deepEqual(calls.assets, ['/assets/uploads/2026/april/image.jpg']);
 });
