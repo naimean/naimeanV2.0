@@ -743,17 +743,17 @@
 </head>
 <body>
   <div class="fade-overlay is-visible" id="fade-overlay"></div>
-  <audio id="congregation-audio" src="assets/congregation.mp3" preload="auto"></audio>
-  <audio id="congregation-audio-crusty" src="assets/krusty_laugh.mp3" preload="auto"></audio>
-  <audio id="congregation-audio-goose" src="assets/goose_honk.mp3" preload="auto"></audio>
-  <audio id="congregation-audio-rick" src="assets/rick_nope.mp3" preload="auto"></audio>
-  <audio id="congregation-audio-morty" src="assets/morty_aw_jeez.mp3" preload="auto"></audio>
-  <video id="rock-roll-continuation-media" src="assets/notarickroll.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
+  <audio id="congregation-audio" src="assets/audio/congregation.v20260424.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-crusty" src="assets/audio/krusty_laugh.v20260424.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-goose" src="assets/audio/goose_honk.v20260424.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-rick" src="assets/audio/rick_nope.v20260424.mp3" preload="auto"></audio>
+  <audio id="congregation-audio-morty" src="assets/audio/morty_aw_jeez.v20260424.mp3" preload="auto"></audio>
+  <video id="rock-roll-continuation-media" src="assets/video/notarickroll.v20260424.mp4" playsinline preload="auto" style="display:none" aria-hidden="true"></video>
 
     <div class="chapel-outer">
       <div class="chapel-wrapper">
-        <img src="assets/chapel_stacked.png" alt="The Chapel" class="chapel-img" />
-        <img src="assets/trans_rick.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" hidden aria-hidden="true" />
+        <img src="assets/images/chapel_stacked.v20260424.png" alt="The Chapel" class="chapel-img" />
+        <img src="assets/images/trans_rick.v20260424.gif" alt="" class="chapel-trans-rick" id="chapel-trans-rick" hidden aria-hidden="true" />
         <div class="chapel-power-btn" id="chapel-power-btn" aria-hidden="true">
           <span class="chapel-power-light"></span>
         </div>
@@ -898,8 +898,8 @@
   <script>
     // Robust scroll to bottom — retry until images are painted (fixes mobile)
     // Source image heights in pixels, measured from tracked assets:
-    // - 2529px: pre-stitch assets/chapel_stacked.png height
-    // - 3709px: current stitched assets/chapel_stacked.png height
+    // - 2529px: pre-stitch assets/images/chapel_stacked.v20260424.png height
+    // - 3709px: current stitched assets/images/chapel_stacked.v20260424.png height
     // Their ratio marks the stitch boundary used for the initial floor anchor.
     const ORIGINAL_CHAPEL_HEIGHT = 2529;
     const STITCHED_CHAPEL_HEIGHT = 3709;
@@ -999,7 +999,7 @@
     let clearHotspotResizeCursorClasses = null;
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sauceDrip = document.getElementById('sauce-drip');
-    const wrongAudio = new Audio('assets/wrong.mp3');
+    const wrongAudio = new Audio('assets/audio/wrong.v20260424.mp3');
     wrongAudio.preload = 'auto';
     wrongAudio.load();
     const defaultLayoutInlineStyles = new Map();
