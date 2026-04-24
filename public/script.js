@@ -982,10 +982,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (!puzzleSolved) {
       await runNedryGateSequence();
-      await delay(JOIN_DISCORD_PLEASE_SCREEN_HOLD_MS);
     }
 
-    await runPleaseSequence();
     return true;
   }
 
