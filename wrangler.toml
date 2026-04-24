@@ -11,6 +11,10 @@ zone_name = "naimean.com"
 pattern = "www.naimean.com/*"
 zone_name = "naimean.com"
 
+[[routes]]
+pattern = "uploads.naimean.com/*"
+zone_name = "naimean.com"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"

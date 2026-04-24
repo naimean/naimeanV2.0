@@ -47,6 +47,7 @@ jobs:
           grep -q '\[\[routes\]\]' wrangler.toml
           grep -q 'pattern = "naimean.com/\*"' wrangler.toml
           grep -q 'pattern = "www.naimean.com/\*"' wrangler.toml
+          grep -q 'pattern = "uploads.naimean.com/\*"' wrangler.toml
           grep -q 'name' cloudflare-worker/wrangler.toml
           grep -q 'main' cloudflare-worker/wrangler.toml
           grep -q 'compatibility_date' cloudflare-worker/wrangler.toml

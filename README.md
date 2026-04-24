@@ -25,7 +25,7 @@ The split is intentional: the static site stays lightweight, while secrets, cook
 Browser
   │
   ▼
-naimean.com / www.naimean.com
+naimean.com / www.naimean.com / uploads.naimean.com
   │
   ▼
 naimeanv2
@@ -38,6 +38,7 @@ naimeanv2
 
 - `naimean.com/*` -> `naimeanv2`
 - `www.naimean.com/*` -> `naimeanv2`
+- `uploads.naimean.com/*` -> `naimeanv2`
 - `naimean.com/api/*` -> `naimean-api`
 
 ### Critical deployment rule
@@ -74,7 +75,7 @@ naimeanv2
 
 | Worker | Role | Route |
 |---|---|---|
-| `naimeanv2` | edge router | `naimean.com/*`, `www.naimean.com/*` |
+| `naimeanv2` | edge router | `naimean.com/*`, `www.naimean.com/*`, `uploads.naimean.com/*` |
 | `barrelrollcounter-worker` | counter/auth/layout/tool backend | service-bound from `naimeanv2` |
 | `naimean-api` | standalone REST API | `naimean.com/api/*` |
 
@@ -209,7 +210,8 @@ The link is defined as `DISCORD_FALLBACK_INVITE_URL` in `public/script.js` and t
 
 ### Reserved static asset path
 
-- `public/assets/uploads/` is scaffolded in-repo as the reserved public path for upload-tool output.
+- `uploads.naimean.com` is the planned upload subdomain, routed through the edge worker.
+- `public/assets/uploads/` is scaffolded in-repo as the reserved published path for upload-tool output behind that subdomain.
 - Live upload writes and rename behavior still depend on the pending Cloudflare storage/binding setup.
 - This repo change only keeps the published asset tree ready for that path.
 

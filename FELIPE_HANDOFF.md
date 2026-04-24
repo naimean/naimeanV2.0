@@ -36,6 +36,7 @@ Cloudflare account:
 |---|---|
 | `naimean.com/*` | `naimeanv2` |
 | `www.naimean.com/*` | `naimeanv2` |
+| `uploads.naimean.com/*` | `naimeanv2` |
 | `naimean.com/api/*` | `naimean-api` |
 
 These route declarations now live in repo-managed `wrangler.toml` files. Critical: `naimean.com` must not point directly to GitHub Pages in production.

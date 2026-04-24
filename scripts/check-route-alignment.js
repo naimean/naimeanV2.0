@@ -22,7 +22,7 @@ const root = path.resolve(__dirname, '..');
 const src = fs.readFileSync(path.join(root, 'src/index.js'), 'utf8');
 const routerToml = fs.readFileSync(path.join(root, 'wrangler.toml'), 'utf8');
 const apiToml = fs.readFileSync(path.join(root, 'naimean-api/wrangler.toml'), 'utf8');
-const EXPECTED_ROUTER_ROUTES = ['naimean.com/*', 'www.naimean.com/*'];
+const EXPECTED_ROUTER_ROUTES = ['naimean.com/*', 'www.naimean.com/*', 'uploads.naimean.com/*'];
 const EXPECTED_API_ROUTES = ['naimean.com/api/*'];
 
 const proxyMatch = src.match(/const PROXY_PATHS\s*=\s*\[([^\]]+)\]/);
