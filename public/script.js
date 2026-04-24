@@ -1010,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       setJoinDiscordWorkflowPending(false);
-      return continueJoinDiscordWorkflow();
+      return await continueJoinDiscordWorkflow();
     } finally {
       joinDiscordWorkflowRunning = false;
     }
@@ -1600,10 +1600,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (shoutboxContainer) shoutboxContainer.classList.add('visible');
     if (prankVideoOverlay) prankVideoOverlay.classList.add('visible');
 
-    try {
-      prankVideo.currentTime = 0;
-      await prankVideo.play();
-    } catch (_) {}
+    prankVideo.currentTime = 0;
+    // Fire-and-forget: same reasoning as runPleaseSequence — don't await play()
+    // so a hanging Promise can't block the redirect.
+    prankVideo.play().catch(() => {});
 
     incrementRickrollCount();
     await delay(PRANK_REDIRECT_DELAY_MS);
@@ -1629,12 +1629,13 @@ document.addEventListener('DOMContentLoaded', function() {
     shoutboxContainer.classList.add('visible');
     prankVideoOverlay.classList.add('visible');
 
-    try {
-      prankVideo.currentTime = 0;
-      await prankVideo.play();
-    } catch (_) {
-      // Continue to redirect even if autoplay is blocked.
-    }
+    prankVideo.currentTime = 0;
+    // Fire-and-forget: do not await play() — on some browsers (e.g. after a popup
+    // auth flow where there is no active user gesture) the Promise can stay pending
+    // indefinitely instead of rejecting, which would block the redirect.  The
+    // rockroll continuation on chapel.html will pick up where the video left off
+    // (or retry on first user interaction if autoplay is still blocked there).
+    prankVideo.play().catch(() => {});
 
     incrementRickrollCount();
     await delay(PRANK_REDIRECT_DELAY_MS);
