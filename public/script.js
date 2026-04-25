@@ -826,8 +826,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Pre-fills the boot input with the authenticated user's username so they
   // are recognised by the bedroom switcher without typing anything.
+  // Skips when the input is at the default arcade value so that arcade
+  // remains the default regardless of login state.
   function applySessionToBootInput() {
     if (!bootInput || !authSession || !authSession.authenticated || !authSession.user) {
+      return;
+    }
+    if (bootInput.value === BOOT_DEFAULT_VALUE) {
       return;
     }
     const username = authSession.user.username;
@@ -1177,14 +1182,13 @@ document.addEventListener('DOMContentLoaded', function() {
           emailAuthSubmit.disabled = false;
           return;
         }
-        // Success — refresh session and pre-populate boot input.
+        // Success — refresh session.
         hideEmailAuthForm();
         await refreshAuthSession();
         applySessionToBootInput();
         renderDiscordAuthChip();
         const action = emailAuthMode === 'register' ? 'Account created.' : 'Signed in.';
         appendShoutboxMessage(`AUTH> ${action} Welcome, ${payload.username}.`);
-        appendShoutboxMessage('AUTH> Your username has been loaded into the boot switcher.');
         appendShoutboxMessage('AUTH> Type C:\\Naimean\\logout to sign out.');
       } catch (_) {
         emailAuthError.textContent = 'Network error. Please try again.';
@@ -1396,7 +1400,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootInput) {
       bootInput.style.display = 'inline-block';
       resetBootInput();
-      applySessionToBootInput();
       bootInput.focus();
       selectBootEditableSuffix();
     }
