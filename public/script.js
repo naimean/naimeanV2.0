@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   ]);
   const POWER_BUTTON_COOLDOWN_MS = 5000;
   const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
+  const ARCADE_COMMANDS = new Set(['arcade', 'emulator', 'games']);
   const AUTH_LOGIN_COMMANDS = new Set(['login', 'signin', 'discord']);
   const AUTH_LOGOUT_COMMANDS = new Set(['logout', 'signout']);
   const MINI_GAME_MIN_GUESS = 1;
@@ -75,6 +76,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const discordAuthName = document.getElementById('discord-auth-name');
   const discordAuthAvatar = document.getElementById('discord-auth-avatar');
   const discordAuthAvatarImage = document.getElementById('discord-auth-avatar-image');
+  const arcadeOverlay = document.getElementById('arcade-overlay');
+  const arcadePicker = document.getElementById('arcade-picker');
+  const arcadePlayer = document.getElementById('arcade-player');
+  const arcadeSystemSelect = document.getElementById('arcade-system');
+  const arcadeGameList = document.getElementById('arcade-game-list');
+  const arcadeLaunchBtn = document.getElementById('arcade-launch-btn');
+  const arcadeCloseBtn = document.getElementById('arcade-close-btn');
+  const arcadeBackBtn = document.getElementById('arcade-back-btn');
+  const arcadeFullscreenBtn = document.getElementById('arcade-fullscreen-btn');
+  const arcadeNowPlaying = document.getElementById('arcade-now-playing');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
   const BOOT_DEFAULT_SUFFIX = 'Admin';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
@@ -103,6 +114,10 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameActive = false;
   let miniGameTarget = 0;
   let miniGameAttempts = 0;
+  const EJS_CDN_BASE = 'https://cdn.emulatorjs.org/stable/data/';
+  let arcadeManifest = null;
+  let arcadeSelectedGame = null;
+  let arcadeFullscreen = false;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
@@ -1669,6 +1684,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   document.addEventListener('keydown', async function(e) {
+    if (e.key === 'Escape' && arcadeFullscreen) {
+      exitArcadeFullscreen();
+      return;
+    }
     if (e.key === 'Enter' && !screenOn) {
       const active = document.activeElement;
       const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'BUTTON' || active.tagName === 'TEXTAREA');
@@ -1879,6 +1898,220 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
+    // ─── Arcade overlay ─────────────────────────────────────────────────────
+
+    function showArcadePicker() {
+      if (arcadePicker) {
+        arcadePicker.style.display = '';
+      }
+      if (arcadePlayer) {
+        arcadePlayer.style.display = 'none';
+      }
+    }
+
+    function showArcadePlayer() {
+      if (arcadePicker) {
+        arcadePicker.style.display = 'none';
+      }
+      if (arcadePlayer) {
+        arcadePlayer.style.display = 'flex';
+      }
+    }
+
+    function stopEmulator() {
+      var oldScript = document.getElementById('emulatorjs-loader');
+      if (oldScript) {
+        oldScript.remove();
+      }
+      var gameContainer = document.getElementById('game');
+      if (gameContainer) {
+        gameContainer.innerHTML = '';
+      }
+      var ejsKeys = ['EJS_player', 'EJS_core', 'EJS_gameUrl', 'EJS_pathtodata',
+        'EJS_startOnLoaded', 'EJS_emulator', 'EJS_Buttons', 'EJS_gameID',
+        'EJS_width', 'EJS_height'];
+      ejsKeys.forEach(function(k) {
+        try { delete window[k]; } catch (_) {}
+      });
+    }
+
+    function populateArcadeGameList() {
+      if (!arcadeGameList || !arcadeSystemSelect) {
+        return;
+      }
+      var system = arcadeSystemSelect.value;
+      var games = Array.isArray(arcadeManifest && arcadeManifest[system])
+        ? arcadeManifest[system]
+        : [];
+      arcadeSelectedGame = null;
+      if (arcadeLaunchBtn) {
+        arcadeLaunchBtn.disabled = true;
+      }
+      arcadeGameList.innerHTML = '';
+      if (games.length === 0) {
+        var msg = document.createElement('div');
+        msg.className = 'arcade-no-games';
+        msg.textContent = 'NO ROMS FOUND FOR ' + system.toUpperCase()
+          + '. ADD ROMS TO /ASSETS/ROMS/' + system.toUpperCase()
+          + '/ AND UPDATE MANIFEST.JSON.';
+        arcadeGameList.appendChild(msg);
+        return;
+      }
+      games.forEach(function(game) {
+        if (!game || typeof game.name !== 'string' || typeof game.file !== 'string') {
+          return;
+        }
+        var btn = document.createElement('button');
+        btn.className = 'arcade-game-item';
+        btn.textContent = game.name;
+        btn.type = 'button';
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-selected', 'false');
+        btn.addEventListener('click', function() {
+          var allItems = arcadeGameList.querySelectorAll('.arcade-game-item');
+          allItems.forEach(function(b) {
+            b.classList.remove('selected');
+            b.setAttribute('aria-selected', 'false');
+          });
+          btn.classList.add('selected');
+          btn.setAttribute('aria-selected', 'true');
+          arcadeSelectedGame = game;
+          if (arcadeLaunchBtn) {
+            arcadeLaunchBtn.disabled = false;
+          }
+        });
+        arcadeGameList.appendChild(btn);
+      });
+    }
+
+    function launchGame(system, file, name) {
+      stopEmulator();
+      showArcadePlayer();
+      if (arcadeNowPlaying) {
+        arcadeNowPlaying.textContent = name;
+      }
+      window.EJS_player = '#game';
+      window.EJS_core = system;
+      window.EJS_gameUrl = '/assets/roms/' + system + '/' + file;
+      window.EJS_pathtodata = EJS_CDN_BASE;
+      window.EJS_startOnLoaded = true;
+      var script = document.createElement('script');
+      script.id = 'emulatorjs-loader';
+      script.src = EJS_CDN_BASE + 'loader.js';
+      document.head.appendChild(script);
+    }
+
+    function exitArcadeFullscreen() {
+      if (!arcadeFullscreen || !arcadeOverlay) {
+        return;
+      }
+      arcadeFullscreen = false;
+      arcadeOverlay.classList.remove('fullscreen');
+      if (arcadeFullscreenBtn) {
+        arcadeFullscreenBtn.textContent = 'FULLSCREEN';
+        arcadeFullscreenBtn.setAttribute('aria-label', 'Toggle fullscreen');
+      }
+    }
+
+    function toggleArcadeFullscreen() {
+      if (!arcadeOverlay) {
+        return;
+      }
+      arcadeFullscreen = !arcadeFullscreen;
+      arcadeOverlay.classList.toggle('fullscreen', arcadeFullscreen);
+      if (arcadeFullscreenBtn) {
+        arcadeFullscreenBtn.textContent = arcadeFullscreen ? 'EXIT FS' : 'FULLSCREEN';
+        arcadeFullscreenBtn.setAttribute('aria-label',
+          arcadeFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
+      }
+      setTimeout(function() {
+        window.dispatchEvent(new Event('resize'));
+      }, 50);
+    }
+
+    async function loadArcadeManifest() {
+      if (arcadeManifest !== null) {
+        return arcadeManifest;
+      }
+      try {
+        var res = await fetch('/assets/roms/manifest.json', { cache: 'no-cache' });
+        if (!res.ok) {
+          arcadeManifest = {};
+          return arcadeManifest;
+        }
+        arcadeManifest = await res.json();
+      } catch (_) {
+        arcadeManifest = {};
+      }
+      return arcadeManifest;
+    }
+
+    function openArcade() {
+      if (!arcadeOverlay) {
+        return;
+      }
+      showArcadePicker();
+      arcadeOverlay.classList.add('visible');
+      arcadeOverlay.setAttribute('aria-hidden', 'false');
+      loadArcadeManifest().then(function() {
+        populateArcadeGameList();
+      }).catch(function() {
+        populateArcadeGameList();
+      });
+    }
+
+    function closeArcade() {
+      if (!arcadeOverlay) {
+        return;
+      }
+      exitArcadeFullscreen();
+      stopEmulator();
+      arcadeOverlay.classList.remove('visible');
+      arcadeOverlay.setAttribute('aria-hidden', 'true');
+      if (shoutboxInput) {
+        shoutboxInput.focus();
+      }
+    }
+
+    if (arcadeCloseBtn) {
+      arcadeCloseBtn.addEventListener('click', function() {
+        closeArcade();
+      });
+    }
+
+    if (arcadeSystemSelect) {
+      arcadeSystemSelect.addEventListener('change', function() {
+        arcadeSelectedGame = null;
+        if (arcadeLaunchBtn) {
+          arcadeLaunchBtn.disabled = true;
+        }
+        populateArcadeGameList();
+      });
+    }
+
+    if (arcadeLaunchBtn) {
+      arcadeLaunchBtn.addEventListener('click', function() {
+        if (!arcadeSelectedGame || !arcadeSystemSelect) {
+          return;
+        }
+        launchGame(arcadeSystemSelect.value, arcadeSelectedGame.file, arcadeSelectedGame.name);
+      });
+    }
+
+    if (arcadeBackBtn) {
+      arcadeBackBtn.addEventListener('click', function() {
+        stopEmulator();
+        showArcadePicker();
+        populateArcadeGameList();
+      });
+    }
+
+    if (arcadeFullscreenBtn) {
+      arcadeFullscreenBtn.addEventListener('click', function() {
+        toggleArcadeFullscreen();
+      });
+    }
+
     if (shoutboxForm && shoutboxInput) {
       shoutboxForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1891,6 +2124,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (FINAL_UNLOCK_VALUES.has(text)) {
           runPleaseSequence();
           return;
+        }
+
+        if (text.startsWith(FINAL_PREFIX)) {
+          const cmd = text.slice(FINAL_PREFIX.length).trim().toLowerCase();
+          if (ARCADE_COMMANDS.has(cmd)) {
+            resetFinalInput();
+            openArcade();
+            return;
+          }
         }
 
         playWrongSound();
