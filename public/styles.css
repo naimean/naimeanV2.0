@@ -1279,6 +1279,27 @@ body {
   cursor: default;
 }
 
+/* ── Arcade diagnostic status label ─────────────────────────────────────── */
+
+.arcade-status {
+  font-family: 'VT323', monospace;
+  font-size: 0.82em;
+  color: rgba(142, 240, 178, 0.75);
+  min-height: 1.2em;
+  padding: 2px 0;
+  word-break: break-word;
+  flex-shrink: 0;
+}
+
+.arcade-controller-hint {
+  font-family: 'VT323', monospace;
+  font-size: 0.78em;
+  color: rgba(142, 240, 178, 0.5);
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
 /* ── Loading indicator (shown while EmulatorJS initialises) ─────────────── */
 
 .arcade-loading {
@@ -1347,6 +1368,16 @@ body {
 @keyframes arcade-scan {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
+}
+
+.arcade-loading-status {
+  font-family: 'VT323', monospace;
+  font-size: 0.85em;
+  color: rgba(142, 240, 178, 0.65);
+  text-align: center;
+  max-width: 90%;
+  word-break: break-word;
+  min-height: 1.2em;
 }
 
 /* ── Player (emulator running) ───────────────────────────────────────────── */

@@ -141,6 +141,8 @@
         </div>
         <div class="arcade-game-list" id="arcade-game-list" role="listbox" aria-label="Available games"></div>
         <button class="arcade-launch-btn" id="arcade-launch-btn" type="button" disabled>LOAD GAME</button>
+        <div id="arcade-status" class="arcade-status" role="status" aria-live="polite"></div>
+        <p class="arcade-controller-hint">If you have 2x controllers connected, they should just "work"</p>
       </div>
       <div class="arcade-player" id="arcade-player">
         <div class="arcade-bar">
@@ -154,6 +156,7 @@
             <div class="arcade-loading-bar-track">
               <div class="arcade-loading-bar-fill"></div>
             </div>
+            <div id="arcade-loading-status" class="arcade-loading-status"></div>
           </div>
           <div id="game"></div>
         </div>

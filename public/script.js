@@ -87,6 +87,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeFullscreenBtn = document.getElementById('arcade-fullscreen-btn');
   const arcadeNowPlaying = document.getElementById('arcade-now-playing');
   const arcadeLoading = document.getElementById('arcade-loading');
+  const arcadeStatus = document.getElementById('arcade-status');
+  const arcadeLoadingStatus = document.getElementById('arcade-loading-status');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
   const BOOT_DEFAULT_SUFFIX = 'Arcade';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
@@ -1963,6 +1965,15 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
+    function setArcadeStatus(msg) {
+      if (arcadeStatus) {
+        arcadeStatus.textContent = msg;
+      }
+      if (arcadeLoadingStatus) {
+        arcadeLoadingStatus.textContent = msg;
+      }
+    }
+
     function populateArcadeGameList() {
       if (!arcadeGameList || !arcadeSystemSelect) {
         return;
@@ -1983,8 +1994,10 @@ document.addEventListener('DOMContentLoaded', function() {
           + '. ADD ROMS TO /ASSETS/ROMS/' + system.toUpperCase()
           + '/ AND UPDATE MANIFEST.JSON.';
         arcadeGameList.appendChild(msg);
+        setArcadeStatus('No ROMs found for ' + system.toUpperCase() + ' — check manifest.json');
         return;
       }
+      setArcadeStatus(games.length + ' game(s) listed — click a title to launch');
       games.forEach(function(game) {
         if (!game) {
           return;
@@ -2014,6 +2027,7 @@ document.addEventListener('DOMContentLoaded', function() {
           if (arcadeLaunchBtn) {
             arcadeLaunchBtn.disabled = false;
           }
+          setArcadeStatus('Selected: ' + game.name + ' — launching…');
           launchGame(system, game.file, game.name);
         });
         arcadeGameList.appendChild(btn);
@@ -2029,6 +2043,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (arcadeLoading) {
         arcadeLoading.classList.add('active');
       }
+      setArcadeStatus('Launching ' + name + ' (' + system.toUpperCase() + ')…');
       window.EJS_player = '#game';
       window.EJS_core = system;
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
@@ -2042,10 +2057,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (arcadeLoading) {
           arcadeLoading.classList.remove('active');
         }
+        setArcadeStatus('Game started — enjoy!');
       };
+      setArcadeStatus('Fetching EmulatorJS from CDN…');
       var script = document.createElement('script');
       script.id = 'emulatorjs-loader';
       script.src = EJS_CDN_BASE + 'loader.js';
+      script.onload = function() {
+        setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
+      };
       script.onerror = function() {
         if (arcadeLoadTimeout) {
           clearTimeout(arcadeLoadTimeout);
@@ -2054,12 +2074,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (arcadeLoading) {
           arcadeLoading.classList.remove('active');
         }
+        setArcadeStatus('Error: failed to load EmulatorJS from CDN — check network / console');
       };
       arcadeLoadTimeout = setTimeout(function() {
         arcadeLoadTimeout = null;
         if (arcadeLoading) {
           arcadeLoading.classList.remove('active');
         }
+        setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
       document.head.appendChild(script);
     }
@@ -2096,15 +2118,19 @@ document.addEventListener('DOMContentLoaded', function() {
       if (arcadeManifest !== null) {
         return arcadeManifest;
       }
+      setArcadeStatus('Loading game manifest…');
       try {
         var res = await fetch('/assets/roms/manifest.json', { cache: 'no-cache' });
         if (!res.ok) {
+          setArcadeStatus('Manifest fetch failed (HTTP ' + res.status + ') — no games available');
           arcadeManifest = {};
           return arcadeManifest;
         }
         arcadeManifest = await res.json();
+        setArcadeStatus('Manifest loaded — select a game');
       } catch (err) {
         console.warn('Failed to load arcade manifest:', err);
+        setArcadeStatus('Manifest load error: ' + (err && err.message ? err.message : String(err)));
         arcadeManifest = {};
       }
       return arcadeManifest;
@@ -2131,6 +2157,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       exitArcadeFullscreen();
       stopEmulator();
+      setArcadeStatus('');
       arcadeOverlay.classList.remove('visible');
       arcadeOverlay.setAttribute('aria-hidden', 'true');
       if (shoutboxInput) {
