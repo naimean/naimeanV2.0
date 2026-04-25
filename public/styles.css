@@ -1306,6 +1306,12 @@ body {
   text-shadow: 0 0 8px rgba(140, 240, 178, 0.6);
 }
 
+.arcade-loading-dots {
+  display: inline-block;
+  width: 1.5em;
+  text-align: left;
+}
+
 .arcade-loading-dots::after {
   content: '';
   animation: arcade-dots 1.2s steps(4, end) infinite;
