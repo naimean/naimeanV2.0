@@ -1948,10 +1948,22 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(arcadeLoadTimeout);
         arcadeLoadTimeout = null;
       }
-      var ejsLoaderScript = document.getElementById('emulatorjs-loader');
-      if (ejsLoaderScript) {
-        ejsLoaderScript.remove();
-      }
+      // Remove the loader script and all scripts/styles injected by it (emulator.min.js,
+      // emulator.min.css, etc.) so that a second launch gets a clean slate and doesn't
+      // accumulate duplicate elements or re-use stale module state.
+      document.querySelectorAll(
+        'script[id="emulatorjs-loader"], ' +
+        'script[src*="emulatorjs"], script[src*="emulator.min"], ' +
+        'link[href*="emulatorjs"], link[href*="emulator.min"]'
+      ).forEach(function(el) { el.remove(); });
+      // Remove any globals injected by emulator.min.js so the next load starts fresh.
+      var ejsGlobals = ['EmulatorJS', 'EJS_STORAGE', 'EJS_DUMMYSTORAGE', 'EJS_COMPRESSION',
+        'EJS_GameManager', 'EJS_ControlHandler', 'EJS_SHADERS'];
+      ejsGlobals.forEach(function(k) {
+        if (Object.prototype.hasOwnProperty.call(window, k)) {
+          try { delete window[k]; } catch (e) { window[k] = undefined; }
+        }
+      });
       var gameContainer = document.getElementById('game');
       if (gameContainer) {
         gameContainer.innerHTML = '';
@@ -1964,7 +1976,9 @@ document.addEventListener('DOMContentLoaded', function() {
         'EJS_startOnLoaded', 'EJS_emulator', 'EJS_Buttons', 'EJS_gameID',
         'EJS_width', 'EJS_height', 'EJS_onGameStart'];
       ejsKeys.forEach(function(k) {
-        try { delete window[k]; } catch (_) {}
+        if (Object.prototype.hasOwnProperty.call(window, k)) {
+          try { delete window[k]; } catch (e) { window[k] = undefined; }
+        }
       });
     }
 
