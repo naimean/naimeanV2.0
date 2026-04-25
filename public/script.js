@@ -2044,7 +2044,6 @@ document.addEventListener('DOMContentLoaded', function() {
       window.EJS_player = '#game';
       window.EJS_core = system;
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
-      window.EJS_pathtodata = EJS_CDN_URLS[0];
       window.EJS_startOnLoaded = true;
       window.EJS_onGameStart = function() {
         if (arcadeLoadTimeout) {
@@ -2077,11 +2076,14 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         var cdnBase = EJS_CDN_URLS[cdnIndex];
+        // Set EJS_pathtodata before appending the script so that loader.js reads
+        // the correct CDN base when it executes (loader.js reads this synchronously,
+        // before the onload callback would fire).
+        window.EJS_pathtodata = cdnBase;
         var s = document.createElement('script');
         s.id = 'emulatorjs-loader';
         s.src = cdnBase + 'loader.js';
         s.onload = function() {
-          window.EJS_pathtodata = cdnBase;
           setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
         };
         s.onerror = function() {
