@@ -117,7 +117,10 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameActive = false;
   let miniGameTarget = 0;
   let miniGameAttempts = 0;
-  const EJS_CDN_BASE = 'https://cdn.emulatorjs.org/stable/data/';
+  const EJS_CDN_URLS = [
+    'https://cdn.emulatorjs.org/stable/data/',
+    'https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@latest/data/',
+  ];
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
   let arcadeFullscreen = false;
@@ -2041,7 +2044,7 @@ document.addEventListener('DOMContentLoaded', function() {
       window.EJS_player = '#game';
       window.EJS_core = system;
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
-      window.EJS_pathtodata = EJS_CDN_BASE;
+      window.EJS_pathtodata = EJS_CDN_URLS[0];
       window.EJS_startOnLoaded = true;
       window.EJS_onGameStart = function() {
         if (arcadeLoadTimeout) {
@@ -2061,34 +2064,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
-      var retriesRemaining = 1;
-      function appendLoaderScript() {
+      function appendLoaderScript(cdnIndex) {
+        if (cdnIndex >= EJS_CDN_URLS.length) {
+          if (arcadeLoadTimeout) {
+            clearTimeout(arcadeLoadTimeout);
+            arcadeLoadTimeout = null;
+          }
+          if (arcadeLoading) {
+            arcadeLoading.classList.remove('active');
+          }
+          setArcadeStatus('Error: failed to load EmulatorJS from CDN — check network / console');
+          return;
+        }
+        var cdnBase = EJS_CDN_URLS[cdnIndex];
         var s = document.createElement('script');
         s.id = 'emulatorjs-loader';
-        s.src = EJS_CDN_BASE + 'loader.js';
+        s.src = cdnBase + 'loader.js';
         s.onload = function() {
+          window.EJS_pathtodata = cdnBase;
           setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
         };
         s.onerror = function() {
           s.remove();
-          if (retriesRemaining > 0) {
-            retriesRemaining--;
-            setArcadeStatus('CDN load failed — retrying…');
-            setTimeout(appendLoaderScript, 2000);
+          var nextIndex = cdnIndex + 1;
+          if (nextIndex < EJS_CDN_URLS.length) {
+            setArcadeStatus('CDN load failed — trying alternate…');
+            setTimeout(function() { appendLoaderScript(nextIndex); }, 1000);
           } else {
-            if (arcadeLoadTimeout) {
-              clearTimeout(arcadeLoadTimeout);
-              arcadeLoadTimeout = null;
-            }
-            if (arcadeLoading) {
-              arcadeLoading.classList.remove('active');
-            }
-            setArcadeStatus('Error: failed to load EmulatorJS from CDN — check network / console');
+            appendLoaderScript(nextIndex);
           }
         };
         document.head.appendChild(s);
       }
-      appendLoaderScript();
+      appendLoaderScript(0);
     }
 
     function exitArcadeFullscreen() {
