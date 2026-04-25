@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeFullscreenBtn = document.getElementById('arcade-fullscreen-btn');
   const arcadeNowPlaying = document.getElementById('arcade-now-playing');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
-  const BOOT_DEFAULT_SUFFIX = 'Admin';
+  const BOOT_DEFAULT_SUFFIX = 'Arcade';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
   const BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY = {
@@ -1881,6 +1881,14 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         if (screenOn && !puzzleSolved) {
+          const inputValue = bootInput ? bootInput.value : '';
+          const suffix = inputValue.startsWith(BOOT_PREFIX)
+            ? inputValue.slice(BOOT_PREFIX.length).trim().toLowerCase()
+            : '';
+          if (ARCADE_COMMANDS.has(suffix)) {
+            openArcade();
+            return;
+          }
           playWrongSound();
         }
       });
@@ -1893,6 +1901,14 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         if (screenOn && !puzzleSolved) {
+          const inputValue = bootInput ? bootInput.value : '';
+          const suffix = inputValue.startsWith(BOOT_PREFIX)
+            ? inputValue.slice(BOOT_PREFIX.length).trim().toLowerCase()
+            : '';
+          if (ARCADE_COMMANDS.has(suffix)) {
+            openArcade();
+            return;
+          }
           beginJoinDiscordWorkflow();
         }
       });
@@ -1987,6 +2003,7 @@ document.addEventListener('DOMContentLoaded', function() {
           if (arcadeLaunchBtn) {
             arcadeLaunchBtn.disabled = false;
           }
+          launchGame(system, game.file, game.name);
         });
         arcadeGameList.appendChild(btn);
       });
@@ -2000,7 +2017,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       window.EJS_player = '#game';
       window.EJS_core = system;
-      window.EJS_gameUrl = '/assets/roms/' + system + '/' + file;
+      window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
       window.EJS_pathtodata = EJS_CDN_BASE;
       window.EJS_startOnLoaded = true;
       var script = document.createElement('script');
