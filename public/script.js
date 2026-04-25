@@ -1875,17 +1875,20 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
+    function getBootInputSuffix() {
+      const inputValue = bootInput ? bootInput.value : '';
+      return inputValue.startsWith(BOOT_PREFIX)
+        ? inputValue.slice(BOOT_PREFIX.length).trim().toLowerCase()
+        : '';
+    }
+
     if (bootInlineSubmit) {
       bootInlineSubmit.addEventListener('click', function() {
         if (Date.now() < bootScreenUnlockAt) {
           return;
         }
         if (screenOn && !puzzleSolved) {
-          const inputValue = bootInput ? bootInput.value : '';
-          const suffix = inputValue.startsWith(BOOT_PREFIX)
-            ? inputValue.slice(BOOT_PREFIX.length).trim().toLowerCase()
-            : '';
-          if (ARCADE_COMMANDS.has(suffix)) {
+          if (ARCADE_COMMANDS.has(getBootInputSuffix())) {
             openArcade();
             return;
           }
@@ -1901,11 +1904,7 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         if (screenOn && !puzzleSolved) {
-          const inputValue = bootInput ? bootInput.value : '';
-          const suffix = inputValue.startsWith(BOOT_PREFIX)
-            ? inputValue.slice(BOOT_PREFIX.length).trim().toLowerCase()
-            : '';
-          if (ARCADE_COMMANDS.has(suffix)) {
+          if (ARCADE_COMMANDS.has(getBootInputSuffix())) {
             openArcade();
             return;
           }
