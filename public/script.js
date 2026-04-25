@@ -79,6 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeOverlay = document.getElementById('arcade-overlay');
   const arcadePicker = document.getElementById('arcade-picker');
   const arcadePlayer = document.getElementById('arcade-player');
+  const arcadeGameWrap = document.querySelector('.arcade-game-wrap');
+  const arcadeGameContainer = document.getElementById('game');
   const arcadeSystemSelect = document.getElementById('arcade-system');
   const arcadeGameList = document.getElementById('arcade-game-list');
   const arcadeLaunchBtn = document.getElementById('arcade-launch-btn');
@@ -136,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let arcadeSelectedGame = null;
   let arcadeFullscreen = false;
   let arcadeLoadTimeout = null;
+  let arcadeCurrentAspect = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
@@ -1975,17 +1978,20 @@ document.addEventListener('DOMContentLoaded', function() {
           try { delete window[k]; } catch (e) { window[k] = undefined; }
         }
       });
-      var gameContainer = document.getElementById('game');
-      if (gameContainer) {
-        gameContainer.innerHTML = '';
+      if (arcadeGameContainer) {
+        arcadeGameContainer.innerHTML = '';
+        // Clear inline dimensions set by applyArcadeAspectRatio so CSS takes over again.
+        arcadeGameContainer.style.width = '';
+        arcadeGameContainer.style.height = '';
       }
+      arcadeCurrentAspect = null;
       if (arcadeLoading) {
         arcadeLoading.classList.remove('active');
       }
       // Keys based on the EmulatorJS stable API; update if the library version changes.
       var ejsKeys = ['EJS_player', 'EJS_core', 'EJS_gameUrl', 'EJS_pathtodata',
         'EJS_startOnLoaded', 'EJS_emulator', 'EJS_Buttons', 'EJS_gameID',
-        'EJS_width', 'EJS_height', 'EJS_onGameStart'];
+        'EJS_onGameStart'];
       ejsKeys.forEach(function(k) {
         if (Object.prototype.hasOwnProperty.call(window, k)) {
           try { delete window[k]; } catch (e) { window[k] = undefined; }
@@ -2000,6 +2006,35 @@ document.addEventListener('DOMContentLoaded', function() {
       if (arcadeLoadingStatus) {
         arcadeLoadingStatus.textContent = msg;
       }
+    }
+
+    // Sizes #game to the largest rectangle with arcadeCurrentAspect that fits in
+    // .arcade-game-wrap.  EmulatorJS uses canvas{width:100%;height:100%} so it
+    // fills whatever #game is; we must constrain #game's CSS dimensions here.
+    function applyArcadeAspectRatio() {
+      if (!arcadeCurrentAspect) {
+        return;
+      }
+      if (!arcadeGameWrap || !arcadeGameContainer) {
+        return;
+      }
+      var aw = arcadeGameWrap.clientWidth;
+      var ah = arcadeGameWrap.clientHeight;
+      if (aw <= 0 || ah <= 0) {
+        return;
+      }
+      var w, h;
+      if (aw / ah > arcadeCurrentAspect) {
+        // Container is wider than the target ratio — constrain by height
+        h = ah;
+        w = Math.floor(ah * arcadeCurrentAspect);
+      } else {
+        // Container is taller than the target ratio — constrain by width
+        w = aw;
+        h = Math.floor(aw / arcadeCurrentAspect);
+      }
+      arcadeGameContainer.style.width = w + 'px';
+      arcadeGameContainer.style.height = h + 'px';
     }
 
     function populateArcadeGameList() {
@@ -2066,26 +2101,13 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeLoading.classList.add('active');
       }
       setArcadeStatus('Launching ' + name + ' (' + system.toUpperCase() + ')…');
-      // Compute native-aspect-ratio dimensions that fit within the available game area.
-      // EmulatorJS reads EJS_width/EJS_height to size its canvas; without explicit
-      // values it fills the container (which is ~3:2 here), stretching the image.
-      var gameWrap = document.querySelector('.arcade-game-wrap');
-      if (gameWrap) {
-        var aw = gameWrap.clientWidth;
-        var ah = gameWrap.clientHeight;
-        if (aw > 0 && ah > 0) {
-          var targetAspect = EJS_SYSTEM_ASPECT[system] || (4 / 3);
-          if (aw / ah > targetAspect) {
-            // Container is wider than the target ratio — constrain by height
-            window.EJS_height = Math.floor(ah);
-            window.EJS_width = Math.floor(ah * targetAspect);
-          } else {
-            // Container is taller than the target ratio — constrain by width
-            window.EJS_width = Math.floor(aw);
-            window.EJS_height = Math.floor(aw / targetAspect);
-          }
-        }
-      }
+      // Size #game to the native aspect ratio of the chosen system so EmulatorJS
+      // renders at the correct proportions.  The EmulatorJS canvas CSS is
+      // "width:100%;height:100%" (fills its container), so we must constrain #game
+      // rather than relying on window.EJS_width/EJS_height (which EmulatorJS does
+      // not read from loader.js or emulator.min.js).
+      arcadeCurrentAspect = EJS_SYSTEM_ASPECT[system] || (4 / 3);
+      applyArcadeAspectRatio();
       window.EJS_player = '#game';
       window.EJS_core = system;
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
@@ -2270,6 +2292,12 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleArcadeFullscreen();
       });
     }
+
+    // Re-apply aspect ratio on resize so the canvas stays correct after
+    // fullscreen toggle or browser window resize while a game is running.
+    window.addEventListener('resize', function() {
+      applyArcadeAspectRatio();
+    });
 
     if (shoutboxForm && shoutboxInput) {
       shoutboxForm.addEventListener('submit', async function(e) {
