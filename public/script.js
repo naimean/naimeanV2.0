@@ -1919,14 +1919,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function stopEmulator() {
-      var oldScript = document.getElementById('emulatorjs-loader');
-      if (oldScript) {
-        oldScript.remove();
+      var ejsLoaderScript = document.getElementById('emulatorjs-loader');
+      if (ejsLoaderScript) {
+        ejsLoaderScript.remove();
       }
       var gameContainer = document.getElementById('game');
       if (gameContainer) {
         gameContainer.innerHTML = '';
       }
+      // Keys based on the EmulatorJS stable API; update if the library version changes.
       var ejsKeys = ['EJS_player', 'EJS_core', 'EJS_gameUrl', 'EJS_pathtodata',
         'EJS_startOnLoaded', 'EJS_emulator', 'EJS_Buttons', 'EJS_gameID',
         'EJS_width', 'EJS_height'];
@@ -2040,7 +2041,8 @@ document.addEventListener('DOMContentLoaded', function() {
           return arcadeManifest;
         }
         arcadeManifest = await res.json();
-      } catch (_) {
+      } catch (err) {
+        console.warn('Failed to load arcade manifest:', err);
         arcadeManifest = {};
       }
       return arcadeManifest;
@@ -2055,7 +2057,8 @@ document.addEventListener('DOMContentLoaded', function() {
       arcadeOverlay.setAttribute('aria-hidden', 'false');
       loadArcadeManifest().then(function() {
         populateArcadeGameList();
-      }).catch(function() {
+      }).catch(function(err) {
+        console.warn('Failed to load arcade manifest:', err);
         populateArcadeGameList();
       });
     }

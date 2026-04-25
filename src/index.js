@@ -8,6 +8,7 @@ const DOCUMENT_CSP = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.emulatorjs.org",
+  // 'wasm-unsafe-eval' is required for EmulatorJS to compile WebAssembly cores at runtime.
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net",
