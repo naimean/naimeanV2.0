@@ -2061,7 +2061,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
-      var cdnRetries = 1;
+      var retriesRemaining = 1;
       function appendLoaderScript() {
         var s = document.createElement('script');
         s.id = 'emulatorjs-loader';
@@ -2071,8 +2071,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         s.onerror = function() {
           s.remove();
-          if (cdnRetries > 0) {
-            cdnRetries--;
+          if (retriesRemaining > 0) {
+            retriesRemaining--;
             setArcadeStatus('CDN load failed — retrying…');
             setTimeout(appendLoaderScript, 2000);
           } else {
