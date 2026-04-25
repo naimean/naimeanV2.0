@@ -119,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
   let arcadeFullscreen = false;
+  let arcadeLoadTimeout = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
@@ -1938,6 +1939,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function stopEmulator() {
+      if (arcadeLoadTimeout) {
+        clearTimeout(arcadeLoadTimeout);
+        arcadeLoadTimeout = null;
+      }
       var ejsLoaderScript = document.getElementById('emulatorjs-loader');
       if (ejsLoaderScript) {
         ejsLoaderScript.remove();
@@ -2030,6 +2035,10 @@ document.addEventListener('DOMContentLoaded', function() {
       window.EJS_pathtodata = EJS_CDN_BASE;
       window.EJS_startOnLoaded = true;
       window.EJS_onGameStart = function() {
+        if (arcadeLoadTimeout) {
+          clearTimeout(arcadeLoadTimeout);
+          arcadeLoadTimeout = null;
+        }
         if (arcadeLoading) {
           arcadeLoading.classList.remove('active');
         }
@@ -2037,6 +2046,21 @@ document.addEventListener('DOMContentLoaded', function() {
       var script = document.createElement('script');
       script.id = 'emulatorjs-loader';
       script.src = EJS_CDN_BASE + 'loader.js';
+      script.onerror = function() {
+        if (arcadeLoadTimeout) {
+          clearTimeout(arcadeLoadTimeout);
+          arcadeLoadTimeout = null;
+        }
+        if (arcadeLoading) {
+          arcadeLoading.classList.remove('active');
+        }
+      };
+      arcadeLoadTimeout = setTimeout(function() {
+        arcadeLoadTimeout = null;
+        if (arcadeLoading) {
+          arcadeLoading.classList.remove('active');
+        }
+      }, 30000);
       document.head.appendChild(script);
     }
 
