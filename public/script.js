@@ -2056,23 +2056,17 @@ document.addEventListener('DOMContentLoaded', function() {
       systemKeys.forEach(function(system) {
         var games = Array.isArray(manifest[system]) ? manifest[system] : [];
         games.forEach(function(game) {
-          if (!game) {
+          if (!game || typeof game !== 'string') {
             return;
           }
-          // Support both {name, file} objects and plain filename strings.
-          if (typeof game === 'string') {
-            game = { name: game.replace(/\.[^.]+$/, ''), file: game };
-          }
-          if (typeof game.name !== 'string' || typeof game.file !== 'string') {
-            return;
-          }
+          var displayName = game.replace(/\.[^.]+$/, '');
           var btn = document.createElement('button');
           btn.className = 'arcade-game-item';
-          btn.textContent = game.name;
+          btn.textContent = displayName;
           btn.type = 'button';
           btn.setAttribute('role', 'option');
           btn.setAttribute('aria-selected', 'false');
-          btn.addEventListener('click', (function(sys, g) {
+          btn.addEventListener('click', (function(sys, file, label) {
             return function() {
               var allItems = arcadeGameList.querySelectorAll('.arcade-game-item');
               allItems.forEach(function(b) {
@@ -2081,12 +2075,12 @@ document.addEventListener('DOMContentLoaded', function() {
               });
               btn.classList.add('selected');
               btn.setAttribute('aria-selected', 'true');
-              arcadeSelectedGame = g;
-              console.log('[Arcade] game selected: "' + g.name + '" system=' + sys + ' file=' + g.file);
-              setArcadeStatus('Selected: ' + g.name + ' — launching…');
-              launchGame(sys, g.file, g.name);
+              arcadeSelectedGame = { file: file, name: label };
+              console.log('[Arcade] game selected: "' + label + '" system=' + sys + ' file=' + file);
+              setArcadeStatus('Selected: ' + label + ' — launching…');
+              launchGame(sys, file, label);
             };
-          }(system, game)));
+          }(system, game, displayName)));
           arcadeGameList.appendChild(btn);
           totalAdded++;
         });
