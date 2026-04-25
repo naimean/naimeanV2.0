@@ -217,7 +217,7 @@
     const cfPressure = document.getElementById('cf-pressure');
     const cfYield = document.getElementById('cf-yield');
 
-    function randomOffset(base, range) {
+    function fluctuateValue(base, range) {
       return (base + (Math.random() * 2 - 1) * range).toFixed(1);
     }
 
@@ -227,7 +227,7 @@
         cfTemp.textContent = t + ' K';
       }
       if (cfPressure) {
-        cfPressure.textContent = randomOffset(9.2, 0.3) + ' GPa';
+        cfPressure.textContent = fluctuateValue(9.2, 0.3) + ' GPa';
       }
       if (cfYield) {
         const y = Math.round(84 + (Math.random() * 2 - 1) * 3);
@@ -236,9 +236,20 @@
     }
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let readoutIntervalId = null;
     if (!reducedMotion.matches) {
-      window.setInterval(tickReadout, 1800);
+      readoutIntervalId = window.setInterval(tickReadout, 1800);
     }
+    reducedMotion.addEventListener('change', function (e) {
+      if (e.matches) {
+        if (readoutIntervalId !== null) {
+          window.clearInterval(readoutIntervalId);
+          readoutIntervalId = null;
+        }
+      } else if (readoutIntervalId === null) {
+        readoutIntervalId = window.setInterval(tickReadout, 1800);
+      }
+    });
 
     // Navigate back with fade.
     let isNavigating = false;

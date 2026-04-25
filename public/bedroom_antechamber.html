@@ -1221,7 +1221,11 @@
           mobileTripleTapCount = 0;
           getLatestAuthSession().then(function (session) {
             if (isOwnerDiscordSession(session)) { setToolsActive(true); }
-          }).catch(function () {});
+          }).catch(function (err) {
+            if (window.NaimeanDiag && typeof window.NaimeanDiag.log === 'function') {
+              window.NaimeanDiag.log('owner triple-tap tools auth check failed: ' + ((err && err.message) || 'unknown'));
+            }
+          });
         }, { passive: true });
       }
 
