@@ -1959,7 +1959,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       games.forEach(function(game) {
-        if (!game || typeof game.name !== 'string' || typeof game.file !== 'string') {
+        if (!game) {
+          return;
+        }
+        // Support both {name, file} objects and plain filename strings.
+        if (typeof game === 'string') {
+          game = { name: game.replace(/\.[^.]+$/, ''), file: game };
+        }
+        if (typeof game.name !== 'string' || typeof game.file !== 'string') {
           return;
         }
         var btn = document.createElement('button');
