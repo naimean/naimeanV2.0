@@ -37,6 +37,8 @@
       --monitor-cursor-left: 39%;
       --monitor-cursor-top: 14%;
       --nav-fade-duration: 0.9s;
+      --cf-zoom-cursor-left: 46%;
+      --cf-zoom-cursor-top: 40%;
     }
 
     body {
@@ -190,6 +192,82 @@
       .monitor-glow {
         animation: none;
         background: none;
+      }
+    }
+
+    /* ── Colicofusion zoom overlay ───────────────────────────────────────────── */
+    .colicofusion-zoom-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.9s ease;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .colicofusion-zoom-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .colicofusion-zoom-frame {
+      position: relative;
+      line-height: 0;
+      flex-shrink: 1;
+    }
+
+    .colicofusion-zoom-img {
+      display: block;
+      max-width: 820px;
+      max-height: 100vh;
+      max-height: 100dvh;
+      width: auto;
+      height: auto;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .colicofusion-zoom-cursor {
+      position: absolute;
+      left: var(--cf-zoom-cursor-left);
+      top: var(--cf-zoom-cursor-top);
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: clamp(24px, 5.5vw, 48px);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+      visibility: hidden;
+      animation: cf-zoom-cursor-blink 1.4s infinite;
+    }
+
+    @keyframes cf-zoom-cursor-blink {
+      0%, 43% {
+        color: #ff7800;
+        text-shadow:
+          0 0 8px rgba(255, 100, 0, 0.9),
+          0 0 20px rgba(255, 60, 0, 0.5);
+      }
+      47%, 93% {
+        color: transparent;
+        text-shadow: none;
+      }
+      97%, 100% {
+        color: #ff7800;
+        text-shadow:
+          0 0 8px rgba(255, 100, 0, 0.9),
+          0 0 20px rgba(255, 60, 0, 0.5);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .colicofusion-zoom-cursor {
+        animation: none;
+        color: #ff7800;
       }
     }
 
@@ -439,6 +517,12 @@
 </head>
 <body>
   <div class="fade-overlay" id="fade-overlay"></div>
+  <div class="colicofusion-zoom-overlay" id="colicofusion-zoom-overlay" aria-hidden="true">
+    <div class="colicofusion-zoom-frame" id="colicofusion-zoom-frame">
+      <img src="assets/images/colicofusion.png" alt="" class="colicofusion-zoom-img" id="colicofusion-zoom-img" />
+      <span class="colicofusion-zoom-cursor" id="colicofusion-zoom-cursor" aria-hidden="true">_</span>
+    </div>
+  </div>
   <div class="bedroom-antechamber-outer" id="bedroom-antechamber-outer">
     <img src="assets/images/bedroom_antechamber.v20260424.png" alt="Bedroom Antechamber" class="bedroom-antechamber-img" id="bedroom-antechamber-img" />
     <div class="monitor-glow" aria-hidden="true"></div>
@@ -615,7 +699,27 @@
         return;
       }
       isNavigatingToColicofusion = true;
-      fadeOutAndNavigate('colicofusion.html');
+      const overlay = document.getElementById('colicofusion-zoom-overlay');
+      if (!overlay) {
+        return;
+      }
+      overlay.classList.add('active');
+      const cursor = document.getElementById('colicofusion-zoom-cursor');
+      function showCursor() {
+        if (cursor) { cursor.style.visibility = 'visible'; }
+      }
+      function handleOverlayTransitionEnd(e) {
+        if (e.target !== overlay || e.propertyName !== 'opacity') { return; }
+        overlay.removeEventListener('transitionend', handleOverlayTransitionEnd);
+        clearTimeout(fallbackTimer);
+        showCursor();
+      }
+      overlay.addEventListener('transitionend', handleOverlayTransitionEnd);
+      const fadeDurationMs = parseCssDurationToMs(getComputedStyle(overlay).transitionDuration) || 900;
+      const fallbackTimer = setTimeout(function () {
+        overlay.removeEventListener('transitionend', handleOverlayTransitionEnd);
+        showCursor();
+      }, fadeDurationMs + 100);
     }
 
     function playDoorClosingSound() {
