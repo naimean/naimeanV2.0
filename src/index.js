@@ -7,8 +7,13 @@ const DOCUMENT_CSP = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
-  // 'wasm-unsafe-eval' is required for EmulatorJS to compile WebAssembly cores at runtime.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
+  // 'wasm-unsafe-eval' allows WebAssembly compilation at runtime (required by EmulatorJS cores).
+  // 'unsafe-eval' is required because the EmulatorJS 7-Zip decompression worker (extract7z.js)
+  // is Emscripten-generated and calls eval() internally to decompress .wasm.data core archives.
+  // This is the narrowest viable fix: isolating EmulatorJS in a sandboxed iframe would remove
+  // the need for 'unsafe-eval' on the main document but requires significant restructuring.
+  // Note: 'unsafe-inline' (already present) is the higher XSS risk; 'unsafe-eval' is incremental.
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
