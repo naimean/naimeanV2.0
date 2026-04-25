@@ -716,7 +716,7 @@
       }
       overlay.addEventListener('transitionend', handleOverlayTransitionEnd);
       const fadeDurationMs = parseCssDurationToMs(getComputedStyle(overlay).transitionDuration) || 900;
-      var fallbackTimer = setTimeout(function () {
+      const fallbackTimer = setTimeout(function () {
         overlay.removeEventListener('transitionend', handleOverlayTransitionEnd);
         showCursor();
       }, fadeDurationMs + 100);
