@@ -1975,63 +1975,57 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function populateArcadeGameList() {
-      if (!arcadeGameList || !arcadeSystemSelect) {
+      if (!arcadeGameList) {
         return;
       }
-      var system = arcadeSystemSelect.value;
-      var games = Array.isArray(arcadeManifest && arcadeManifest[system])
-        ? arcadeManifest[system]
-        : [];
       arcadeSelectedGame = null;
-      if (arcadeLaunchBtn) {
-        arcadeLaunchBtn.disabled = true;
-      }
       arcadeGameList.innerHTML = '';
-      if (games.length === 0) {
+      var manifest = arcadeManifest || {};
+      var systemKeys = ['nes', 'snes', 'gb', 'gba', 'n64', 'segaMD', 'atari2600'];
+      var totalAdded = 0;
+      systemKeys.forEach(function(system) {
+        var games = Array.isArray(manifest[system]) ? manifest[system] : [];
+        games.forEach(function(game) {
+          if (!game) {
+            return;
+          }
+          // Support both {name, file} objects and plain filename strings.
+          if (typeof game === 'string') {
+            game = { name: game.replace(/\.[^.]+$/, ''), file: game };
+          }
+          if (typeof game.name !== 'string' || typeof game.file !== 'string') {
+            return;
+          }
+          var btn = document.createElement('button');
+          btn.className = 'arcade-game-item';
+          btn.textContent = game.name;
+          btn.type = 'button';
+          btn.setAttribute('role', 'option');
+          btn.setAttribute('aria-selected', 'false');
+          btn.addEventListener('click', (function(sys, g) {
+            return function() {
+              var allItems = arcadeGameList.querySelectorAll('.arcade-game-item');
+              allItems.forEach(function(b) {
+                b.classList.remove('selected');
+                b.setAttribute('aria-selected', 'false');
+              });
+              btn.classList.add('selected');
+              btn.setAttribute('aria-selected', 'true');
+              arcadeSelectedGame = g;
+              setArcadeStatus('Selected: ' + g.name + ' — launching…');
+              launchGame(sys, g.file, g.name);
+            };
+          }(system, game)));
+          arcadeGameList.appendChild(btn);
+          totalAdded++;
+        });
+      });
+      if (totalAdded === 0) {
         var msg = document.createElement('div');
         msg.className = 'arcade-no-games';
-        msg.textContent = 'NO ROMS FOUND FOR ' + system.toUpperCase()
-          + '. ADD ROMS TO /ASSETS/ROMS/' + system.toUpperCase()
-          + '/ AND UPDATE MANIFEST.JSON.';
+        msg.textContent = 'NO ROMS FOUND. ADD ROMS TO /ASSETS/ROMS/<SYSTEM>/ AND UPDATE MANIFEST.JSON.';
         arcadeGameList.appendChild(msg);
-        setArcadeStatus('No ROMs found for ' + system.toUpperCase() + ' — check manifest.json');
-        return;
       }
-      setArcadeStatus(games.length + ' game(s) listed — click a title to launch');
-      games.forEach(function(game) {
-        if (!game) {
-          return;
-        }
-        // Support both {name, file} objects and plain filename strings.
-        if (typeof game === 'string') {
-          game = { name: game.replace(/\.[^.]+$/, ''), file: game };
-        }
-        if (typeof game.name !== 'string' || typeof game.file !== 'string') {
-          return;
-        }
-        var btn = document.createElement('button');
-        btn.className = 'arcade-game-item';
-        btn.textContent = game.name;
-        btn.type = 'button';
-        btn.setAttribute('role', 'option');
-        btn.setAttribute('aria-selected', 'false');
-        btn.addEventListener('click', function() {
-          var allItems = arcadeGameList.querySelectorAll('.arcade-game-item');
-          allItems.forEach(function(b) {
-            b.classList.remove('selected');
-            b.setAttribute('aria-selected', 'false');
-          });
-          btn.classList.add('selected');
-          btn.setAttribute('aria-selected', 'true');
-          arcadeSelectedGame = game;
-          if (arcadeLaunchBtn) {
-            arcadeLaunchBtn.disabled = false;
-          }
-          setArcadeStatus('Selected: ' + game.name + ' — launching…');
-          launchGame(system, game.file, game.name);
-        });
-        arcadeGameList.appendChild(btn);
-      });
     }
 
     function launchGame(system, file, name) {
@@ -2158,11 +2152,18 @@ document.addEventListener('DOMContentLoaded', function() {
       exitArcadeFullscreen();
       stopEmulator();
       setArcadeStatus('');
-      arcadeOverlay.classList.remove('visible');
-      arcadeOverlay.setAttribute('aria-hidden', 'true');
-      if (shoutboxInput) {
-        shoutboxInput.focus();
-      }
+      arcadeOverlay.classList.add('arcade-fading-out');
+      setTimeout(function() {
+        arcadeOverlay.classList.remove('visible');
+        arcadeOverlay.classList.remove('arcade-fading-out');
+        arcadeOverlay.setAttribute('aria-hidden', 'true');
+        if (shoutboxInput) {
+          shoutboxInput.value = BOOT_DEFAULT_VALUE;
+          shoutboxInput.focus();
+          var arcadeStart = BOOT_DEFAULT_VALUE.length - BOOT_DEFAULT_SUFFIX.length;
+          shoutboxInput.setSelectionRange(arcadeStart, BOOT_DEFAULT_VALUE.length);
+        }
+      }, 350);
     }
 
     if (arcadeCloseBtn) {
