@@ -1958,9 +1958,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function stopEmulator() {
+      console.log('[Arcade] stopEmulator: stopping emulator and cleaning up');
       if (arcadeLoadTimeout) {
         clearTimeout(arcadeLoadTimeout);
         arcadeLoadTimeout = null;
+        console.log('[Arcade] stopEmulator: cleared load timeout');
       }
       // Remove the loader script and all scripts/styles injected by it (emulator.min.js,
       // emulator.min.css, etc.) so that a second launch gets a clean slate and doesn't
@@ -1970,6 +1972,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'script[src*="emulatorjs"], script[src*="emulator.min"], ' +
         'link[href*="emulatorjs"], link[href*="emulator.min"]'
       ).forEach(function(el) { el.remove(); });
+      console.log('[Arcade] stopEmulator: removed injected emulator scripts/styles');
       // Remove any globals injected by emulator.min.js so the next load starts fresh.
       var ejsGlobals = ['EmulatorJS', 'EJS_STORAGE', 'EJS_DUMMYSTORAGE', 'EJS_COMPRESSION',
         'EJS_GameManager', 'EJS_ControlHandler', 'EJS_SHADERS'];
@@ -1983,6 +1986,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear inline dimensions set by applyArcadeAspectRatio so CSS takes over again.
         arcadeGameContainer.style.width = '';
         arcadeGameContainer.style.height = '';
+        console.log('[Arcade] stopEmulator: cleared game container');
       }
       arcadeCurrentAspect = null;
       if (arcadeLoading) {
@@ -1997,6 +2001,7 @@ document.addEventListener('DOMContentLoaded', function() {
           try { delete window[k]; } catch (e) { window[k] = undefined; }
         }
       });
+      console.log('[Arcade] stopEmulator: cleared EJS globals');
     }
 
     function setArcadeStatus(msg) {
@@ -2038,7 +2043,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function populateArcadeGameList() {
+      console.log('[Arcade] populateArcadeGameList: building game list from manifest');
       if (!arcadeGameList) {
+        console.warn('[Arcade] populateArcadeGameList: arcadeGameList element not found, aborting');
         return;
       }
       arcadeSelectedGame = null;
@@ -2075,6 +2082,7 @@ document.addEventListener('DOMContentLoaded', function() {
               btn.classList.add('selected');
               btn.setAttribute('aria-selected', 'true');
               arcadeSelectedGame = g;
+              console.log('[Arcade] game selected: "' + g.name + '" system=' + sys + ' file=' + g.file);
               setArcadeStatus('Selected: ' + g.name + ' — launching…');
               launchGame(sys, g.file, g.name);
             };
@@ -2084,14 +2092,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       });
       if (totalAdded === 0) {
+        console.warn('[Arcade] populateArcadeGameList: no ROMs found in manifest');
         var msg = document.createElement('div');
         msg.className = 'arcade-no-games';
         msg.textContent = 'NO ROMS FOUND. ADD ROMS TO /ASSETS/ROMS/<SYSTEM>/ AND UPDATE MANIFEST.JSON.';
         arcadeGameList.appendChild(msg);
+      } else {
+        console.log('[Arcade] populateArcadeGameList: added ' + totalAdded + ' game(s)');
       }
     }
 
     function launchGame(system, file, name) {
+      console.log('[Arcade] launchGame: system=' + system + ' file=' + file + ' name="' + name + '"');
       stopEmulator();
       showArcadePlayer();
       if (arcadeNowPlaying) {
@@ -2112,7 +2124,9 @@ document.addEventListener('DOMContentLoaded', function() {
       window.EJS_core = system;
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
       window.EJS_startOnLoaded = true;
+      console.log('[Arcade] launchGame: EJS globals set — EJS_core=' + system + ' EJS_gameUrl=' + window.EJS_gameUrl + ' EJS_pathtodata will be set per CDN');
       window.EJS_onGameStart = function() {
+        console.log('[Arcade] EJS_onGameStart: game started successfully');
         if (arcadeLoadTimeout) {
           clearTimeout(arcadeLoadTimeout);
           arcadeLoadTimeout = null;
@@ -2123,15 +2137,18 @@ document.addEventListener('DOMContentLoaded', function() {
         setArcadeStatus('Game started — enjoy!');
       };
       setArcadeStatus('Fetching EmulatorJS from CDN…');
+      console.log('[Arcade] launchGame: starting 30s load timeout, fetching EmulatorJS from CDN');
       arcadeLoadTimeout = setTimeout(function() {
         arcadeLoadTimeout = null;
         if (arcadeLoading) {
           arcadeLoading.classList.remove('active');
         }
+        console.warn('[Arcade] load timeout: EmulatorJS did not load within 30s');
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
       function appendLoaderScript(cdnIndex) {
         if (cdnIndex >= EJS_CDN_URLS.length) {
+          console.error('[Arcade] appendLoaderScript: all CDN URLs exhausted, cannot load EmulatorJS');
           if (arcadeLoadTimeout) {
             clearTimeout(arcadeLoadTimeout);
             arcadeLoadTimeout = null;
@@ -2147,16 +2164,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // the correct CDN base when it executes (loader.js reads this synchronously,
         // before the onload callback would fire).
         window.EJS_pathtodata = cdnBase;
+        console.log('[Arcade] appendLoaderScript: trying CDN ' + (cdnIndex + 1) + '/' + EJS_CDN_URLS.length + ' → ' + cdnBase + 'loader.js');
         var s = document.createElement('script');
         s.id = 'emulatorjs-loader';
         s.src = cdnBase + 'loader.js';
         s.onload = function() {
+          console.log('[Arcade] appendLoaderScript: loader.js loaded OK from ' + cdnBase);
           setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
         };
         s.onerror = function() {
+          console.warn('[Arcade] appendLoaderScript: failed to load loader.js from ' + cdnBase);
           s.remove();
           var nextIndex = cdnIndex + 1;
           if (nextIndex < EJS_CDN_URLS.length) {
+            console.log('[Arcade] appendLoaderScript: retrying with next CDN in 1s…');
             setArcadeStatus('CDN load failed — trying alternate…');
             setTimeout(function() { appendLoaderScript(nextIndex); }, 1000);
           } else {
@@ -2198,19 +2219,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function loadArcadeManifest() {
       if (arcadeManifest !== null) {
+        console.log('[Arcade] loadArcadeManifest: manifest already cached, skipping fetch');
         return arcadeManifest;
       }
+      console.log('[Arcade] loadArcadeManifest: fetching /assets/roms/manifest.json');
       setArcadeStatus('Loading game manifest…');
       try {
         var res = await fetch('/assets/roms/manifest.json', { cache: 'no-cache' });
         if (!res.ok) {
+          console.error('[Arcade] loadArcadeManifest: HTTP ' + res.status + ' — manifest unavailable');
           setArcadeStatus('Manifest fetch failed (HTTP ' + res.status + ') — no games available');
           arcadeManifest = {};
           return arcadeManifest;
         }
         arcadeManifest = await res.json();
+        console.log('[Arcade] loadArcadeManifest: manifest loaded OK, systems:', Object.keys(arcadeManifest).join(', ') || '(none)');
         setArcadeStatus('Manifest loaded — select a game');
       } catch (err) {
+        console.error('[Arcade] loadArcadeManifest: error —', err);
         console.warn('Failed to load arcade manifest:', err);
         setArcadeStatus('Manifest load error: ' + (err && err.message ? err.message : String(err)));
         arcadeManifest = {};
@@ -2219,7 +2245,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function openArcade() {
+      console.log('[Arcade] openArcade: opening arcade overlay');
       if (!arcadeOverlay) {
+        console.warn('[Arcade] openArcade: arcadeOverlay element not found, aborting');
         return;
       }
       showArcadePicker();
@@ -2234,7 +2262,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function closeArcade() {
+      console.log('[Arcade] closeArcade: closing arcade overlay');
       if (!arcadeOverlay) {
+        console.warn('[Arcade] closeArcade: arcadeOverlay element not found, aborting');
         return;
       }
       exitArcadeFullscreen();
@@ -2245,6 +2275,7 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeOverlay.classList.remove('visible');
         arcadeOverlay.classList.remove('arcade-fading-out');
         arcadeOverlay.setAttribute('aria-hidden', 'true');
+        console.log('[Arcade] closeArcade: overlay hidden');
         if (shoutboxInput) {
           shoutboxInput.value = BOOT_DEFAULT_VALUE;
           shoutboxInput.focus();
