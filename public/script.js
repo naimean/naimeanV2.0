@@ -2054,22 +2054,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setArcadeStatus('Game started — enjoy!');
       };
       setArcadeStatus('Fetching EmulatorJS from CDN…');
-      var script = document.createElement('script');
-      script.id = 'emulatorjs-loader';
-      script.src = EJS_CDN_BASE + 'loader.js';
-      script.onload = function() {
-        setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
-      };
-      script.onerror = function() {
-        if (arcadeLoadTimeout) {
-          clearTimeout(arcadeLoadTimeout);
-          arcadeLoadTimeout = null;
-        }
-        if (arcadeLoading) {
-          arcadeLoading.classList.remove('active');
-        }
-        setArcadeStatus('Error: failed to load EmulatorJS from CDN — check network / console');
-      };
       arcadeLoadTimeout = setTimeout(function() {
         arcadeLoadTimeout = null;
         if (arcadeLoading) {
@@ -2077,7 +2061,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
-      document.head.appendChild(script);
+      var cdnRetries = 1;
+      function appendLoaderScript() {
+        var s = document.createElement('script');
+        s.id = 'emulatorjs-loader';
+        s.src = EJS_CDN_BASE + 'loader.js';
+        s.onload = function() {
+          setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
+        };
+        s.onerror = function() {
+          s.remove();
+          if (cdnRetries > 0) {
+            cdnRetries--;
+            setArcadeStatus('CDN load failed — retrying…');
+            setTimeout(appendLoaderScript, 2000);
+          } else {
+            if (arcadeLoadTimeout) {
+              clearTimeout(arcadeLoadTimeout);
+              arcadeLoadTimeout = null;
+            }
+            if (arcadeLoading) {
+              arcadeLoading.classList.remove('active');
+            }
+            setArcadeStatus('Error: failed to load EmulatorJS from CDN — check network / console');
+          }
+        };
+        document.head.appendChild(s);
+      }
+      appendLoaderScript();
     }
 
     function exitArcadeFullscreen() {
