@@ -1279,6 +1279,70 @@ body {
   cursor: default;
 }
 
+/* ── Loading indicator (shown while EmulatorJS initialises) ─────────────── */
+
+.arcade-loading {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #000;
+  color: var(--mint-bright);
+  font-family: 'VT323', monospace;
+  pointer-events: none;
+}
+
+.arcade-loading.active {
+  display: flex;
+}
+
+.arcade-loading-text {
+  font-size: 1.2em;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 8px rgba(140, 240, 178, 0.6);
+}
+
+.arcade-loading-dots::after {
+  content: '';
+  animation: arcade-dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes arcade-dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+  100% { content: ''; }
+}
+
+.arcade-loading-bar-track {
+  width: 60%;
+  max-width: 220px;
+  height: 6px;
+  border: 1px solid rgba(142, 240, 178, 0.4);
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.arcade-loading-bar-fill {
+  height: 100%;
+  width: 40%;
+  background: var(--mint-bright);
+  border-radius: 3px;
+  animation: arcade-scan 1.4s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(140, 240, 178, 0.7);
+}
+
+@keyframes arcade-scan {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
 /* ── Player (emulator running) ───────────────────────────────────────────── */
 
 .arcade-player {
