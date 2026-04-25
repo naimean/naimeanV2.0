@@ -1097,6 +1097,11 @@ body {
   flex-direction: column;
 }
 
+.arcade-overlay.arcade-fading-out {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
 .arcade-overlay.fullscreen {
   position: fixed;
   inset: 0;
