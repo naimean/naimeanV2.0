@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   ]);
   const POWER_BUTTON_COOLDOWN_MS = 5000;
   const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
-  const ARCADE_COMMANDS = new Set(['arcade', 'emulator', 'games']);
+  const ARCADE_COMMANDS = new Set(['arcade', 'emulator', 'games', 'user\\arcade']);
   const AUTH_LOGIN_COMMANDS = new Set(['login', 'signin', 'discord']);
   const AUTH_LOGOUT_COMMANDS = new Set(['logout', 'signout']);
   const MINI_GAME_MIN_GUESS = 1;
