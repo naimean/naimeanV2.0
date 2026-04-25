@@ -2151,8 +2151,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         setArcadeStatus('Game started — enjoy!');
       };
+      function getEjsLoadErrorMessage(e) {
+        var target = e && (e.target || e.currentTarget);
+        var targetUrl = target && (target.src || target.href);
+        var errorMessage = e && e.error && e.error.message;
+        var message = e && e.message;
+        var name = e && e.name;
+        var type = e && e.type;
+        var stringValue;
+
+        if (errorMessage) {
+          return errorMessage;
+        }
+        if (message && name && message !== name) {
+          return name + ': ' + message;
+        }
+        if (message) {
+          return message;
+        }
+        if (name && targetUrl) {
+          return name + ' while loading ' + targetUrl;
+        }
+        if (type && targetUrl) {
+          return type + ' while loading ' + targetUrl;
+        }
+        if (type) {
+          return 'Load event: ' + type;
+        }
+        if (name) {
+          return name;
+        }
+
+        stringValue = String(e);
+        if (stringValue && stringValue !== '[object Event]' && stringValue !== '[object Object]') {
+          return stringValue;
+        }
+
+        return 'Unknown load error';
+      }
       window.EJS_onLoadError = function(e) {
-        var msg = e && e.message ? e.message : String(e);
+        var msg = getEjsLoadErrorMessage(e);
         console.error('[Arcade] EJS_onLoadError:', e);
         if (arcadeLoadTimeout) {
           clearTimeout(arcadeLoadTimeout);
