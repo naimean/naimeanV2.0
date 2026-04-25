@@ -1203,6 +1203,7 @@ body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -1231,6 +1232,8 @@ body {
   display: block;
   width: 100%;
   box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .arcade-game-item::before {
@@ -1284,7 +1287,37 @@ body {
   cursor: default;
 }
 
-/* ── Arcade diagnostic status label ─────────────────────────────────────── */
+/* ── Fullscreen launch button ────────────────────────────────────────────── */
+
+.arcade-fs-launch-btn {
+  display: none;
+  width: 100%;
+  padding: 18px 12px;
+  border: 2px solid rgba(142, 240, 178, 0.7);
+  border-radius: 6px;
+  background: rgba(22, 58, 30, 0.9);
+  color: var(--mint-bright);
+  font-family: 'VT323', monospace;
+  font-size: 2em;
+  letter-spacing: 0.08em;
+  text-align: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  text-shadow: 0 0 10px rgba(140, 240, 178, 0.5);
+  box-shadow: 0 0 16px rgba(140, 240, 178, 0.15);
+  box-sizing: border-box;
+}
+
+.arcade-fs-launch-btn:hover,
+.arcade-fs-launch-btn:focus-visible {
+  background: rgba(36, 94, 49, 0.98);
+  border-color: var(--mint-bright);
+  outline: none;
+}
+
+.arcade-overlay.fullscreen .arcade-fs-launch-btn.ready {
+  display: block;
+}
 
 .arcade-status {
   font-family: 'VT323', monospace;
