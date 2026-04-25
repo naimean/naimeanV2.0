@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeSystemSelect = document.getElementById('arcade-system');
   const arcadeGameList = document.getElementById('arcade-game-list');
   const arcadeLaunchBtn = document.getElementById('arcade-launch-btn');
+  const arcadeFsLaunchBtn = document.getElementById('arcade-fs-launch-btn');
   const arcadeCloseBtn = document.getElementById('arcade-close-btn');
   const arcadeBackBtn = document.getElementById('arcade-back-btn');
   const arcadeFullscreenBtn = document.getElementById('arcade-fullscreen-btn');
@@ -2050,6 +2051,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       arcadeSelectedGame = null;
       arcadeGameList.innerHTML = '';
+      if (arcadeFsLaunchBtn) {
+        arcadeFsLaunchBtn.textContent = 'LAUNCH';
+        arcadeFsLaunchBtn.classList.remove('ready');
+      }
       var manifest = arcadeManifest || {};
       var systemKeys = ['nes', 'snes', 'gb', 'gba', 'n64', 'segaMD', 'atari2600'];
       var totalAdded = 0;
@@ -2075,10 +2080,13 @@ document.addEventListener('DOMContentLoaded', function() {
               });
               btn.classList.add('selected');
               btn.setAttribute('aria-selected', 'true');
-              arcadeSelectedGame = { file: file, name: label };
+              arcadeSelectedGame = { file: file, name: label, system: sys };
               console.log('[Arcade] game selected: "' + label + '" system=' + sys + ' file=' + file);
-              setArcadeStatus('Selected: ' + label + ' — launching…');
-              launchGame(sys, file, label);
+              setArcadeStatus('Selected: ' + label);
+              if (arcadeFsLaunchBtn) {
+                arcadeFsLaunchBtn.textContent = 'LAUNCH  \u25B6  ' + label;
+                arcadeFsLaunchBtn.classList.add('ready');
+              }
             };
           }(system, game, displayName)));
           arcadeGameList.appendChild(btn);
@@ -2411,6 +2419,15 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         launchGame(arcadeSystemSelect.value, arcadeSelectedGame.file, arcadeSelectedGame.name);
+      });
+    }
+
+    if (arcadeFsLaunchBtn) {
+      arcadeFsLaunchBtn.addEventListener('click', function() {
+        if (!arcadeSelectedGame) {
+          return;
+        }
+        launchGame(arcadeSelectedGame.system, arcadeSelectedGame.file, arcadeSelectedGame.name);
       });
     }
 
