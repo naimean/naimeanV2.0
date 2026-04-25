@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeBackBtn = document.getElementById('arcade-back-btn');
   const arcadeFullscreenBtn = document.getElementById('arcade-fullscreen-btn');
   const arcadeNowPlaying = document.getElementById('arcade-now-playing');
+  const arcadeLoading = document.getElementById('arcade-loading');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
   const BOOT_DEFAULT_SUFFIX = 'Arcade';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
@@ -1942,10 +1943,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if (gameContainer) {
         gameContainer.innerHTML = '';
       }
+      if (arcadeLoading) {
+        arcadeLoading.classList.remove('active');
+      }
       // Keys based on the EmulatorJS stable API; update if the library version changes.
       var ejsKeys = ['EJS_player', 'EJS_core', 'EJS_gameUrl', 'EJS_pathtodata',
         'EJS_startOnLoaded', 'EJS_emulator', 'EJS_Buttons', 'EJS_gameID',
-        'EJS_width', 'EJS_height'];
+        'EJS_width', 'EJS_height', 'EJS_onGameStart'];
       ejsKeys.forEach(function(k) {
         try { delete window[k]; } catch (_) {}
       });
@@ -2014,11 +2018,19 @@ document.addEventListener('DOMContentLoaded', function() {
       if (arcadeNowPlaying) {
         arcadeNowPlaying.textContent = name;
       }
+      if (arcadeLoading) {
+        arcadeLoading.classList.add('active');
+      }
       window.EJS_player = '#game';
       window.EJS_core = system;
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
       window.EJS_pathtodata = EJS_CDN_BASE;
       window.EJS_startOnLoaded = true;
+      window.EJS_onGameStart = function() {
+        if (arcadeLoading) {
+          arcadeLoading.classList.remove('active');
+        }
+      };
       var script = document.createElement('script');
       script.id = 'emulatorjs-loader';
       script.src = EJS_CDN_BASE + 'loader.js';
