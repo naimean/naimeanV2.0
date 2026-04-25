@@ -2055,6 +2055,26 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeLoading.classList.add('active');
       }
       setArcadeStatus('Launching ' + name + ' (' + system.toUpperCase() + ')…');
+      // Compute 4:3 dimensions that fit within the available game area.
+      // EmulatorJS reads EJS_width/EJS_height to size its canvas; without explicit
+      // values it fills the container (which is ~3:2 here), stretching the image.
+      var gameWrap = document.querySelector('.arcade-game-wrap');
+      if (gameWrap) {
+        var aw = gameWrap.clientWidth;
+        var ah = gameWrap.clientHeight;
+        if (aw > 0 && ah > 0) {
+          var targetAspect = 4 / 3;
+          if (aw / ah > targetAspect) {
+            // Container is wider than 4:3 — constrain by height
+            window.EJS_height = Math.floor(ah);
+            window.EJS_width = Math.floor(ah * targetAspect);
+          } else {
+            // Container is taller than 4:3 — constrain by width
+            window.EJS_width = Math.floor(aw);
+            window.EJS_height = Math.floor(aw / targetAspect);
+          }
+        }
+      }
       window.EJS_player = '#game';
       window.EJS_core = system;
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
