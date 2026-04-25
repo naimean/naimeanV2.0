@@ -121,6 +121,17 @@ document.addEventListener('DOMContentLoaded', function() {
     'https://cdn.emulatorjs.org/stable/data/',
     'https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@latest/data/',
   ];
+  // Native display aspect ratios per EmulatorJS system key.
+  // GB: 160×144 (10:9), GBA: 240×160 (3:2), all others use standard 4:3.
+  const EJS_SYSTEM_ASPECT = {
+    gb:        160 / 144,
+    gba:       240 / 160,
+    nes:       4 / 3,
+    snes:      4 / 3,
+    n64:       4 / 3,
+    segaMD:    4 / 3,
+    atari2600: 4 / 3
+  };
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
   let arcadeFullscreen = false;
@@ -2055,7 +2066,7 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeLoading.classList.add('active');
       }
       setArcadeStatus('Launching ' + name + ' (' + system.toUpperCase() + ')…');
-      // Compute 4:3 dimensions that fit within the available game area.
+      // Compute native-aspect-ratio dimensions that fit within the available game area.
       // EmulatorJS reads EJS_width/EJS_height to size its canvas; without explicit
       // values it fills the container (which is ~3:2 here), stretching the image.
       var gameWrap = document.querySelector('.arcade-game-wrap');
@@ -2063,13 +2074,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var aw = gameWrap.clientWidth;
         var ah = gameWrap.clientHeight;
         if (aw > 0 && ah > 0) {
-          var targetAspect = 4 / 3;
+          var targetAspect = EJS_SYSTEM_ASPECT[system] || (4 / 3);
           if (aw / ah > targetAspect) {
-            // Container is wider than 4:3 — constrain by height
+            // Container is wider than the target ratio — constrain by height
             window.EJS_height = Math.floor(ah);
             window.EJS_width = Math.floor(ah * targetAspect);
           } else {
-            // Container is taller than 4:3 — constrain by width
+            // Container is taller than the target ratio — constrain by width
             window.EJS_width = Math.floor(aw);
             window.EJS_height = Math.floor(aw / targetAspect);
           }
