@@ -21,11 +21,21 @@
       --top-blue-hotspot-top: 0%;
       --top-blue-hotspot-width: 33%;
       --top-blue-hotspot-height: 18%;
-      --doorway-hotspot-left: calc(40% + 120px);
-      --doorway-hotspot-top: 30%;
-      --doorway-hotspot-width: 20%;
+      --doorway-hotspot-left: 25%;
+      --doorway-hotspot-top: 25%;
+      --doorway-hotspot-width: 22%;
       --doorway-hotspot-height: 55%;
       --bottom-hotspot-height: 12%;
+      --rock-hotspot-left: 5%;
+      --rock-hotspot-top: 50%;
+      --rock-hotspot-width: 18%;
+      --rock-hotspot-height: 18%;
+      --colicofusion-hotspot-left: 52%;
+      --colicofusion-hotspot-top: 38%;
+      --colicofusion-hotspot-width: 16%;
+      --colicofusion-hotspot-height: 12%;
+      --monitor-cursor-left: 39%;
+      --monitor-cursor-top: 14%;
       --nav-fade-duration: 0.9s;
     }
 
@@ -45,6 +55,11 @@
       margin: 0 auto;
     }
 
+    /* Viewport simulator: constrains the outer container to mimic a narrow device. */
+    body.viewport-simulated .bedroom-antechamber-outer {
+      max-width: var(--simulated-viewport-width, 820px);
+    }
+
     .bedroom-antechamber-img {
       width: 100%;
       height: auto;
@@ -53,49 +68,129 @@
       -webkit-user-drag: none;
     }
 
-    .trapdoor-up-btn {
+    .antechamber-hotspot-btn {
       position: absolute;
+      background: transparent;
+      opacity: 0;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .trapdoor-up-btn {
       left: var(--top-blue-hotspot-left);
       top: var(--top-blue-hotspot-top);
       width: var(--top-blue-hotspot-width);
       height: var(--top-blue-hotspot-height);
-      background: transparent;
-      opacity: 0;
-      border: none;
-      padding: 0;
-      cursor: pointer;
       z-index: 2;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .bedroom-enter-btn {
-      position: absolute;
       left: var(--doorway-hotspot-left);
       top: var(--doorway-hotspot-top);
       width: var(--doorway-hotspot-width);
       height: var(--doorway-hotspot-height);
-      background: transparent;
-      opacity: 0;
-      border: none;
-      padding: 0;
-      cursor: pointer;
       z-index: 1;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .lower-level-btn {
-      position: absolute;
       left: 0;
       bottom: 0;
       width: 100%;
       height: var(--bottom-hotspot-height);
-      background: transparent;
-      opacity: 0;
-      border: none;
-      padding: 0;
-      cursor: pointer;
       z-index: 3;
-      -webkit-tap-highlight-color: transparent;
+    }
+
+    .rock-btn {
+      left: var(--rock-hotspot-left);
+      top: var(--rock-hotspot-top);
+      width: var(--rock-hotspot-width);
+      height: var(--rock-hotspot-height);
+      z-index: 2;
+    }
+
+    .colicofusion-btn {
+      left: var(--colicofusion-hotspot-left);
+      top: var(--colicofusion-hotspot-top);
+      width: var(--colicofusion-hotspot-width);
+      height: var(--colicofusion-hotspot-height);
+      z-index: 2;
+    }
+
+    /* ── Monitor underscore cursor ─────────────────────────────────────────── */
+    .monitor-cursor {
+      position: absolute;
+      left: var(--monitor-cursor-left);
+      top: var(--monitor-cursor-top);
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: clamp(8px, 1.8vw, 16px);
+      line-height: 1;
+      pointer-events: none;
+      z-index: 4;
+      user-select: none;
+      -webkit-user-select: none;
+      animation: monitor-cursor-blink 1.4s infinite;
+    }
+
+    /* The room-glow pulse is a radial overlay that pulses alongside the cursor. */
+    .monitor-glow {
+      position: absolute;
+      left: var(--monitor-cursor-left);
+      top: var(--monitor-cursor-top);
+      width: 42%;
+      height: 22%;
+      transform: translate(-28%, -28%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 3;
+      mix-blend-mode: screen;
+      animation: monitor-glow-pulse 1.4s infinite;
+    }
+
+    @keyframes monitor-cursor-blink {
+      0%, 43% {
+        color: #ffffff;
+        text-shadow:
+          0 0 6px rgba(255, 255, 255, 0.9),
+          0 0 16px rgba(255, 255, 255, 0.45);
+      }
+      47%, 93% {
+        color: #dd0000;
+        text-shadow:
+          0 0 6px rgba(220, 0, 0, 0.9),
+          0 0 16px rgba(200, 0, 0, 0.45);
+      }
+      97%, 100% {
+        color: #ffffff;
+        text-shadow:
+          0 0 6px rgba(255, 255, 255, 0.9),
+          0 0 16px rgba(255, 255, 255, 0.45);
+      }
+    }
+
+    @keyframes monitor-glow-pulse {
+      0%, 43% {
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.055) 0%, transparent 72%);
+      }
+      47%, 93% {
+        background: radial-gradient(circle, rgba(200, 0, 0, 0.07) 0%, transparent 72%);
+      }
+      97%, 100% {
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.055) 0%, transparent 72%);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .monitor-cursor {
+        animation: none;
+        color: #ffffff;
+        text-shadow: none;
+      }
+      .monitor-glow {
+        animation: none;
+        background: none;
+      }
     }
 
     .fade-overlay {
@@ -112,22 +207,334 @@
       opacity: 1;
       pointer-events: auto;
     }
+
+    /* ── Hotspot admin tools ─────────────────────────────────────────────────── */
+    .antechamber-hotspot-btn,
+    .antechamber-invisible-hotspot-btn {
+      outline: none;
+      box-shadow: none;
+    }
+
+    body.hotspot-tools-active .antechamber-hotspot-btn,
+    body.hotspot-tools-active .antechamber-invisible-hotspot-btn {
+      outline: 2px dashed rgba(255, 255, 255, 0.95);
+      outline-offset: -1px;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.8);
+      opacity: 1;
+    }
+
+    .hotspot-tool {
+      position: fixed;
+      right: 12px;
+      top: calc((var(--hotspot-tool-top, 12px) * var(--hotspot-tool-scale, 1)) + var(--hotspot-tool-mobile-offset, 0px));
+      z-index: 120;
+      width: min(260px, calc(100vw - 24px));
+      background: rgba(0, 0, 0, 0.88);
+      border: 1px solid rgba(210, 210, 210, 0.6);
+      color: #fff;
+      font: 12px/1.3 'IBM Plex Mono', 'Courier New', monospace;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      visibility: hidden;
+      pointer-events: none;
+      transform: scale(var(--hotspot-tool-scale, 1));
+      transform-origin: top right;
+    }
+
+    /* Tools are shown when body has the .hotspot-tools-active class.
+       Toggle with Ctrl+Shift+H or via NaimeanLayout.toggle() in the console. */
+    body.hotspot-tools-active .hotspot-tool {
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    #hotspot-move-tool {
+      --hotspot-tool-top: 12px;
+    }
+
+    #hotspot-size-tool {
+      --hotspot-tool-top: 220px;
+    }
+
+    #hotspot-viewport-tool {
+      --hotspot-tool-top: 440px;
+    }
+
+    @media (max-width: 768px) {
+      .hotspot-tool {
+        --hotspot-tool-scale: 0.5;
+        --hotspot-tool-mobile-offset: 100px;
+      }
+    }
+
+    .hotspot-tool-title {
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hotspot-tool select,
+    .hotspot-tool button {
+      font: inherit;
+    }
+
+    .hotspot-tool select {
+      width: 100%;
+      background: #111;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      padding: 4px;
+    }
+
+    .hotspot-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .hotspot-tool-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .hotspot-tool button {
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      padding: 4px;
+      cursor: pointer;
+    }
+
+    .hotspot-tool button:hover,
+    .hotspot-tool button:focus-visible {
+      background: #2a2a2a;
+      outline: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .hotspot-tool-meta {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.82);
+      word-break: break-word;
+    }
+
+    .hotspot-tool-save {
+      background: #0d3320 !important;
+      border-color: #1a5c30 !important;
+      color: #8ef0b2 !important;
+      grid-column: 1 / -1;
+    }
+
+    .hotspot-tool-save:hover,
+    .hotspot-tool-save:focus-visible {
+      background: #164d2a !important;
+    }
+
+    /* Dashed highlight on the currently selected hotspot element. */
+    body.hotspot-tools-active .hotspot-selected {
+      outline: 2px dashed rgba(255, 220, 0, 0.9) !important;
+      outline-offset: 2px !important;
+      z-index: 121 !important;
+    }
+
+    body.hotspot-tools-active .hotspot-selected {
+      pointer-events: auto !important;
+      cursor: grab !important;
+      touch-action: none;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-dragging {
+      cursor: grabbing !important;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-n,
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-s {
+      cursor: ns-resize !important;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-e,
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-w {
+      cursor: ew-resize !important;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-ne,
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-sw {
+      cursor: nesw-resize !important;
+    }
+
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-nw,
+    body.hotspot-tools-active .hotspot-selected.hotspot-resize-se {
+      cursor: nwse-resize !important;
+    }
+
+    .hotspot-viewport-active {
+      background: #1a3a1a !important;
+      border-color: #4a8a4a !important;
+    }
+
+    .hotspot-viewport-probe-shell {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.04);
+      min-height: 92px;
+      max-height: 260px;
+      overflow: auto;
+      padding: 6px;
+    }
+
+    .hotspot-viewport-probe-empty {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .hotspot-viewport-probe-canvas {
+      position: relative;
+      display: none;
+      min-width: 100%;
+    }
+
+    .hotspot-viewport-probe-canvas.is-ready {
+      display: block;
+    }
+
+    .hotspot-viewport-probe-frame {
+      border: 0;
+      display: block;
+      transform-origin: top left;
+      background: #000;
+      pointer-events: none;
+    }
+
+    .layout-probe-body .hotspot-tool {
+      display: none !important;
+    }
+
+    .layout-probe-body .hotspot-viewport-probe-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 130;
+    }
+
+    .layout-probe-body .hotspot-viewport-probe-box {
+      position: absolute;
+      border: 1px solid rgba(255, 230, 120, 0.95);
+      background: rgba(255, 230, 120, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.58);
+    }
+
+    .layout-probe-body .hotspot-viewport-probe-label {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform: translateY(-100%);
+      padding: 1px 4px;
+      background: rgba(0, 0, 0, 0.86);
+      color: #fff;
+      font: 10px/1.2 'IBM Plex Mono', 'Courier New', monospace;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
   <div class="fade-overlay" id="fade-overlay"></div>
-  <div class="bedroom-antechamber-outer">
-    <img src="assets/images/bedroom_antechamber.v20260424.png" alt="Bedroom Antechamber" class="bedroom-antechamber-img" />
-    <button class="trapdoor-up-btn" id="trapdoor-up-btn" aria-label="Go back up through the trap door"></button>
-    <button class="bedroom-enter-btn" id="bedroom-enter-btn" aria-label="Enter the bedroom"></button>
-    <button class="lower-level-btn" id="lower-level-btn" aria-label="Descend to the first level"></button>
+  <div class="bedroom-antechamber-outer" id="bedroom-antechamber-outer">
+    <img src="assets/images/bedroom_antechamber.v20260424.png" alt="Bedroom Antechamber" class="bedroom-antechamber-img" id="bedroom-antechamber-img" />
+    <div class="monitor-glow" aria-hidden="true"></div>
+    <span class="monitor-cursor" id="monitor-cursor" aria-hidden="true">_</span>
+    <button class="antechamber-hotspot-btn trapdoor-up-btn" id="trapdoor-up-btn" aria-label="Go back up through the trap door"></button>
+    <button class="antechamber-hotspot-btn bedroom-enter-btn" id="bedroom-enter-btn" aria-label="Enter the bedroom"></button>
+    <button class="antechamber-hotspot-btn lower-level-btn" id="lower-level-btn" aria-label="Descend to the first level"></button>
+    <button class="antechamber-hotspot-btn rock-btn" id="rock-btn" aria-label="Toggle layout tools"></button>
+    <button class="antechamber-hotspot-btn colicofusion-btn" id="colicofusion-btn" aria-label="Open Colicofusion"></button>
+
+    <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move hotspot tool">
+      <h2 class="hotspot-tool-title">Move Tool</h2>
+      <select id="move-tool-target" data-hotspot-target>
+        <option value="__none__">no hotspot</option>
+        <option value="trapdoor-up-btn">trapdoor hotspot</option>
+        <option value="bedroom-enter-btn">bedroom door hotspot</option>
+        <option value="lower-level-btn">lower level hotspot</option>
+        <option value="rock-btn">rock hotspot</option>
+        <option value="colicofusion-btn">colicofusion hotspot</option>
+        <option value="monitor-cursor">monitor cursor</option>
+      </select>
+      <div class="hotspot-tool-grid">
+        <button type="button" data-move-prop="top" data-move-step="-2">up</button>
+        <button type="button" data-move-prop="top" data-move-step="2">down</button>
+        <button type="button" data-move-prop="left" data-move-step="-2">left</button>
+        <button type="button" data-move-prop="left" data-move-step="2">right</button>
+      </div>
+      <div class="hotspot-tool-grid">
+        <button type="button" data-hotspot-action="show">show</button>
+        <button type="button" data-hotspot-action="hide">hide</button>
+      </div>
+      <div class="hotspot-tool-grid">
+        <button type="button" class="hotspot-tool-save" id="hotspot-save-btn">💾 Save all</button>
+      </div>
+      <div class="hotspot-tool-meta" id="move-tool-meta" aria-live="polite">Select an element to view dimensions.</div>
+    </section>
+
+    <section class="hotspot-tool" id="hotspot-size-tool" aria-label="Resize hotspot tool">
+      <h2 class="hotspot-tool-title">Size Tool</h2>
+      <select id="size-tool-target" data-hotspot-target>
+        <option value="__none__">no hotspot</option>
+        <option value="trapdoor-up-btn">trapdoor hotspot</option>
+        <option value="bedroom-enter-btn">bedroom door hotspot</option>
+        <option value="lower-level-btn">lower level hotspot</option>
+        <option value="rock-btn">rock hotspot</option>
+        <option value="colicofusion-btn">colicofusion hotspot</option>
+        <option value="monitor-cursor">monitor cursor</option>
+      </select>
+      <div class="hotspot-tool-grid">
+        <button type="button" data-size-prop="width" data-size-step="2">w +</button>
+        <button type="button" data-size-prop="width" data-size-step="-2">w -</button>
+        <button type="button" data-size-prop="height" data-size-step="2">h +</button>
+        <button type="button" data-size-prop="height" data-size-step="-2">h -</button>
+      </div>
+      <div class="hotspot-tool-grid">
+        <button type="button" data-hotspot-action="show">show</button>
+        <button type="button" data-hotspot-action="hide">hide</button>
+      </div>
+      <div class="hotspot-tool-meta" id="size-tool-meta" aria-live="polite">Select an element to view dimensions.</div>
+    </section>
+
+    <section class="hotspot-tool" id="hotspot-viewport-tool" aria-label="Viewport simulator tool">
+      <h2 class="hotspot-tool-title">Viewport</h2>
+      <div class="hotspot-tool-grid-4">
+        <button type="button" data-viewport-width="375" title="iPhone SE / mini">375</button>
+        <button type="button" data-viewport-width="390" title="iPhone 14/15">390</button>
+        <button type="button" data-viewport-width="430" title="iPhone 14 Plus">430</button>
+        <button type="button" data-viewport-width="768" title="iPad portrait">768</button>
+        <button type="button" data-viewport-width="1024" title="iPad landscape">1024</button>
+        <button type="button" data-viewport-width="1280" title="Laptop">1280</button>
+        <button type="button" data-viewport-width="1440" title="Desktop">1440</button>
+        <button type="button" data-viewport-reset title="Reset">↺</button>
+      </div>
+      <div class="hotspot-tool-meta" id="viewport-tool-meta" aria-live="polite">No simulation active.</div>
+      <div class="hotspot-tool-meta" id="viewport-tool-live-meta" aria-live="polite">Select a viewport to load an accurate live preview.</div>
+      <div class="hotspot-viewport-probe-shell" id="hotspot-viewport-probe-shell">
+        <div class="hotspot-viewport-probe-empty" id="hotspot-viewport-probe-empty">No accurate preview loaded.</div>
+        <div class="hotspot-viewport-probe-canvas" id="hotspot-viewport-probe-canvas">
+          <iframe
+            class="hotspot-viewport-probe-frame"
+            id="hotspot-viewport-probe-frame"
+            loading="lazy"
+            referrerpolicy="same-origin"
+            title="Accurate loaded viewport preview"></iframe>
+        </div>
+      </div>
+    </section>
   </div>
   <script src="auth.js"></script>
   <script>
     let isNavigatingBackUp = false;
     let isNavigatingToBedroom = false;
     let isNavigatingToFirstLevel = false;
+    let isNavigatingToColicofusion = false;
     const fadeOverlay = document.getElementById('fade-overlay');
+    const antechamberOuter = document.getElementById('bedroom-antechamber-outer');
 
     // Fallback reveal in case full window load is delayed by media/network activity.
     const LOAD_REVEAL_FALLBACK_MS = 1200;
@@ -180,7 +587,7 @@
     }
 
     function navigateBackUp() {
-      if (isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToFirstLevel) {
+      if (isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToFirstLevel || isNavigatingToColicofusion) {
         return;
       }
       isNavigatingBackUp = true;
@@ -188,7 +595,7 @@
     }
 
     function navigateToBedroom() {
-      if (isNavigatingToBedroom || isNavigatingBackUp || isNavigatingToFirstLevel) {
+      if (isNavigatingToBedroom || isNavigatingBackUp || isNavigatingToFirstLevel || isNavigatingToColicofusion) {
         return;
       }
       isNavigatingToBedroom = true;
@@ -196,11 +603,19 @@
     }
 
     function navigateToFirstLevel() {
-      if (isNavigatingToFirstLevel || isNavigatingBackUp || isNavigatingToBedroom) {
+      if (isNavigatingToFirstLevel || isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToColicofusion) {
         return;
       }
       isNavigatingToFirstLevel = true;
       window.location.assign('level_one.html');
+    }
+
+    function navigateToColicofusion() {
+      if (isNavigatingToColicofusion || isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToFirstLevel) {
+        return;
+      }
+      isNavigatingToColicofusion = true;
+      fadeOutAndNavigate('colicofusion.html');
     }
 
     function playDoorClosingSound() {
@@ -289,6 +704,921 @@
     document.getElementById('trapdoor-up-btn').addEventListener('click', navigateBackUp);
     document.getElementById('bedroom-enter-btn').addEventListener('click', navigateToBedroom);
     document.getElementById('lower-level-btn').addEventListener('click', navigateToFirstLevel);
+    document.getElementById('colicofusion-btn').addEventListener('click', navigateToColicofusion);
+
+    // ── Hotspot admin tools ─────────────────────────────────────────────────────
+    const HOTSPOT_LAYOUT_PAGE = 'bedroom_antechamber';
+    const HOTSPOT_TOOL_NONE_TARGET = '__none__';
+    const HOTSPOT_TOOL_DEFAULT_TARGET = HOTSPOT_TOOL_NONE_TARGET;
+    const HOTSPOT_TOOL_DRAG_HELP_TEXT = 'drag to move • drag border to resize';
+    const HOTSPOT_VIEWPORT_WIDTHS = [375, 390, 430, 768, 1024, 1280, 1440];
+    const HOTSPOT_LAYOUT_PROBE_QUERY_PARAM = 'layoutProbe';
+    const HOTSPOT_PREVIEW_SHELL_PADDING_PX = 12;
+    const HOTSPOT_PROBE_REMEASURE_DELAYS_MS = [120, 400, 900];
+    const HOTSPOT_RESIZE_EDGE_MIN_PX = 6;
+    const HOTSPOT_RESIZE_EDGE_MAX_PX = 18;
+    const HOTSPOT_RESIZE_EDGE_SIZE_RATIO = 0.35;
+    const HOTSPOT_TOUCH_RESIZE_EDGE_MIN_PX = 10;
+    const HOTSPOT_TOUCH_RESIZE_EDGE_MAX_PX = 26;
+    const HOTSPOT_TOUCH_RESIZE_EDGE_SIZE_RATIO = 0.4;
+    const HOTSPOT_MOVE_CENTER_MIN_PX = 8;
+    const HOTSPOT_TOUCH_MOVE_CENTER_MIN_PX = 16;
+    const HOTSPOT_MIN_RESIZE_PX = 1;
+    const HOTSPOT_MOBILE_TRIPLE_TAP_WINDOW_MS = 700;
+    const HOTSPOT_OWNER_DISCORD_ALIASES = new Set(['badonka', 'muahdib']);
+    const HOTSPOT_STYLE_PROPERTY_NAMES = ['top', 'left', 'width', 'height'];
+    const LAYOUT_TOOLS_KEY = 'naimean-hotspot-tools';
+    const HOTSPOT_IDS = [
+      'trapdoor-up-btn',
+      'bedroom-enter-btn',
+      'lower-level-btn',
+      'rock-btn',
+      'colicofusion-btn',
+      'monitor-cursor',
+    ];
+
+    let activeSimulatedViewportWidth = null;
+    let activeHotspotViewportWidth = null;
+    let activeLayoutLoadRequestId = 0;
+    let activeViewportProbeMessage = null;
+    let activeViewportProbeToken = '';
+    let stopHotspotToolsDrag = null;
+    let clearHotspotResizeCursorClasses = null;
+
+    const isLayoutProbeMode = new URLSearchParams(window.location.search).get(HOTSPOT_LAYOUT_PROBE_QUERY_PARAM) === '1';
+    const defaultLayoutInlineStyles = new Map();
+
+    function parseNumericValue(value) {
+      const numericValue = Number.parseFloat(value);
+      return Number.isFinite(numericValue) ? numericValue : 0;
+    }
+
+    function isToolsActive() {
+      try { return localStorage.getItem(LAYOUT_TOOLS_KEY) === '1'; } catch (_) { return false; }
+    }
+
+    function setToolsActive(on) {
+      const nextToolsActive = Boolean(on);
+      try { nextToolsActive ? localStorage.setItem(LAYOUT_TOOLS_KEY, '1') : localStorage.removeItem(LAYOUT_TOOLS_KEY); } catch (_) {}
+      if (!nextToolsActive) {
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        if (typeof stopHotspotToolsDrag === 'function') {
+          stopHotspotToolsDrag();
+        }
+        if (selectedTarget && typeof clearHotspotResizeCursorClasses === 'function') {
+          clearHotspotResizeCursorClasses(selectedTarget);
+        }
+      }
+      document.body.classList.toggle('hotspot-tools-active', nextToolsActive);
+    }
+
+    function resolveNearestHotspotViewportWidth(width) {
+      const numericWidth = Number(width);
+      if (!Number.isFinite(numericWidth) || numericWidth <= 0) {
+        return HOTSPOT_VIEWPORT_WIDTHS[HOTSPOT_VIEWPORT_WIDTHS.length - 1];
+      }
+      return HOTSPOT_VIEWPORT_WIDTHS.reduce(function (closestWidth, candidateWidth) {
+        return Math.abs(candidateWidth - numericWidth) < Math.abs(closestWidth - numericWidth) ? candidateWidth : closestWidth;
+      }, HOTSPOT_VIEWPORT_WIDTHS[0]);
+    }
+
+    function isViewportSimulated() {
+      return Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0;
+    }
+
+    function resolveLiveHotspotViewportWidth() {
+      return resolveNearestHotspotViewportWidth(window.innerWidth || document.documentElement.clientWidth || 0);
+    }
+
+    function syncActiveHotspotViewportWidth() {
+      activeHotspotViewportWidth = isViewportSimulated() ? activeSimulatedViewportWidth : resolveLiveHotspotViewportWidth();
+      return activeHotspotViewportWidth;
+    }
+
+    function getCurrentHotspotViewportWidth() {
+      return (Number.isFinite(activeHotspotViewportWidth) && activeHotspotViewportWidth > 0)
+        ? activeHotspotViewportWidth
+        : resolveLiveHotspotViewportWidth();
+    }
+
+    function getCurrentHotspotLayoutPageKey() {
+      return `${HOTSPOT_LAYOUT_PAGE}--vp-${getCurrentHotspotViewportWidth()}`;
+    }
+
+    function captureDefaultLayoutInlineStyles() {
+      HOTSPOT_IDS.forEach(function (id) {
+        if (defaultLayoutInlineStyles.has(id)) { return; }
+        const target = document.getElementById(id);
+        if (!target) { return; }
+        defaultLayoutInlineStyles.set(id, {
+          top: target.style.top,
+          left: target.style.left,
+          width: target.style.width,
+          height: target.style.height,
+        });
+      });
+    }
+
+    function resolveHotspotCssPropertyName(property) {
+      return property.replace(/[A-Z]/g, function (match) { return '-' + match.toLowerCase(); });
+    }
+
+    function restoreDefaultLayoutInlineStyles() {
+      HOTSPOT_IDS.forEach(function (id) {
+        const target = document.getElementById(id);
+        const defaults = defaultLayoutInlineStyles.get(id);
+        if (!target || !defaults) { return; }
+        HOTSPOT_STYLE_PROPERTY_NAMES.forEach(function (property) {
+          const value = defaults[property];
+          if (value) {
+            target.style[property] = value;
+          } else {
+            target.style.removeProperty(resolveHotspotCssPropertyName(property));
+          }
+        });
+      });
+    }
+
+    function getHotspotTargetById(targetId) {
+      if (!targetId || targetId === HOTSPOT_TOOL_NONE_TARGET) { return null; }
+      return document.getElementById(targetId);
+    }
+
+    function getSelectedHotspotId() {
+      const firstSelector = document.querySelector('[data-hotspot-target]');
+      return firstSelector ? firstSelector.value : HOTSPOT_TOOL_DEFAULT_TARGET;
+    }
+
+    function syncHotspotTargetSelection(nextTargetId) {
+      document.querySelectorAll('[data-hotspot-target]').forEach(function (selector) {
+        selector.value = nextTargetId;
+      });
+    }
+
+    function applyHotspotElementVisibility(target, visible) {
+      if (!target) { return; }
+      if (visible) {
+        if (target.hidden) { target.hidden = false; }
+        target.style.visibility = 'visible';
+        target.style.pointerEvents = 'auto';
+      } else {
+        target.style.pointerEvents = 'none';
+        target.style.visibility = 'hidden';
+      }
+    }
+
+    function setHotspotVisibility(targetId, visible) {
+      applyHotspotElementVisibility(getHotspotTargetById(targetId), visible);
+    }
+
+    function resolveTargetLayoutMetrics(target) {
+      if (!target || !antechamberOuter) { return null; }
+      const computed = window.getComputedStyle(target);
+      const wrapperRect = antechamberOuter.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const leftValue = Number.parseFloat(computed.left);
+      const topValue = Number.parseFloat(computed.top);
+      const widthValue = Number.parseFloat(computed.width);
+      const heightValue = Number.parseFloat(computed.height);
+      return {
+        left: Number.isFinite(leftValue) ? leftValue : targetRect.left - wrapperRect.left,
+        top: Number.isFinite(topValue) ? topValue : targetRect.top - wrapperRect.top,
+        width: Number.isFinite(widthValue) && widthValue > 0 ? widthValue : targetRect.width,
+        height: Number.isFinite(heightValue) && heightValue > 0 ? heightValue : targetRect.height,
+        hasExplicitLeft: Number.isFinite(leftValue),
+        hasExplicitTop: Number.isFinite(topValue),
+      };
+    }
+
+    function normalizeTargetLayoutPosition(target) {
+      const metrics = resolveTargetLayoutMetrics(target);
+      if (!metrics) { return null; }
+      target.style.left = `${metrics.left}px`;
+      target.style.top = `${metrics.top}px`;
+      if (!metrics.hasExplicitLeft) { target.style.right = 'auto'; }
+      if (!metrics.hasExplicitTop) { target.style.bottom = 'auto'; }
+      return metrics;
+    }
+
+    function adjustHotspotDimension(targetId, property, deltaPx) {
+      const target = getHotspotTargetById(targetId);
+      if (!target) { return; }
+      const metrics = (property === 'left' || property === 'top')
+        ? normalizeTargetLayoutPosition(target)
+        : resolveTargetLayoutMetrics(target);
+      if (!metrics) { return; }
+      const currentPx = (property === 'left' || property === 'top')
+        ? metrics[property]
+        : parseNumericValue(window.getComputedStyle(target)[property]);
+      const nextPx = (property === 'width' || property === 'height')
+        ? Math.max(1, currentPx + deltaPx)
+        : currentPx + deltaPx;
+      target.style[property] = `${nextPx}px`;
+    }
+
+    function renderHotspotToolMeta() {
+      const target = getHotspotTargetById(getSelectedHotspotId());
+      const moveMeta = document.getElementById('move-tool-meta');
+      const sizeMeta = document.getElementById('size-tool-meta');
+      if (!moveMeta || !sizeMeta) { return; }
+      if (!target) {
+        moveMeta.textContent = 'No element selected.';
+        sizeMeta.textContent = 'No element selected.';
+        return;
+      }
+      const metrics = resolveTargetLayoutMetrics(target);
+      if (!metrics) {
+        moveMeta.textContent = 'No element selected.';
+        sizeMeta.textContent = 'No element selected.';
+        return;
+      }
+      const metaText = `left ${Math.round(metrics.left)} | top ${Math.round(metrics.top)} | w ${Math.round(metrics.width)} | h ${Math.round(metrics.height)} | ${HOTSPOT_TOOL_DRAG_HELP_TEXT}`;
+      moveMeta.textContent = metaText;
+      sizeMeta.textContent = metaText;
+    }
+
+    function renderViewportToolMeta() {
+      const viewportMeta = document.getElementById('viewport-tool-meta');
+      if (!viewportMeta) { return; }
+      const activeWidth = getCurrentHotspotViewportWidth();
+      const liveWindowWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+      if (isViewportSimulated()) {
+        viewportMeta.textContent = `Simulating ${activeWidth}px viewport slot. Saves use key ${getCurrentHotspotLayoutPageKey()} while live window is ${liveWindowWidth}px.`;
+        return;
+      }
+      viewportMeta.textContent = `Live window ${liveWindowWidth}px. Defaulting to ${activeWidth}px viewport slot using key ${getCurrentHotspotLayoutPageKey()}.`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function isFiniteProbeNumber(value) {
+      return typeof value === 'number' && Number.isFinite(value);
+    }
+
+    function isValidViewportProbePayload(payload) {
+      if (!payload || payload.type !== 'naimean-layout-probe' || payload.page !== HOTSPOT_LAYOUT_PAGE) { return false; }
+      if (!isFiniteProbeNumber(payload.viewportWidth) || !isFiniteProbeNumber(payload.documentHeight)) { return false; }
+      if (!payload.measurements || typeof payload.measurements !== 'object' || Array.isArray(payload.measurements)) { return false; }
+      return Object.keys(payload.measurements).every(function (id) {
+        const m = payload.measurements[id];
+        return m && isFiniteProbeNumber(m.left) && isFiniteProbeNumber(m.top) && isFiniteProbeNumber(m.width) && isFiniteProbeNumber(m.height);
+      });
+    }
+
+    function createViewportProbeToken() {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+      }
+      return `probe-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+    }
+
+    function renderViewportProbeMeta() {
+      const viewportLiveMeta = document.getElementById('viewport-tool-live-meta');
+      if (!viewportLiveMeta) { return; }
+      const probeViewportWidth = getCurrentHotspotViewportWidth();
+      if (!activeViewportProbeMessage || activeViewportProbeMessage.viewportWidth !== probeViewportWidth) {
+        viewportLiveMeta.textContent = `Loading ${isViewportSimulated() ? 'simulated' : 'live-slot'} ${probeViewportWidth}px viewport metrics…`;
+        return;
+      }
+      const payload = activeViewportProbeMessage;
+      const lv = payload.layoutViewport || {};
+      const vv = payload.visualViewport || {};
+      const sa = payload.safeArea || {};
+      viewportLiveMeta.textContent = [
+        `real ${lv.width || '?'}×${lv.height || '?'} layout`,
+        `vv ${vv.width || '?'}×${vv.height || '?'}`,
+        `dpr ${payload.devicePixelRatio || '?'}`,
+        `safe ${sa.top || 0}/${sa.right || 0}/${sa.bottom || 0}/${sa.left || 0}`,
+      ].join(' | ');
+    }
+
+    function updateViewportProbePreview() {
+      const previewShell = document.getElementById('hotspot-viewport-probe-shell');
+      const previewEmpty = document.getElementById('hotspot-viewport-probe-empty');
+      const previewCanvas = document.getElementById('hotspot-viewport-probe-canvas');
+      const previewFrame = document.getElementById('hotspot-viewport-probe-frame');
+      if (!previewShell || !previewEmpty || !previewCanvas || !previewFrame) { return; }
+      const probeViewportWidth = getCurrentHotspotViewportWidth();
+      if (!Number.isFinite(probeViewportWidth) || probeViewportWidth <= 0) {
+        activeViewportProbeMessage = null;
+        activeViewportProbeToken = '';
+        previewCanvas.classList.remove('is-ready');
+        previewFrame.removeAttribute('src');
+        previewEmpty.hidden = false;
+        previewEmpty.textContent = 'No accurate preview loaded.';
+        renderViewportProbeMeta();
+        return;
+      }
+      const probeToken = createViewportProbeToken();
+      const probeUrl = new URL(window.location.href);
+      probeUrl.searchParams.set(HOTSPOT_LAYOUT_PROBE_QUERY_PARAM, '1');
+      probeUrl.searchParams.set('viewportProbeToken', probeToken);
+      probeUrl.hash = '';
+      activeViewportProbeMessage = null;
+      activeViewportProbeToken = probeToken;
+      previewCanvas.classList.remove('is-ready');
+      previewFrame.style.width = `${probeViewportWidth}px`;
+      previewFrame.style.height = '640px';
+      previewFrame.setAttribute('src', probeUrl.toString());
+      previewEmpty.hidden = false;
+      previewEmpty.textContent = `Loading accurate ${probeViewportWidth}px preview…`;
+      renderViewportProbeMeta();
+    }
+
+    function syncViewportProbePreviewScale() {
+      const previewShell = document.getElementById('hotspot-viewport-probe-shell');
+      const previewEmpty = document.getElementById('hotspot-viewport-probe-empty');
+      const previewCanvas = document.getElementById('hotspot-viewport-probe-canvas');
+      const previewFrame = document.getElementById('hotspot-viewport-probe-frame');
+      if (!previewShell || !previewEmpty || !previewCanvas || !previewFrame || !activeViewportProbeMessage) { return; }
+      const viewportWidth = activeViewportProbeMessage.viewportWidth;
+      const documentHeight = activeViewportProbeMessage.documentHeight;
+      if (!Number.isFinite(viewportWidth) || viewportWidth <= 0 || !Number.isFinite(documentHeight) || documentHeight <= 0) { return; }
+      const availableWidth = Math.max(1, previewShell.clientWidth - HOTSPOT_PREVIEW_SHELL_PADDING_PX);
+      const scale = Math.min(1, availableWidth / viewportWidth);
+      previewCanvas.style.width = `${Math.max(1, viewportWidth * scale)}px`;
+      previewCanvas.style.height = `${Math.max(1, documentHeight * scale)}px`;
+      previewFrame.style.width = `${viewportWidth}px`;
+      previewFrame.style.height = `${documentHeight}px`;
+      previewFrame.style.transform = `scale(${scale})`;
+      previewCanvas.classList.add('is-ready');
+      previewEmpty.hidden = true;
+    }
+
+    function setupViewportProbeMessaging() {
+      if (isLayoutProbeMode) { return; }
+      window.addEventListener('message', function (event) {
+        if (event.origin !== window.location.origin) { return; }
+        const payload = event.data;
+        if (!isValidViewportProbePayload(payload)) { return; }
+        if (payload.token !== activeViewportProbeToken) { return; }
+        activeViewportProbeMessage = payload;
+        syncViewportProbePreviewScale();
+        renderViewportProbeMeta();
+      });
+      window.addEventListener('resize', function () { syncViewportProbePreviewScale(); });
+    }
+
+    function createSafeAreaProbe() {
+      const probe = document.createElement('div');
+      probe.setAttribute('aria-hidden', 'true');
+      probe.style.cssText = [
+        'position:fixed', 'left:0', 'top:0', 'width:0', 'height:0',
+        'overflow:hidden', 'visibility:hidden', 'pointer-events:none',
+        'padding-top:env(safe-area-inset-top,0px)',
+        'padding-right:env(safe-area-inset-right,0px)',
+        'padding-bottom:env(safe-area-inset-bottom,0px)',
+        'padding-left:env(safe-area-inset-left,0px)',
+      ].join(';');
+      document.body.appendChild(probe);
+      return probe;
+    }
+
+    function setupLayoutProbeMode() {
+      if (!isLayoutProbeMode || !antechamberOuter) { return; }
+      document.body.classList.add('layout-probe-body');
+      const safeAreaProbe = createSafeAreaProbe();
+      const overlay = document.createElement('div');
+      overlay.className = 'hotspot-viewport-probe-overlay';
+      antechamberOuter.appendChild(overlay);
+      let measureFrame = 0;
+
+      function isTrustedParentOrigin() {
+        try { return new URL(document.referrer).origin === window.location.origin; } catch (_) { return false; }
+      }
+
+      function getSafeAreaInsets() {
+        const computed = window.getComputedStyle(safeAreaProbe);
+        return {
+          top: parseNumericValue(computed.paddingTop),
+          right: parseNumericValue(computed.paddingRight),
+          bottom: parseNumericValue(computed.paddingBottom),
+          left: parseNumericValue(computed.paddingLeft),
+        };
+      }
+
+      function measureHotspots() {
+        measureFrame = 0;
+        const wrapperRect = antechamberOuter.getBoundingClientRect();
+        const measurements = {};
+        let overlayHtml = '';
+        HOTSPOT_IDS.forEach(function (id) {
+          const target = document.getElementById(id);
+          if (!target) { return; }
+          const rect = target.getBoundingClientRect();
+          if (!rect.width && !rect.height) { return; }
+          const measurement = {
+            left: rect.left - wrapperRect.left,
+            top: rect.top - wrapperRect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+          if (!isFiniteProbeNumber(measurement.left) || !isFiniteProbeNumber(measurement.top) || !isFiniteProbeNumber(measurement.width) || !isFiniteProbeNumber(measurement.height)) { return; }
+          measurements[id] = measurement;
+          overlayHtml += `<div class="hotspot-viewport-probe-box" data-hotspot-id="${escapeHtml(id)}" style="left:${measurement.left}px;top:${measurement.top}px;width:${measurement.width}px;height:${measurement.height}px"><span class="hotspot-viewport-probe-label">${escapeHtml(id)}</span></div>`;
+        });
+        overlay.innerHTML = overlayHtml;
+        const visualViewport = window.visualViewport;
+        const payload = {
+          type: 'naimean-layout-probe',
+          page: HOTSPOT_LAYOUT_PAGE,
+          token: new URLSearchParams(window.location.search).get('viewportProbeToken') || '',
+          viewportWidth: window.innerWidth || document.documentElement.clientWidth || 0,
+          layoutViewport: {
+            width: window.innerWidth || document.documentElement.clientWidth || 0,
+            height: window.innerHeight || document.documentElement.clientHeight || 0,
+          },
+          visualViewport: visualViewport ? {
+            width: Number(visualViewport.width.toFixed(2)),
+            height: Number(visualViewport.height.toFixed(2)),
+            offsetLeft: Number(visualViewport.offsetLeft.toFixed(2)),
+            offsetTop: Number(visualViewport.offsetTop.toFixed(2)),
+          } : null,
+          devicePixelRatio: window.devicePixelRatio || 1,
+          safeArea: getSafeAreaInsets(),
+          documentHeight: Math.max(
+            document.documentElement.scrollHeight,
+            document.documentElement.offsetHeight,
+            document.body ? document.body.scrollHeight : 0,
+            antechamberOuter.offsetHeight
+          ),
+          measurements: measurements,
+        };
+        if (window.parent && window.parent !== window && isTrustedParentOrigin()) {
+          window.parent.postMessage(payload, window.location.origin);
+        }
+      }
+
+      function scheduleMeasurement() {
+        if (measureFrame) { return; }
+        measureFrame = window.requestAnimationFrame(measureHotspots);
+      }
+
+      scheduleMeasurement();
+      window.addEventListener('load', scheduleMeasurement);
+      window.addEventListener('resize', scheduleMeasurement);
+      window.addEventListener('orientationchange', scheduleMeasurement);
+      window.addEventListener('scroll', scheduleMeasurement, { passive: true });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleMeasurement, { passive: true });
+        window.visualViewport.addEventListener('scroll', scheduleMeasurement, { passive: true });
+      }
+      HOTSPOT_PROBE_REMEASURE_DELAYS_MS.forEach(function (delayMs) {
+        window.setTimeout(scheduleMeasurement, delayMs);
+      });
+    }
+
+    function setupHotspotTools() {
+      const moveTool = document.getElementById('hotspot-move-tool');
+      const sizeTool = document.getElementById('hotspot-size-tool');
+      if (!moveTool || !sizeTool) { return; }
+
+      captureDefaultLayoutInlineStyles();
+      setToolsActive(false);
+
+      // Toggle with Ctrl+Shift+H or window.NaimeanLayout.toggle().
+      document.addEventListener('keydown', function (e) {
+        if (e.ctrlKey && e.shiftKey && !e.altKey && e.key === 'H') {
+          e.preventDefault();
+          setToolsActive(!isToolsActive());
+        }
+      });
+
+      // Rock button toggles layout tools.
+      const rockButton = document.getElementById('rock-btn');
+      if (rockButton) {
+        rockButton.addEventListener('click', function () {
+          setToolsActive(!isToolsActive());
+        });
+      }
+
+      // Mobile: owner triple-tap anywhere in the scene toggles tools.
+      let mobileTripleTapCount = 0;
+      let mobileTripleTapLastTimestamp = 0;
+      function hasTouchCapability() {
+        return (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || Number(navigator.maxTouchPoints) > 0;
+      }
+      if (hasTouchCapability()) {
+        document.addEventListener('touchend', function (event) {
+          if (isToolsActive()) { return; }
+          const target = event.target instanceof Element ? event.target : null;
+          if (!target || !antechamberOuter || !antechamberOuter.contains(target) || target.closest('button, .hotspot-tool')) {
+            mobileTripleTapCount = 0;
+            return;
+          }
+          const now = Date.now();
+          if (now - mobileTripleTapLastTimestamp > HOTSPOT_MOBILE_TRIPLE_TAP_WINDOW_MS) { mobileTripleTapCount = 0; }
+          mobileTripleTapLastTimestamp = now;
+          mobileTripleTapCount += 1;
+          if (mobileTripleTapCount < 3) { return; }
+          mobileTripleTapCount = 0;
+          getLatestAuthSession().then(function (session) {
+            if (isOwnerDiscordSession(session)) { setToolsActive(true); }
+          }).catch(function (err) {
+            if (window.NaimeanDiag && typeof window.NaimeanDiag.log === 'function') {
+              window.NaimeanDiag.log('owner triple-tap tools auth check failed: ' + ((err && err.message) || 'unknown'));
+            }
+          });
+        }, { passive: true });
+      }
+
+      function isOwnerDiscordSession(session) {
+        if (!session || !session.authenticated || !session.user || session.user.provider !== 'discord') { return false; }
+        const username = typeof session.user.username === 'string' ? session.user.username.trim().toLowerCase() : '';
+        const displayName = typeof session.user.displayName === 'string' ? session.user.displayName.trim().toLowerCase() : '';
+        return HOTSPOT_OWNER_DISCORD_ALIASES.has(username) || HOTSPOT_OWNER_DISCORD_ALIASES.has(displayName);
+      }
+
+      // ── Selected-element highlight ──────────────────────────────────────────
+      let lastHighlightedId = null;
+      function updateSelectionHighlight(nextId) {
+        if (lastHighlightedId && lastHighlightedId !== nextId) {
+          const prev = document.getElementById(lastHighlightedId);
+          if (prev) {
+            prev.classList.remove('hotspot-selected', 'hotspot-dragging');
+            clearResizeCursorClasses(prev);
+          }
+        }
+        if (nextId) {
+          const next = document.getElementById(nextId);
+          if (next) { next.classList.add('hotspot-selected'); }
+        }
+        lastHighlightedId = nextId;
+      }
+
+      let activeDrag = null;
+
+      function resolveResizeEdge(edgeStart, edgeEnd, size, dragConfig) {
+        const calcEdge = Math.max(dragConfig.edgeMinPx, Math.min(dragConfig.edgeMaxPx, size * dragConfig.edgeSizeRatio));
+        const maxForCenter = Math.max(0, (size - dragConfig.centerMoveMinPx) / 2);
+        const edge = Math.min(calcEdge, maxForCenter);
+        if (edgeStart > edge && edgeEnd > edge) { return ''; }
+        return edgeStart <= edgeEnd ? 'start' : 'end';
+      }
+
+      function getResizeDragConfig(pointerType) {
+        const isTouch = pointerType === 'touch';
+        return {
+          edgeMinPx: isTouch ? HOTSPOT_TOUCH_RESIZE_EDGE_MIN_PX : HOTSPOT_RESIZE_EDGE_MIN_PX,
+          edgeMaxPx: isTouch ? HOTSPOT_TOUCH_RESIZE_EDGE_MAX_PX : HOTSPOT_RESIZE_EDGE_MAX_PX,
+          edgeSizeRatio: isTouch ? HOTSPOT_TOUCH_RESIZE_EDGE_SIZE_RATIO : HOTSPOT_RESIZE_EDGE_SIZE_RATIO,
+          centerMoveMinPx: isTouch ? HOTSPOT_TOUCH_MOVE_CENTER_MIN_PX : HOTSPOT_MOVE_CENTER_MIN_PX,
+        };
+      }
+
+      function getResizeEdges(target, clientX, clientY, pointerType) {
+        if (!target) { return { left: false, right: false, top: false, bottom: false }; }
+        const rect = target.getBoundingClientRect();
+        const cfg = getResizeDragConfig(pointerType);
+        const hEdge = resolveResizeEdge(clientX - rect.left, rect.right - clientX, rect.width, cfg);
+        const vEdge = resolveResizeEdge(clientY - rect.top, rect.bottom - clientY, rect.height, cfg);
+        return { left: hEdge === 'start', right: hEdge === 'end', top: vEdge === 'start', bottom: vEdge === 'end' };
+      }
+
+      function clearResizeCursorClasses(target) {
+        if (!target) { return; }
+        target.classList.remove('hotspot-resize-n', 'hotspot-resize-s', 'hotspot-resize-e', 'hotspot-resize-w', 'hotspot-resize-ne', 'hotspot-resize-nw', 'hotspot-resize-se', 'hotspot-resize-sw');
+      }
+
+      function applyResizeCursorClass(target, edges) {
+        if (!target) { return; }
+        clearResizeCursorClasses(target);
+        if (!edges) { return; }
+        const v = edges.top ? 'n' : (edges.bottom ? 's' : '');
+        const h = edges.left ? 'w' : (edges.right ? 'e' : '');
+        const cursorClass = v && h ? `hotspot-resize-${v}${h}` : v ? `hotspot-resize-${v}` : h ? `hotspot-resize-${h}` : '';
+        if (cursorClass) { target.classList.add(cursorClass); }
+      }
+
+      function stopSelectedTargetDrag() {
+        if (!activeDrag) { return; }
+        if (activeDrag.target && typeof activeDrag.target.releasePointerCapture === 'function') {
+          try { activeDrag.target.releasePointerCapture(activeDrag.pointerId); } catch (_) {}
+          activeDrag.target.classList.remove('hotspot-dragging');
+        }
+        applyResizeCursorClass(activeDrag.target, null);
+        activeDrag = null;
+        renderHotspotToolMeta();
+      }
+
+      stopHotspotToolsDrag = stopSelectedTargetDrag;
+      clearHotspotResizeCursorClasses = clearResizeCursorClasses;
+
+      syncActiveHotspotViewportWidth();
+      syncHotspotTargetSelection(HOTSPOT_TOOL_DEFAULT_TARGET);
+      updateSelectionHighlight(HOTSPOT_TOOL_DEFAULT_TARGET);
+      renderHotspotToolMeta();
+      renderViewportToolMeta();
+
+      document.querySelectorAll('[data-hotspot-target]').forEach(function (selector) {
+        selector.addEventListener('change', function () {
+          stopSelectedTargetDrag();
+          syncHotspotTargetSelection(selector.value);
+          updateSelectionHighlight(selector.value);
+          renderHotspotToolMeta();
+          renderViewportProbeMeta();
+        });
+      });
+
+      document.addEventListener('pointerdown', function (event) {
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        if (!document.body.classList.contains('hotspot-tools-active') || !event.isPrimary) { return; }
+        if (event.pointerType === 'mouse' && event.button !== 0) { return; }
+        if (event.target.closest('.hotspot-tool')) { return; }
+        if (!selectedTarget || !selectedTarget.contains(event.target)) { return; }
+
+        const metrics = normalizeTargetLayoutPosition(selectedTarget);
+        if (!metrics) { return; }
+        const resizeEdges = getResizeEdges(selectedTarget, event.clientX, event.clientY, event.pointerType);
+        const isResizing = resizeEdges.left || resizeEdges.right || resizeEdges.top || resizeEdges.bottom;
+        activeDrag = {
+          mode: isResizing ? 'resize' : 'move',
+          edges: resizeEdges,
+          pointerId: event.pointerId,
+          startClientX: event.clientX,
+          startClientY: event.clientY,
+          startLeft: metrics.left,
+          startTop: metrics.top,
+          startWidth: metrics.width,
+          startHeight: metrics.height,
+          target: selectedTarget,
+        };
+        selectedTarget.classList.add('hotspot-dragging');
+        applyResizeCursorClass(selectedTarget, isResizing ? resizeEdges : null);
+        if (typeof selectedTarget.setPointerCapture === 'function') {
+          try { selectedTarget.setPointerCapture(event.pointerId); } catch (_) {}
+        }
+        event.preventDefault();
+      }, true);
+
+      document.addEventListener('pointermove', function (event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) { return; }
+        const deltaX = event.clientX - activeDrag.startClientX;
+        const deltaY = event.clientY - activeDrag.startClientY;
+        if (activeDrag.mode === 'resize') {
+          let nextLeft = activeDrag.startLeft;
+          let nextTop = activeDrag.startTop;
+          let nextWidth = activeDrag.startWidth;
+          let nextHeight = activeDrag.startHeight;
+          if (activeDrag.edges.right) { nextWidth = Math.max(HOTSPOT_MIN_RESIZE_PX, activeDrag.startWidth + deltaX); }
+          else if (activeDrag.edges.left) { nextWidth = Math.max(HOTSPOT_MIN_RESIZE_PX, activeDrag.startWidth - deltaX); nextLeft = activeDrag.startLeft + (activeDrag.startWidth - nextWidth); }
+          if (activeDrag.edges.bottom) { nextHeight = Math.max(HOTSPOT_MIN_RESIZE_PX, activeDrag.startHeight + deltaY); }
+          else if (activeDrag.edges.top) { nextHeight = Math.max(HOTSPOT_MIN_RESIZE_PX, activeDrag.startHeight - deltaY); nextTop = activeDrag.startTop + (activeDrag.startHeight - nextHeight); }
+          activeDrag.target.style.left = `${nextLeft}px`;
+          activeDrag.target.style.top = `${nextTop}px`;
+          activeDrag.target.style.width = `${nextWidth}px`;
+          activeDrag.target.style.height = `${nextHeight}px`;
+        } else {
+          activeDrag.target.style.left = `${activeDrag.startLeft + deltaX}px`;
+          activeDrag.target.style.top = `${activeDrag.startTop + deltaY}px`;
+        }
+        renderHotspotToolMeta();
+        event.preventDefault();
+      }, true);
+
+      document.addEventListener('pointerup', function (event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) { return; }
+        event.preventDefault();
+        stopSelectedTargetDrag();
+      }, true);
+
+      document.addEventListener('pointercancel', function (event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) { return; }
+        stopSelectedTargetDrag();
+      }, true);
+
+      document.addEventListener('pointermove', function (event) {
+        if (activeDrag || !document.body.classList.contains('hotspot-tools-active')) { return; }
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        if (!selectedTarget) { return; }
+        if (!selectedTarget.contains(event.target)) { applyResizeCursorClass(selectedTarget, null); return; }
+        applyResizeCursorClass(selectedTarget, getResizeEdges(selectedTarget, event.clientX, event.clientY, event.pointerType));
+      }, true);
+
+      document.addEventListener('click', function (event) {
+        if (!document.body.classList.contains('hotspot-tools-active')) { return; }
+        const selectedTarget = getHotspotTargetById(getSelectedHotspotId());
+        if (!selectedTarget || !selectedTarget.contains(event.target)) { return; }
+        event.preventDefault();
+        event.stopPropagation();
+      }, true);
+
+      moveTool.querySelectorAll('[data-move-prop]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          adjustHotspotDimension(getSelectedHotspotId(), button.getAttribute('data-move-prop'), parseNumericValue(button.getAttribute('data-move-step')));
+          renderHotspotToolMeta();
+        });
+      });
+
+      sizeTool.querySelectorAll('[data-size-prop]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          adjustHotspotDimension(getSelectedHotspotId(), button.getAttribute('data-size-prop'), parseNumericValue(button.getAttribute('data-size-step')));
+          renderHotspotToolMeta();
+        });
+      });
+
+      document.querySelectorAll('[data-hotspot-action]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          setHotspotVisibility(getSelectedHotspotId(), button.getAttribute('data-hotspot-action') === 'show');
+          renderHotspotToolMeta();
+        });
+      });
+
+      // ── Viewport simulator ──────────────────────────────────────────────────
+      const viewportTool = document.getElementById('hotspot-viewport-tool');
+      if (viewportTool) {
+        let activeViewportBtn = null;
+        function setActiveViewportButton(viewportWidth) {
+          if (activeViewportBtn) { activeViewportBtn.classList.remove('hotspot-viewport-active'); }
+          activeViewportBtn = viewportTool.querySelector(`[data-viewport-width="${viewportWidth}"]`);
+          if (activeViewportBtn) { activeViewportBtn.classList.add('hotspot-viewport-active'); }
+        }
+        viewportTool.querySelectorAll('[data-viewport-width]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const width = btn.getAttribute('data-viewport-width');
+            activeSimulatedViewportWidth = parseNumericValue(width);
+            syncActiveHotspotViewportWidth();
+            document.documentElement.style.setProperty('--simulated-viewport-width', width + 'px');
+            document.body.classList.add('viewport-simulated');
+            setActiveViewportButton(activeSimulatedViewportWidth);
+            renderViewportToolMeta();
+            updateViewportProbePreview();
+            loadLayoutOverrides();
+          });
+        });
+        const resetBtn = viewportTool.querySelector('[data-viewport-reset]');
+        if (resetBtn) {
+          resetBtn.addEventListener('click', function () {
+            activeSimulatedViewportWidth = null;
+            syncActiveHotspotViewportWidth();
+            document.documentElement.style.removeProperty('--simulated-viewport-width');
+            document.body.classList.remove('viewport-simulated');
+            setActiveViewportButton(getCurrentHotspotViewportWidth());
+            renderViewportToolMeta();
+            updateViewportProbePreview();
+            loadLayoutOverrides();
+          });
+        }
+        setActiveViewportButton(getCurrentHotspotViewportWidth());
+        updateViewportProbePreview();
+      }
+
+      // ── Save button ──────────────────────────────────────────────────────────
+      const saveBtn = document.getElementById('hotspot-save-btn');
+      const moveMeta = document.getElementById('move-tool-meta');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', function () {
+          if (!antechamberOuter) { return; }
+          const ww = antechamberOuter.offsetWidth;
+          const wh = antechamberOuter.offsetHeight;
+          if (!ww || !wh) { return; }
+          const overrides = {};
+          HOTSPOT_IDS.forEach(function (id) {
+            const el = document.getElementById(id);
+            if (!el) { return; }
+            const metrics = resolveTargetLayoutMetrics(el);
+            if (!metrics) { return; }
+            overrides[id] = {
+              top: metrics.top / wh * 100,
+              left: metrics.left / ww * 100,
+              width: metrics.width / ww * 100,
+              height: metrics.height / wh * 100,
+            };
+          });
+          saveBtn.disabled = true;
+          saveBtn.textContent = '⏳ Saving…';
+          fetch('/layout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ page: getCurrentHotspotLayoutPageKey(), overrides: overrides }),
+          }).then(function (res) {
+            return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+          }).then(function (result) {
+            saveBtn.disabled = false;
+            if (result.ok) {
+              saveBtn.textContent = '✓ Saved!';
+              if (moveMeta) { moveMeta.textContent = 'Saved ' + (result.data.saved || 0) + ' elements for ' + getCurrentHotspotViewportWidth() + 'px viewport.'; }
+            } else if (result.data && result.data.error === 'Unauthorized') {
+              saveBtn.textContent = '💾 Save all';
+              if (moveMeta) { moveMeta.textContent = 'Login required — use C:\\Naimean\\login first.'; }
+            } else {
+              saveBtn.textContent = '✗ Error';
+              if (moveMeta) { moveMeta.textContent = 'Save failed: ' + ((result.data && result.data.error) || 'unknown error'); }
+            }
+            setTimeout(function () { saveBtn.textContent = '💾 Save all'; }, 3000);
+          }).catch(function () {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '✗ Error';
+            setTimeout(function () { saveBtn.textContent = '💾 Save all'; }, 3000);
+          });
+        });
+      }
+
+      window.addEventListener('resize', function () {
+        if (isViewportSimulated()) {
+          renderViewportToolMeta();
+          renderViewportProbeMeta();
+          syncViewportProbePreviewScale();
+          return;
+        }
+        const previousViewportWidth = getCurrentHotspotViewportWidth();
+        const nextViewportWidth = syncActiveHotspotViewportWidth();
+        if (viewportTool) {
+          viewportTool.querySelectorAll('[data-viewport-width]').forEach(function (button) {
+            button.classList.toggle('hotspot-viewport-active', parseNumericValue(button.dataset.viewportWidth) === nextViewportWidth);
+          });
+        }
+        renderViewportToolMeta();
+        if (previousViewportWidth !== nextViewportWidth) {
+          updateViewportProbePreview();
+          loadLayoutOverrides();
+          return;
+        }
+        renderViewportProbeMeta();
+        syncViewportProbePreviewScale();
+      });
+    }
+
+    // ── Load saved layout overrides ───────────────────────────────────────────
+    function applyLayoutOverrides(overrides) {
+      if (!overrides || typeof overrides !== 'object') { return; }
+      Object.keys(overrides).forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el) { return; }
+        const dims = overrides[id];
+        if (typeof dims.top === 'number' && Number.isFinite(dims.top)) { el.style.top = dims.top + '%'; }
+        if (typeof dims.left === 'number' && Number.isFinite(dims.left)) { el.style.left = dims.left + '%'; }
+        if (typeof dims.width === 'number' && Number.isFinite(dims.width)) { el.style.width = dims.width + '%'; }
+        if (typeof dims.height === 'number' && Number.isFinite(dims.height)) { el.style.height = dims.height + '%'; }
+      });
+    }
+
+    function loadLayoutOverrides() {
+      const requestId = ++activeLayoutLoadRequestId;
+      const primaryPageKey = getCurrentHotspotLayoutPageKey();
+      const shouldSkipLegacyFallback = isLayoutProbeMode
+        || (Number.isFinite(activeSimulatedViewportWidth) && activeSimulatedViewportWidth > 0);
+      const fallbackPageKeys = shouldSkipLegacyFallback
+        ? [primaryPageKey]
+        : [primaryPageKey, HOTSPOT_LAYOUT_PAGE];
+
+      fallbackPageKeys.reduce(function (promise, pageKey) {
+        return promise.then(function (match) {
+          if (match) { return match; }
+          return fetch('/layout?page=' + encodeURIComponent(pageKey), { credentials: 'same-origin' })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .then(function (data) {
+              const overrides = data && data.overrides ? data.overrides : null;
+              if (overrides && Object.keys(overrides).length > 0) { return { pageKey: pageKey, overrides: overrides }; }
+              return null;
+            })
+            .catch(function () { return null; });
+        });
+      }, Promise.resolve(null))
+        .then(function (match) {
+          if (requestId !== activeLayoutLoadRequestId) { return; }
+          restoreDefaultLayoutInlineStyles();
+          if (match) { applyLayoutOverrides(match.overrides); }
+          renderHotspotToolMeta();
+          renderViewportToolMeta();
+          renderViewportProbeMeta();
+        })
+        .catch(function () {});
+    }
+
+    async function getLatestAuthSession() {
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.refreshSession === 'function') {
+        return window.NaimeanAuth.refreshSession();
+      }
+      try {
+        const response = await fetch('/auth/session', { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } });
+        if (!response.ok) { return { authenticated: false, user: null }; }
+        const payload = await response.json();
+        return { authenticated: Boolean(payload && payload.authenticated), user: payload && payload.user ? payload.user : null };
+      } catch (_) {
+        return { authenticated: false, user: null };
+      }
+    }
+
+    // ── Public API ────────────────────────────────────────────────────────────
+    window.NaimeanLayout = {
+      toggle: function () {
+        setToolsActive(!document.body.classList.contains('hotspot-tools-active'));
+      },
+    };
+
+    setupViewportProbeMessaging();
+    setupLayoutProbeMode();
+    setupHotspotTools();
+    loadLayoutOverrides();
   </script>
 </body>
 </html>
