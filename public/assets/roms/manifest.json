@@ -1,9 +1,9 @@
 {
   "nes": [
-    "Legend of Zelda, The (U) (PRG 1).nes",
-    "Super Mario Bros 2 (U) (PRG 1).nes",
-    "Super Mario Bros 3 (U) (PRG 1) [a3].nes",
-    "Super Mario Bros - Duck Hunt - Track Meet (U).nes"
+    { "name": "The Legend of Zelda", "file": "Legend of Zelda, The (U) (PRG 1).nes" },
+    { "name": "Super Mario Bros. 2", "file": "Super Mario Bros 2 (U) (PRG 1).nes" },
+    { "name": "Super Mario Bros. 3", "file": "Super Mario Bros 3 (U) (PRG 1) [a3].nes" },
+    { "name": "Super Mario Bros. / Duck Hunt / Track Meet", "file": "Super Mario Bros - Duck Hunt - Track Meet (U).nes" }
   ],
   "snes": [],
   "gb": [],
