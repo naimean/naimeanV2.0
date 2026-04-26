@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMULATOR</title>
+  <link rel="icon" type="image/jpeg" href="/assets/images/commodore64.v20260424.jpg">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: rgba(142, 240, 178, 0.9);
+      font-family: 'VT323', monospace;
+      overflow: hidden;
+    }
+
+    /* ── Shared top bar ───────────────────────────────────────────────────── */
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      background: rgba(0, 0, 0, 0.95);
+      border-bottom: 1px solid rgba(142, 240, 178, 0.2);
+      flex-shrink: 0;
+      font-size: 1.1em;
+      letter-spacing: 0.05em;
+      z-index: 10;
+    }
+
+    .top-bar-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .top-btn {
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid rgba(142, 240, 178, 0.4);
+      border-radius: 3px;
+      color: rgba(142, 240, 178, 0.8);
+      font-family: 'VT323', monospace;
+      font-size: 0.9em;
+      padding: 2px 8px;
+      cursor: pointer;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .top-btn:hover,
+    .top-btn:focus-visible {
+      background: rgba(142, 240, 178, 0.12);
+      outline: none;
+    }
+
+    /* ── Picker ───────────────────────────────────────────────────────────── */
+
+    #picker {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    .picker-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 32px 16px 24px;
+      gap: 20px;
+    }
+
+    .picker-heading {
+      font-size: 2.2em;
+      letter-spacing: 0.12em;
+      color: rgba(142, 240, 178, 0.95);
+      margin: 0;
+      text-align: center;
+    }
+
+    .picker-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    #game-select {
+      flex: 1 1 auto;
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(142, 240, 178, 0.4);
+      border-radius: 3px;
+      color: rgba(142, 240, 178, 0.9);
+      font-family: 'VT323', monospace;
+      font-size: 1.1em;
+      padding: 4px 8px;
+      cursor: pointer;
+      min-width: 0;
+    }
+
+    #game-select:focus {
+      outline: none;
+      border-color: rgba(142, 240, 178, 0.8);
+    }
+
+    #game-select option,
+    #game-select optgroup {
+      background: #000;
+      color: rgba(142, 240, 178, 0.9);
+    }
+
+    #game-select optgroup {
+      font-style: normal;
+      letter-spacing: 0.06em;
+    }
+
+    #launch-btn {
+      flex-shrink: 0;
+      background: rgba(142, 240, 178, 0.08);
+      border: 1px solid rgba(142, 240, 178, 0.6);
+      border-radius: 3px;
+      color: rgba(142, 240, 178, 0.95);
+      font-family: 'VT323', monospace;
+      font-size: 1.2em;
+      padding: 4px 18px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    #launch-btn:hover,
+    #launch-btn:focus-visible {
+      background: rgba(142, 240, 178, 0.18);
+      outline: none;
+    }
+
+    #launch-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .picker-hint {
+      font-size: 0.9em;
+      color: rgba(142, 240, 178, 0.45);
+      text-align: center;
+      max-width: 460px;
+      line-height: 1.4;
+    }
+
+    #picker-status {
+      font-size: 1em;
+      color: rgba(255, 100, 100, 0.8);
+      text-align: center;
+      min-height: 1.3em;
+    }
+
+    /* ── Player ───────────────────────────────────────────────────────────── */
+
+    #player {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    #player.active {
+      display: flex;
+    }
+
+    .player-game-area {
+      flex: 1 1 auto;
+      min-height: 0;
+      position: relative;
+      background: #000;
+    }
+
+    #game {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Page fade ────────────────────────────────────────────────────────── */
+
+    .page-fade {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 1;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      z-index: 200;
+    }
+
+    .page-fade.clear {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Picker ──────────────────────────────────────────────────────────── -->
+  <div id="picker">
+    <div class="top-bar">
+      <div class="top-bar-title">&#9658; EMULATOR</div>
+      <a class="top-btn" href="/" aria-label="Back to main site">&#8592; MAIN SITE</a>
+    </div>
+    <div class="picker-body">
+      <h2 class="picker-heading">GAME SELECTOR</h2>
+      <div class="picker-row">
+        <select id="game-select" aria-label="Select a game">
+          <option value="">-- SELECT A GAME --</option>
+        </select>
+        <button id="launch-btn" type="button" disabled>LAUNCH</button>
+      </div>
+      <div id="picker-status" aria-live="polite"></div>
+      <p class="picker-hint">
+        Arrow keys / D-pad &middot; Z&nbsp;=&nbsp;B &middot; X&nbsp;=&nbsp;A &middot;
+        Enter&nbsp;=&nbsp;Start &middot; Shift&nbsp;=&nbsp;Select<br>
+        Controller support: plug in before launching.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Player ──────────────────────────────────────────────────────────── -->
+  <div id="player">
+    <div class="top-bar">
+      <div class="top-bar-title" id="player-title">&#9658; EMULATOR</div>
+      <button class="top-btn" id="player-fs-btn" type="button" aria-label="Toggle fullscreen">FULLSCREEN</button>
+      <button class="top-btn" id="player-restart-btn" type="button" aria-label="Restart game">&#8635; RESTART</button>
+      <button class="top-btn" id="player-back-btn" type="button" aria-label="Back to game picker">&#8592; BACK</button>
+    </div>
+    <div class="player-game-area">
+      <div id="game"></div>
+    </div>
+  </div>
+
+  <!-- ── Fade overlay ─────────────────────────────────────────────────────── -->
+  <div class="page-fade" id="page-fade" aria-hidden="true"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ── Constants ─────────────────────────────────────────────────────────
+
+      var EJS_PATH     = '/assets/retroarch/';
+      var MANIFEST_URL = '/assets/roms/manifest.json';
+      var ROMS_BASE    = '/assets/roms/';
+
+      // Map ROM file extensions to EmulatorJS system keys.
+      // When a ROM comes from the manifest the system key is already known;
+      // this table is used as a fallback for extension-only detection.
+      var EXT_TO_SYSTEM = {
+        'nes':  'nes',
+        'smc':  'snes',  'sfc':  'snes',  'fig':  'snes',
+        'gb':   'gb',    'gbc':  'gb',
+        'gba':  'gba',
+        'n64':  'n64',   'z64':  'n64',   'v64':  'n64',
+        'md':   'segaMD','gen':  'segaMD',
+        'sms':  'segaMS',
+        'gg':   'segaGG',
+        '32x':  'sega32x',
+        'a26':  'atari2600',
+        'a78':  'atari7800',
+        'a52':  'atari5200',
+        'pce':  'pce',
+        'lnx':  'lynx',
+        'vb':   'vb',
+        'd64':  'c64',   'prg':  'c64',   't64': 'c64',
+        'bin':  'psx',   'iso':  'psx',   'img': 'psx',
+      };
+
+      // Human-readable labels shown in the optgroup headers.
+      var SYSTEM_LABELS = {
+        nes:       'NES',
+        snes:      'SNES',
+        gb:        'GAME BOY',
+        gba:       'GAME BOY ADVANCE',
+        n64:       'NINTENDO 64',
+        segaMD:    'SEGA GENESIS',
+        segaMS:    'SEGA MASTER SYSTEM',
+        segaGG:    'SEGA GAME GEAR',
+        sega32x:   'SEGA 32X',
+        atari2600: 'ATARI 2600',
+        atari7800: 'ATARI 7800',
+        atari5200: 'ATARI 5200',
+        pce:       'PC ENGINE',
+        lynx:      'ATARI LYNX',
+        vb:        'VIRTUAL BOY',
+        c64:       'COMMODORE 64',
+        c128:      'COMMODORE 128',
+        vic20:     'VIC-20',
+        pet:       'COMMODORE PET',
+        plus4:     'PLUS/4',
+        psx:       'PLAYSTATION',
+      };
+
+      // ── DOM refs ───────────────────────────────────────────────────────────
+
+      var pickerEl       = document.getElementById('picker');
+      var playerEl       = document.getElementById('player');
+      var gameSelectEl   = document.getElementById('game-select');
+      var launchBtn      = document.getElementById('launch-btn');
+      var pickerStatus   = document.getElementById('picker-status');
+      var playerTitle    = document.getElementById('player-title');
+      var playerFsBtn    = document.getElementById('player-fs-btn');
+      var playerRestBtn  = document.getElementById('player-restart-btn');
+      var playerBackBtn  = document.getElementById('player-back-btn');
+      var fadeEl         = document.getElementById('page-fade');
+
+      // ── Fade helpers ───────────────────────────────────────────────────────
+
+      function fadeIn() {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            if (fadeEl) fadeEl.classList.add('clear');
+          });
+        });
+      }
+
+      function fadeOut(cb) {
+        if (!fadeEl) { cb(); return; }
+        fadeEl.classList.remove('clear');
+        setTimeout(cb, 350);
+      }
+
+      // ── Utility ────────────────────────────────────────────────────────────
+
+      function extOf(filename) {
+        var dot = filename.lastIndexOf('.');
+        return dot >= 0 ? filename.slice(dot + 1).toLowerCase() : '';
+      }
+
+      function systemFromExt(filename) {
+        return EXT_TO_SYSTEM[extOf(filename)] || null;
+      }
+
+      function labelOf(filename) {
+        return filename.replace(/\.[^.]+$/, '');
+      }
+
+      // ── URL params ─────────────────────────────────────────────────────────
+
+      function getParams() {
+        var p = new URLSearchParams(location.search);
+        return { system: p.get('system') || '', file: p.get('file') || '' };
+      }
+
+      function buildUrl(system, file) {
+        return location.pathname + '?system=' + encodeURIComponent(system) + '&file=' + encodeURIComponent(file);
+      }
+
+      // ── Picker ─────────────────────────────────────────────────────────────
+
+      function populateSelect(manifest) {
+        // Keep the placeholder option and remove any previously added groups.
+        while (gameSelectEl.options.length > 1) {
+          gameSelectEl.remove(1);
+        }
+
+        var hasSomething = false;
+
+        Object.keys(manifest).forEach(function (system) {
+          var files = manifest[system];
+          if (!Array.isArray(files) || files.length === 0) return;
+
+          var group = document.createElement('optgroup');
+          group.label = SYSTEM_LABELS[system] || system.toUpperCase();
+
+          files.forEach(function (filename) {
+            var opt = document.createElement('option');
+            opt.value = system + '|' + filename;
+            opt.textContent = labelOf(filename);
+            group.appendChild(opt);
+          });
+
+          gameSelectEl.appendChild(group);
+          hasSomething = true;
+        });
+
+        if (!hasSomething) {
+          var noGames = document.createElement('option');
+          noGames.value = '';
+          noGames.disabled = true;
+          noGames.textContent = 'No ROMs found in manifest.json';
+          gameSelectEl.appendChild(noGames);
+        }
+      }
+
+      function initPicker() {
+        pickerEl.style.display = 'flex';
+        playerEl.classList.remove('active');
+
+        fetch(MANIFEST_URL)
+          .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+          })
+          .then(function (manifest) {
+            populateSelect(manifest);
+          })
+          .catch(function (err) {
+            if (pickerStatus) {
+              pickerStatus.textContent = 'Could not load game list: ' + err.message;
+            }
+          });
+
+        gameSelectEl.addEventListener('change', function () {
+          launchBtn.disabled = !gameSelectEl.value;
+        });
+
+        launchBtn.addEventListener('click', function () {
+          var val = gameSelectEl.value;
+          if (!val) return;
+          var parts = val.split('|');
+          var system = parts[0];
+          var file   = parts.slice(1).join('|');
+          fadeOut(function () {
+            location.assign(buildUrl(system, file));
+          });
+        });
+      }
+
+      // ── Player ─────────────────────────────────────────────────────────────
+
+      function goBack() {
+        fadeOut(function () {
+          location.assign(location.pathname);
+        });
+      }
+
+      function initPlayer(system, file) {
+        pickerEl.style.display = 'none';
+        playerEl.classList.add('active');
+
+        var name = labelOf(file);
+
+        document.title = name.toUpperCase() + ' \u2013 EMULATOR';
+        if (playerTitle) {
+          playerTitle.textContent = '\u25BA ' + name.toUpperCase();
+        }
+
+        // Fullscreen toggle.
+        playerFsBtn.addEventListener('click', function () {
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(function () {});
+          } else {
+            document.documentElement.requestFullscreen().catch(function () {});
+          }
+        });
+
+        document.addEventListener('fullscreenchange', function () {
+          var inFs = !!document.fullscreenElement;
+          playerFsBtn.textContent = inFs ? 'EXIT FS' : 'FULLSCREEN';
+          playerFsBtn.setAttribute('aria-label', inFs ? 'Exit fullscreen' : 'Toggle fullscreen');
+        });
+
+        // Back button.
+        playerBackBtn.addEventListener('click', goBack);
+
+        // Escape: if not in fullscreen, go back to picker.
+        document.addEventListener('keydown', function (e) {
+          if (e.key !== 'Escape') return;
+          if (document.fullscreenElement) return;
+          goBack();
+        });
+
+        // Restart button.
+        playerRestBtn.addEventListener('click', function () {
+          if (window.EJS_emulator && typeof window.EJS_emulator.restart === 'function') {
+            window.EJS_emulator.restart();
+          } else {
+            location.reload();
+          }
+        });
+
+        // Resolve system from URL param first, then fall back to extension detection.
+        var resolvedSystem = system || systemFromExt(file);
+        if (!resolvedSystem) {
+          showPlayerError('Cannot determine emulator core for file: ' + file, name);
+          return;
+        }
+
+        // Configure EmulatorJS globals before injecting loader.js.
+        window.EJS_player        = '#game';
+        window.EJS_core          = resolvedSystem;
+        window.EJS_gameUrl       = ROMS_BASE + resolvedSystem + '/' + encodeURIComponent(file);
+        window.EJS_pathtodata    = EJS_PATH;
+        window.EJS_startOnLoaded = true;
+        window.EJS_color         = '#8ef0b2';
+        window.EJS_defaultOptions = { 'virtual-gamepad': 'enabled' };
+
+        window.EJS_onGameStart = function () {
+          console.log('[Emulator] started: ' + name + ' (' + resolvedSystem + ')');
+        };
+
+        window.EJS_onLoadError = function (e) {
+          var msg = (e && e.error && e.error.message)
+            || (e && e.message)
+            || String(e)
+            || 'Unknown error';
+          console.error('[Emulator] EJS_onLoadError:', msg);
+          showPlayerError(msg, name);
+        };
+
+        var loader = document.createElement('script');
+        loader.src = EJS_PATH + 'loader.js';
+        loader.onerror = function () {
+          showPlayerError('Failed to load EmulatorJS (loader.js not found)', name);
+        };
+        document.head.appendChild(loader);
+      }
+
+      function showPlayerError(msg, name) {
+        var banner = document.createElement('div');
+        banner.style.cssText = [
+          'position:fixed', 'inset:0', 'display:flex', 'flex-direction:column',
+          'align-items:center', 'justify-content:center', 'background:#000',
+          'color:rgba(255,80,80,0.85)', 'font-family:VT323,monospace',
+          'font-size:1.4em', 'letter-spacing:.05em', 'text-align:center',
+          'padding:20px', 'z-index:50'
+        ].join(';');
+
+        var headline = document.createElement('div');
+        headline.textContent = 'EMULATOR ERROR';
+        var detail = document.createElement('div');
+        detail.style.cssText = 'font-size:.7em;margin-top:8px;color:rgba(255,120,120,0.7)';
+        detail.textContent = msg;
+        var backBtn = document.createElement('button');
+        backBtn.style.cssText = [
+          'margin-top:18px', 'background:transparent',
+          'border:1px solid rgba(142,240,178,.4)', 'border-radius:3px',
+          'color:rgba(142,240,178,.8)', 'font-family:VT323,monospace',
+          'font-size:1em', 'padding:4px 14px', 'cursor:pointer'
+        ].join(';');
+        backBtn.textContent = '\u2190 BACK';
+        backBtn.addEventListener('click', goBack);
+
+        banner.appendChild(headline);
+        banner.appendChild(detail);
+        banner.appendChild(backBtn);
+        document.body.appendChild(banner);
+      }
+
+      // ── Bootstrap ──────────────────────────────────────────────────────────
+
+      fadeIn();
+
+      var params = getParams();
+
+      if (params.system && params.file) {
+        initPlayer(params.system, params.file);
+      } else if (!params.system && params.file) {
+        // File provided without system — detect core from extension.
+        var detectedSystem = systemFromExt(params.file);
+        if (detectedSystem) {
+          initPlayer(detectedSystem, params.file);
+        } else {
+          initPicker();
+          if (pickerStatus) {
+            pickerStatus.textContent = 'Unknown file type: ' + extOf(params.file);
+          }
+        }
+      } else {
+        initPicker();
+      }
+
+    }());
+  </script>
+
+</body>
+</html>
