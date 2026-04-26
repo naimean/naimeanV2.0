@@ -68,6 +68,10 @@
   display: none !important;
 }
 
+.discord-auth-chip.is-hidden {
+  display: none;
+}
+
 .discord-auth-login-btn {
   border: none;
   background: transparent;
@@ -591,6 +595,18 @@
         return () => sessionListeners.delete(listener);
       }
       return () => {};
+    },
+    hide: () => {
+      const els = buildChip();
+      if (els) {
+        els.container.classList.add('is-hidden');
+      }
+    },
+    show: () => {
+      const els = buildChip();
+      if (els) {
+        els.container.classList.remove('is-hidden');
+      }
     },
   };
 })();
