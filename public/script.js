@@ -86,8 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeLaunchBtn = document.getElementById('arcade-launch-btn');
   const arcadeFsLaunchBtn = document.getElementById('arcade-fs-launch-btn');
   const arcadeCloseBtn = document.getElementById('arcade-close-btn');
-  const arcadeBackBtn = null; // arcade-bar removed; Escape key handles back-to-picker
-  const arcadeFullscreenBtn = null; // arcade-bar removed; fullscreen handled at overlay level
   const arcadePickerFsBtn = document.getElementById('arcade-picker-fs-btn');
   const arcadeLoading = document.getElementById('arcade-loading');
   const arcadeStatus = document.getElementById('arcade-status');
@@ -1772,7 +1770,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('keydown', async function(e) {
     if (e.key === 'Escape') {
       if (document.fullscreenElement) {
-        // Browser handles native fullscreen exit on Escape; nothing to do here.
+        // The browser exits native fullscreen automatically on Escape.
         return;
       }
       if (arcadePlayer && arcadePlayer.style.display === 'flex') {
@@ -2415,9 +2413,7 @@ document.addEventListener('DOMContentLoaded', function() {
           document.fullscreenElement !== arcadeOverlay &&
           arcadeOverlay.contains(document.fullscreenElement)) {
         document.exitFullscreen().then(function() {
-          if (arcadeOverlay) {
-            return arcadeOverlay.requestFullscreen();
-          }
+          return arcadeOverlay.requestFullscreen();
         }).catch(function() {});
       }
     });
