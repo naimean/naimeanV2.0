@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // scripts/upload-cores-to-r2.js
 //
-// Uploads EmulatorJS core .data files to the Cloudflare R2 bucket `retroarc-cores`.
+// Uploads EmulatorJS core .data files to the Cloudflare R2 bucket `retroarch-cores`.
 // Uses the Cloudflare REST API directly (no external dependencies — Node.js built-ins only).
 //
 // Prerequisites:
-//   - .data files present under public/assets/retroarc/cores/
+//   - .data files present under public/assets/retroarch/cores/
 //     (run node scripts/download-ejs-cores.js first if needed)
 //   - CLOUDFLARE_API_TOKEN env var with R2:Write permission on the bucket
 //   - CLOUDFLARE_ACCOUNT_ID env var
@@ -21,8 +21,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CORES_DIR = path.join(__dirname, '..', 'public', 'assets', 'retroarc', 'cores');
-const BUCKET = 'retroarc-cores';
+const CORES_DIR = path.join(__dirname, '..', 'public', 'assets', 'retroarch', 'cores');
+const BUCKET = 'retroarch-cores';
 const FORCE = process.env.FORCE === '1';
 
 const API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;

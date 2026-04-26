@@ -18,7 +18,7 @@ zone_name = "naimean.com"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/get", "/hit", "/increment", "/auth", "/go", "/layout", "/assets/retroarc/cores/"]
+run_worker_first = ["/get", "/hit", "/increment", "/auth", "/go", "/layout", "/assets/retroarch/cores/"]
 
 [[services]]
 binding = "COUNTER"
@@ -30,7 +30,7 @@ bucket_name = "radley-gallery"
 
 [[r2_buckets]]
 binding = "CORES"
-bucket_name = "retroarc-cores"
+bucket_name = "retroarch-cores"
 
 [[d1_databases]]
 binding = "naimean-db"

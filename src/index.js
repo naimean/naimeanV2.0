@@ -2,13 +2,13 @@ const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"];
 
 // Paths that are handled by the Worker first but served from R2 (not proxied to COUNTER).
 // Must stay in sync with run_worker_first in wrangler.toml (checked by scripts/check-route-alignment.js).
-const R2_PATHS = ["/assets/retroarc/cores/"];
+const R2_PATHS = ["/assets/retroarch/cores/"];
 
 const UPLOADS_HOSTNAME = 'uploads.naimean.com';
 
 // Requests under this prefix are served from the CORES R2 bucket instead of ASSETS.
 // This path is declared in R2_PATHS and run_worker_first — keep all three in sync.
-const CORES_R2_PATH_PREFIX = '/assets/retroarc/cores/';
+const CORES_R2_PATH_PREFIX = '/assets/retroarch/cores/';
 
 const DOCUMENT_CSP = [
   "default-src 'self'",
@@ -22,7 +22,7 @@ const DOCUMENT_CSP = [
   // This is the narrowest viable fix: isolating EmulatorJS in a sandboxed iframe would remove
   // the need for 'unsafe-eval' on the main document but requires significant restructuring.
   // Note: 'unsafe-inline' (already present) is the higher XSS risk; 'unsafe-eval' is incremental.
-  // loader.js, emulator.min.js, and emulator.min.css are self-hosted in /assets/retroarc/ and
+  // loader.js, emulator.min.js, and emulator.min.css are self-hosted in /assets/retroarch/ and
   // served via 'self'. CDN is still listed as a fallback and for system cores (WASM).
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
   "font-src 'self' data: https://fonts.gstatic.com",

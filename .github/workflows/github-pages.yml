@@ -58,7 +58,7 @@ jobs:
            grep -q 'run_worker_first' wrangler.toml
            # Confirm CORES R2 bucket binding is declared for EmulatorJS core archives
            grep -q 'binding = "CORES"' wrangler.toml
-           grep -q 'bucket_name = "retroarc-cores"' wrangler.toml
+           grep -q 'bucket_name = "retroarch-cores"' wrangler.toml
            # Confirm D1 database binding is declared in the counter worker config
            grep -q '\[\[d1_databases\]\]' cloudflare-worker/wrangler.toml
            grep -q 'binding = "DB"' cloudflare-worker/wrangler.toml

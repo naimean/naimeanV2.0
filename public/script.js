@@ -126,9 +126,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameTarget = 0;
   let miniGameAttempts = 0;
   // Self-hosted EmulatorJS assets (loader.js, emulator.min.js, emulator.min.css,
-  // system cores, and compression utilities) in /assets/retroarc/.
+  // system cores, and compression utilities) in /assets/retroarch/.
   // All core .data files are committed to the repo; no CDN is needed at runtime.
-  const LOCAL_EJS_PATH = '/assets/retroarc/';
+  const LOCAL_EJS_PATH = '/assets/retroarch/';
   // Native display aspect ratios per EmulatorJS system key.
   // GB/GG/VB use non-4:3 ratios; GBA is 3:2; Lynx is wide; NDS is portrait.
   const EJS_SYSTEM_ASPECT = {
@@ -2378,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
       // All EmulatorJS assets (loader.js, emulator.min.js/css, core .data files)
-      // are self-hosted under LOCAL_EJS_PATH (/assets/retroarc/).
+      // are self-hosted under LOCAL_EJS_PATH (/assets/retroarch/).
       function appendLoaderScript() {
         // Clean up any EJS_paths override left by a previous attempt.
         if (Object.prototype.hasOwnProperty.call(window, 'EJS_paths')) {

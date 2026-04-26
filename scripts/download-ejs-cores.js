@@ -12,7 +12,7 @@
 // Usage:
 //   node scripts/download-ejs-cores.js
 //
-// Files are saved to public/assets/retroarc/cores/ alongside the .data
+// Files are saved to public/assets/retroarch/cores/ alongside the .data
 // files that are already committed.  Existing files are skipped so
 // re-runs are fast.  Set FORCE=1 to re-download even if the file exists.
 
@@ -22,7 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CORES_DIR = path.join(__dirname, '..', 'public', 'assets', 'retroarc', 'cores');
+const CORES_DIR = path.join(__dirname, '..', 'public', 'assets', 'retroarch', 'cores');
 const CDN_BASE = 'https://cdn.emulatorjs.org/stable/data/cores/';
 const FORCE = process.env.FORCE === '1';
 
