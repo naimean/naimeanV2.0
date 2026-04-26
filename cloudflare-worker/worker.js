@@ -1236,7 +1236,7 @@ async function handleIconGenerate(request, env, origin) {
 
   const subject = typeof body.prompt === 'string' ? body.prompt.trim() : '';
   if (!subject || subject.length > ICON_MAX_PROMPT_LENGTH) {
-    return jsonResponse({ error: 'prompt is required and must be ≤ 400 characters' }, 400, origin, env);
+    return jsonResponse({ error: `prompt is required and must be ≤ ${ICON_MAX_PROMPT_LENGTH} characters` }, 400, origin, env);
   }
 
   const rawWords = Array.isArray(body.words) ? body.words : [];
@@ -1269,11 +1269,12 @@ async function handleIconGenerate(request, env, origin) {
         })
         .then(function (buffer) {
           const bytes = new Uint8Array(buffer);
-          let binary = '';
-          for (let j = 0; j < bytes.length; j++) {
-            binary += String.fromCharCode(bytes[j]);
+          const chunkSize = 0x8000;
+          const parts = [];
+          for (let j = 0; j < bytes.length; j += chunkSize) {
+            parts.push(String.fromCharCode.apply(null, bytes.subarray(j, j + chunkSize)));
           }
-          return 'data:image/png;base64,' + btoa(binary);
+          return 'data:image/png;base64,' + btoa(parts.join(''));
         });
     })
   );
