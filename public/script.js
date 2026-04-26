@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
     'https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@latest/data/',
   ];
   // Native display aspect ratios per EmulatorJS system key.
-  // GB: 160×144 (10:9), GBA: 240×160 (3:2), all others use standard 4:3.
+  // GB/GG/VB use non-4:3 ratios; GBA is 3:2; Lynx is wide; NDS is portrait.
   const EJS_SYSTEM_ASPECT = {
     gb:        160 / 144,
     gba:       240 / 160,
@@ -142,7 +142,20 @@ document.addEventListener('DOMContentLoaded', function() {
     snes:      4 / 3,
     n64:       4 / 3,
     segaMD:    4 / 3,
-    atari2600: 4 / 3
+    segaMS:    4 / 3,
+    segaGG:    160 / 144,
+    sega32x:   4 / 3,
+    atari2600: 4 / 3,
+    atari7800: 4 / 3,
+    atari5200: 4 / 3,
+    pce:       4 / 3,
+    lynx:      160 / 102,
+    vb:        384 / 224,
+    c64:       4 / 3,
+    c128:      4 / 3,
+    vic20:     4 / 3,
+    pet:       4 / 3,
+    plus4:     4 / 3
   };
   const ARCADE_SYSTEM_LABELS = {
     nes:       'NES',
@@ -151,7 +164,20 @@ document.addEventListener('DOMContentLoaded', function() {
     gba:       'GAME BOY ADVANCE',
     n64:       'NINTENDO 64',
     segaMD:    'SEGA GENESIS',
-    atari2600: 'ATARI 2600'
+    segaMS:    'SEGA MASTER SYSTEM',
+    segaGG:    'SEGA GAME GEAR',
+    sega32x:   'SEGA 32X',
+    atari2600: 'ATARI 2600',
+    atari7800: 'ATARI 7800',
+    atari5200: 'ATARI 5200',
+    pce:       'PC ENGINE',
+    lynx:      'ATARI LYNX',
+    vb:        'VIRTUAL BOY',
+    c64:       'COMMODORE 64',
+    c128:      'COMMODORE 128',
+    vic20:     'VIC-20',
+    pet:       'COMMODORE PET',
+    plus4:     'PLUS/4'
   };
   // Default EmulatorJS keyboard bindings per system: [key label, button/action].
   const ARCADE_SYSTEM_CONTROLS = {
@@ -161,7 +187,20 @@ document.addEventListener('DOMContentLoaded', function() {
     gba:       [['↑↓←→','D-PAD'],['Z','B'],['X','A'],['Q','L'],['W','R'],['ENTER','START'],['SHIFT','SELECT']],
     n64:       [['↑↓←→','D-PAD'],['X','A'],['Z','B'],['Q','L'],['W','Z (TRIG)'],['A','C-UP'],['S','C-DOWN'],['ENTER','START']],
     segaMD:    [['↑↓←→','D-PAD'],['Z','A'],['X','B'],['C','C'],['ENTER','START']],
-    atari2600: [['↑↓←→','JOYSTICK'],['Z','FIRE']]
+    segaMS:    [['↑↓←→','D-PAD'],['Z','1'],['X','2'],['ENTER','START']],
+    segaGG:    [['↑↓←→','D-PAD'],['Z','1'],['X','2'],['ENTER','START']],
+    sega32x:   [['↑↓←→','D-PAD'],['Z','A'],['X','B'],['C','C'],['ENTER','START']],
+    atari2600: [['↑↓←→','JOYSTICK'],['Z','FIRE']],
+    atari7800: [['↑↓←→','D-PAD'],['Z','FIRE 1'],['X','FIRE 2']],
+    atari5200: [['↑↓←→','D-PAD'],['Z','FIRE'],['ENTER','START'],['P','PAUSE']],
+    pce:       [['↑↓←→','D-PAD'],['Z','II'],['X','I'],['ENTER','RUN'],['SHIFT','SELECT']],
+    lynx:      [['↑↓←→','D-PAD'],['Z','A'],['X','B'],['Q','OPT 1'],['W','OPT 2'],['ENTER','PAUSE']],
+    vb:        [['↑↓←→','D-PAD L'],['A','R-UP'],['S','R-DOWN'],['Z','B'],['X','A'],['Q','L'],['W','R'],['ENTER','START'],['SHIFT','SELECT']],
+    c64:       [['↑↓←→','JOYSTICK'],['Z','FIRE'],['F1-F8','FUNCTION KEYS']],
+    c128:      [['↑↓←→','JOYSTICK'],['Z','FIRE'],['F1-F8','FUNCTION KEYS']],
+    vic20:     [['↑↓←→','JOYSTICK'],['Z','FIRE']],
+    pet:       [['↑↓←→','CURSOR'],['ENTER','RETURN']],
+    plus4:     [['↑↓←→','JOYSTICK'],['Z','FIRE']]
   };
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
@@ -2143,7 +2182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeFsLaunchBtn.classList.remove('ready');
       }
       var manifest = arcadeManifest || {};
-      var systemKeys = ['nes', 'snes', 'gb', 'gba', 'n64', 'segaMD', 'atari2600'];
+      var systemKeys = ['nes', 'snes', 'gb', 'gba', 'n64', 'segaMD', 'segaMS', 'segaGG', 'sega32x', 'atari2600', 'atari7800', 'atari5200', 'pce', 'lynx', 'vb', 'c64', 'c128', 'vic20', 'pet', 'plus4'];
       var totalAdded = 0;
       systemKeys.forEach(function(system) {
         var games = Array.isArray(manifest[system]) ? manifest[system] : [];
