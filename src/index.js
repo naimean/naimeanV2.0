@@ -29,7 +29,7 @@ const DOCUMENT_CSP = [
   "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
   "media-src 'self' data: blob:",
   "connect-src 'self' https://discord.com https://*.discord.com https://*.workers.dev https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
-  "worker-src blob:",
+  "worker-src 'self' blob:",
   "frame-src 'self' https://discord.com https://*.discord.com",
   "form-action 'self'",
   "upgrade-insecure-requests",
