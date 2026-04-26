@@ -2237,7 +2237,6 @@ document.addEventListener('DOMContentLoaded', function() {
       setArcadeStatus('Launching ' + name + ' (' + system.toUpperCase() + ')…');
       window.EJS_player = '#game';
       window.EJS_core = system;
-      window.EJS_color = '#8ef0b2';
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
       window.EJS_startOnLoaded = true;
       console.log('[Arcade] launchGame: EJS globals set — EJS_core=' + system + ' EJS_gameUrl=' + window.EJS_gameUrl + ' EJS_pathtodata=' + LOCAL_EJS_PATH);
