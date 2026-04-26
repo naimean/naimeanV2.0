@@ -208,6 +208,86 @@
     .page-fade.clear {
       opacity: 0;
     }
+
+    /* ── Boot overlay ─────────────────────────────────────────────────────── */
+
+    #boot-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      color: rgba(142, 240, 178, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      font-family: 'VT323', monospace;
+    }
+
+    #boot-overlay[hidden] { display: none; }
+
+    .boot-scanlines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 2px,
+        rgba(0, 0, 0, 0.15) 4px
+      );
+      z-index: 1;
+    }
+
+    .boot-inner {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      width: 90%;
+      max-width: 460px;
+      text-align: center;
+    }
+
+    #boot-system-label {
+      font-size: 2.4em;
+      letter-spacing: 0.16em;
+      color: var(--boot-color, rgba(142, 240, 178, 0.95));
+      text-shadow: 0 0 14px var(--boot-color, rgba(142, 240, 178, 0.6));
+      line-height: 1.1;
+    }
+
+    #boot-message {
+      font-size: 1.1em;
+      letter-spacing: 0.06em;
+      color: rgba(142, 240, 178, 0.65);
+      min-height: 1.5em;
+    }
+
+    .boot-bar-wrap {
+      width: 100%;
+      height: 8px;
+      border: 1px solid var(--boot-color, rgba(142, 240, 178, 0.5));
+      border-radius: 2px;
+      background: rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+
+    #boot-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--boot-color, rgba(142, 240, 178, 0.8));
+      box-shadow: 0 0 8px var(--boot-color, rgba(142, 240, 178, 0.5));
+      transition: width 0.25s ease;
+    }
+
+    #boot-percent {
+      font-size: 1em;
+      letter-spacing: 0.1em;
+      color: rgba(142, 240, 178, 0.45);
+    }
   </style>
 </head>
 <body>
@@ -245,6 +325,19 @@
     </div>
     <div class="player-game-area">
       <div id="game"></div>
+    </div>
+  </div>
+
+  <!-- ── Boot overlay ─────────────────────────────────────────────────────── -->
+  <div id="boot-overlay" aria-live="polite" aria-label="System boot sequence" hidden>
+    <div class="boot-scanlines" aria-hidden="true"></div>
+    <div class="boot-inner">
+      <div id="boot-system-label"></div>
+      <div id="boot-message"></div>
+      <div class="boot-bar-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="boot-progress-region">
+        <div id="boot-bar"></div>
+      </div>
+      <div id="boot-percent"></div>
     </div>
   </div>
 
@@ -310,6 +403,31 @@
         psx:       'PLAYSTATION',
       };
 
+      // Boot-animation config: per-system display name and accent colour.
+      var SYSTEM_BOOT = {
+        nes:       { label: 'NINTENDO\nENTERTAINMENT SYSTEM', color: '#ff4444' },
+        snes:      { label: 'SUPER\nNINTENDO',                color: '#a86bef' },
+        gb:        { label: 'GAME BOY',                       color: '#8ef0b2' },
+        gba:       { label: 'GAME BOY\nADVANCE',              color: '#a864ff' },
+        n64:       { label: 'NINTENDO 64',                    color: '#ff8c00' },
+        segaMD:    { label: 'SEGA\nGENESIS',                  color: '#3b8bff' },
+        segaMS:    { label: 'SEGA\nMASTER SYSTEM',            color: '#3b8bff' },
+        segaGG:    { label: 'SEGA\nGAME GEAR',                color: '#22aaff' },
+        sega32x:   { label: 'SEGA 32X',                       color: '#cc2222' },
+        atari2600: { label: 'ATARI 2600',                     color: '#ff8800' },
+        atari7800: { label: 'ATARI 7800',                     color: '#ffaa00' },
+        atari5200: { label: 'ATARI 5200',                     color: '#ffcc00' },
+        pce:       { label: 'PC ENGINE',                      color: '#ff5533' },
+        lynx:      { label: 'ATARI LYNX',                     color: '#ff9900' },
+        vb:        { label: 'VIRTUAL BOY',                    color: '#ff2020' },
+        c64:       { label: 'COMMODORE 64',                   color: '#6699ff' },
+        c128:      { label: 'COMMODORE 128',                  color: '#5588ee' },
+        vic20:     { label: 'VIC-20',                         color: '#66aaff' },
+        pet:       { label: 'COMMODORE PET',                  color: '#88bbff' },
+        plus4:     { label: 'PLUS/4',                         color: '#44aacc' },
+        psx:       { label: 'PLAYSTATION',                    color: '#aaaaff' },
+      };
+
       // ── DOM refs ───────────────────────────────────────────────────────────
 
       var pickerEl       = document.getElementById('picker');
@@ -322,6 +440,18 @@
       var playerRestBtn  = document.getElementById('player-restart-btn');
       var playerBackBtn  = document.getElementById('player-back-btn');
       var fadeEl         = document.getElementById('page-fade');
+
+      var bootOverlayEl       = document.getElementById('boot-overlay');
+      var bootSystemLabelEl   = document.getElementById('boot-system-label');
+      var bootMessageEl       = document.getElementById('boot-message');
+      var bootBarEl           = document.getElementById('boot-bar');
+      var bootPercentEl       = document.getElementById('boot-percent');
+      var bootProgressRegion  = document.getElementById('boot-progress-region');
+
+      // ── Core worker state ──────────────────────────────────────────────────
+
+      var coreWorker   = null; // Web Worker instance (created lazily)
+      var pendingLaunch = null; // { system, file } waiting for CORE_READY
 
       // ── Fade helpers ───────────────────────────────────────────────────────
 
@@ -337,6 +467,99 @@
         if (!fadeEl) { cb(); return; }
         fadeEl.classList.remove('clear');
         setTimeout(cb, 350);
+      }
+
+      // ── Core worker helpers ────────────────────────────────────────────────
+
+      function getCoreWorker() {
+        if (coreWorker) return coreWorker;
+        if (!window.Worker) return null;
+        try {
+          coreWorker = new Worker('/emulator/core-worker.js');
+          coreWorker.onmessage = function (e) { onWorkerMessage(e.data); };
+          coreWorker.onerror   = function () {
+            // Worker failed to start (e.g. CSP) — surface as a CORE_ERROR so
+            // the pending boot animation still resolves and launches the player.
+            onWorkerMessage({
+              type:    'CORE_ERROR',
+              system:  pendingLaunch ? pendingLaunch.system : null,
+              message: 'Core worker unavailable'
+            });
+            coreWorker = null;
+          };
+          return coreWorker;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function showBootOverlay(system, file) {
+        pendingLaunch = { system: system, file: file };
+        var cfg = SYSTEM_BOOT[system] || { label: system.toUpperCase(), color: 'rgba(142,240,178,0.9)' };
+        bootOverlayEl.style.setProperty('--boot-color', cfg.color);
+        bootSystemLabelEl.textContent = cfg.label;
+        bootMessageEl.textContent     = 'INITIALIZING\u2026';
+        bootBarEl.style.width         = '0%';
+        bootPercentEl.textContent     = '0%';
+        if (bootProgressRegion) bootProgressRegion.setAttribute('aria-valuenow', '0');
+        bootOverlayEl.removeAttribute('hidden');
+      }
+
+      function updateBootOverlay(progress, message) {
+        var pct = Math.round(Math.min(Math.max(progress, 0), 1) * 100);
+        bootBarEl.style.width     = pct + '%';
+        bootPercentEl.textContent = pct + '%';
+        if (bootProgressRegion) bootProgressRegion.setAttribute('aria-valuenow', String(pct));
+        if (message) bootMessageEl.textContent = message.toUpperCase();
+      }
+
+      function hideBootOverlay() {
+        bootOverlayEl.setAttribute('hidden', '');
+        pendingLaunch = null;
+      }
+
+      function onWorkerMessage(msg) {
+        if (!msg || !msg.type) return;
+        // Ignore progress/ready/error messages for a system other than the one
+        // currently pending launch (can happen during rapid system switches when
+        // an earlier preload finishes after the user has already changed selection).
+        if (msg.system && pendingLaunch && msg.system !== pendingLaunch.system) return;
+
+        switch (msg.type) {
+          case 'CORE_PROGRESS':
+            updateBootOverlay(msg.progress, msg.message);
+            break;
+
+          case 'CORE_READY': {
+            updateBootOverlay(1, 'READY');
+            var sys  = pendingLaunch ? pendingLaunch.system : msg.system;
+            var file = pendingLaunch ? pendingLaunch.file   : '';
+            setTimeout(function () {
+              hideBootOverlay();
+              fadeOut(function () {
+                initPlayer(sys, file);
+                fadeIn();
+              });
+            }, 400);
+            break;
+          }
+
+          case 'CORE_ERROR': {
+            // Show the error briefly then launch anyway — EmulatorJS will handle
+            // its own core fetch so the user still gets to play.
+            updateBootOverlay(1, 'ERROR: ' + (msg.message || 'unknown'));
+            var sys  = pendingLaunch ? pendingLaunch.system : msg.system;
+            var file = pendingLaunch ? pendingLaunch.file   : '';
+            setTimeout(function () {
+              hideBootOverlay();
+              fadeOut(function () {
+                initPlayer(sys, file);
+                fadeIn();
+              });
+            }, 1200);
+            break;
+          }
+        }
       }
 
       // ── Utility ────────────────────────────────────────────────────────────
@@ -423,17 +646,32 @@
 
         gameSelectEl.addEventListener('change', function () {
           launchBtn.disabled = !gameSelectEl.value;
+          // Warm the core for the selected system as soon as the user picks a
+          // game so it may already be downloading by the time LAUNCH is clicked.
+          if (gameSelectEl.value) {
+            var sys = gameSelectEl.value.split('|')[0];
+            var w = getCoreWorker();
+            if (w) w.postMessage({ type: 'PRELOAD_CORE', system: sys });
+          }
         });
 
         launchBtn.addEventListener('click', function () {
           var val = gameSelectEl.value;
           if (!val) return;
-          var parts = val.split('|');
+          var parts  = val.split('|');
           var system = parts[0];
           var file   = parts.slice(1).join('|');
-          fadeOut(function () {
-            location.assign(buildUrl(system, file));
-          });
+          var worker = getCoreWorker();
+          if (worker) {
+            // Show boot animation and preload/warm core in parallel.
+            showBootOverlay(system, file);
+            worker.postMessage({ type: 'PRELOAD_CORE', system: system });
+          } else {
+            // Worker unavailable — fall back to direct navigation.
+            fadeOut(function () {
+              location.assign(buildUrl(system, file));
+            });
+          }
         });
       }
 
