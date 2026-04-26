@@ -113,8 +113,10 @@ export default {
       upstreamResponse = await env.ASSETS.fetch(new Request(rewritten.toString(), request));
     } else if (PROXY_PATHS.some((path) => url.pathname.startsWith(path))) {
       upstreamResponse = await env.COUNTER.fetch(request);
-    } else if (env.CORES && url.pathname.startsWith(CORES_R2_PATH_PREFIX) && url.pathname.endsWith('.data')) {
+    } else if (env.CORES && url.pathname.startsWith(CORES_R2_PATH_PREFIX) &&
+        (url.pathname.endsWith('.data') || url.pathname.endsWith('.js') || url.pathname.endsWith('.wasm'))) {
       // Serve EmulatorJS core archives from R2 with ETag-based cache busting.
+      // Handles .data (current EJS 4.x format), .js, and .wasm (future-proof).
       const key = url.pathname.slice(CORES_R2_PATH_PREFIX.length);
       const coreObj = await env.CORES.get(key);
       if (!coreObj) {
@@ -122,8 +124,13 @@ export default {
       } else {
         const etag = coreObj.httpEtag;
         const ifNoneMatch = request.headers.get('If-None-Match');
+        const coreContentType = url.pathname.endsWith('.js')
+          ? 'application/javascript'
+          : url.pathname.endsWith('.wasm')
+            ? 'application/wasm'
+            : 'application/octet-stream';
         const coreHeaders = new Headers({
-          'Content-Type': 'application/octet-stream',
+          'Content-Type': coreContentType,
           'Cache-Control': 'public, max-age=31536000, immutable',
         });
         if (etag) coreHeaders.set('ETag', etag);

@@ -2175,10 +2175,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (validGames.length === 0) {
           return;
         }
-        var header = document.createElement('div');
+        var header = document.createElement('button');
+        header.type = 'button';
         header.className = 'arcade-section-header';
-        header.textContent = ARCADE_SYSTEM_LABELS[system] || system.toUpperCase();
-        header.setAttribute('aria-hidden', 'true');
+        var systemDisplayLabel = ARCADE_SYSTEM_LABELS[system] || system.toUpperCase();
+        header.textContent = systemDisplayLabel;
+        header.setAttribute('aria-label', 'Launch ' + systemDisplayLabel + ' — select ROM');
+        header.addEventListener('click', (function(sys) {
+          return function() {
+            console.log('[Arcade] system header clicked: ' + sys);
+            launchSystem(sys);
+          };
+        }(system)));
         arcadeGameList.appendChild(header);
         validGames.forEach(function(game) {
           var displayName = game.replace(/\.[^.]+$/, '');
@@ -2234,6 +2242,32 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
       } catch (_) {}
+    }
+
+    function launchSystem(system) {
+      console.log('[Arcade] launchSystem: navigating to player — system=' + system);
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.set('arcade:system', system.toUpperCase());
+        window.NaimeanDiag.log('arcade: launch system ' + system);
+      }
+
+      var dest = '/arcade-player.html?' + new URLSearchParams({ system: system }).toString();
+
+      function doNavigate() {
+        var overlay = document.getElementById('page-fade-overlay');
+        if (overlay) {
+          overlay.classList.add('visible');
+          setTimeout(function() { window.location.assign(dest); }, 900);
+        } else {
+          window.location.assign(dest);
+        }
+      }
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(function() {}).finally(doNavigate);
+      } else {
+        doNavigate();
+      }
     }
 
     function launchGame(system, file, name) {
