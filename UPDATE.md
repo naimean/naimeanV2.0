@@ -51,6 +51,19 @@
 
 # Update Log
 
+## 2026-04-26 (cores migrated from git to Cloudflare R2 — cache busting)
+- Moved all 20 EmulatorJS core `.data` archives (~23 MB) out of git and into the Cloudflare R2 bucket `retroarc-cores` to prevent git bloat.
+- Added `CORES` R2 binding in `wrangler.toml`; added `/assets/retroarc/cores/` to `run_worker_first` so the edge worker intercepts core requests.
+- `src/index.js` now serves `/assets/retroarc/cores/*.data` from R2 with:
+  - ETag (R2 content hash) for HTTP cache validation
+  - 304 Not Modified support when `If-None-Match` matches (cache busting — browsers skip re-download if the core hasn't changed)
+  - `Cache-Control: public, max-age=31536000, immutable` for efficient long-lived caching
+- Added `scripts/upload-cores-to-r2.js` (no external deps) to upload/refresh cores in R2 via the Cloudflare REST API.
+- CI (`deploy-workers` job) now downloads cores and uploads them to R2 on every push to main.
+- Removed the core download step from the GitHub Pages `deploy` job (cores are no longer needed in the Pages artifact).
+- Added `public/assets/retroarc/cores/*.data` to `.gitignore`; binary blobs removed from git tracking.
+- Updated `EMULATOR_PLAN.md` item 4 to reflect the R2-based architecture.
+
 ## 2026-04-26 (retroarc asset reorganisation)
 - Moved all self-hosted EmulatorJS assets from `public/assets/emulatorjs/` to `public/assets/retroarc/`.
   - Cores (`.data` header files) are now at `public/assets/retroarc/cores/`; core audit reports live under `public/assets/retroarc/cores/reports/`.

@@ -1,6 +1,14 @@
 const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"];
 
+// Paths that are handled by the Worker first but served from R2 (not proxied to COUNTER).
+// Must stay in sync with run_worker_first in wrangler.toml (checked by scripts/check-route-alignment.js).
+const R2_PATHS = ["/assets/retroarc/cores/"];
+
 const UPLOADS_HOSTNAME = 'uploads.naimean.com';
+
+// Requests under this prefix are served from the CORES R2 bucket instead of ASSETS.
+// This path is declared in R2_PATHS and run_worker_first — keep all three in sync.
+const CORES_R2_PATH_PREFIX = '/assets/retroarc/cores/';
 
 const DOCUMENT_CSP = [
   "default-src 'self'",
@@ -105,6 +113,27 @@ export default {
       upstreamResponse = await env.ASSETS.fetch(new Request(rewritten.toString(), request));
     } else if (PROXY_PATHS.some((path) => url.pathname.startsWith(path))) {
       upstreamResponse = await env.COUNTER.fetch(request);
+    } else if (env.CORES && url.pathname.startsWith(CORES_R2_PATH_PREFIX) && url.pathname.endsWith('.data')) {
+      // Serve EmulatorJS core archives from R2 with ETag-based cache busting.
+      const key = url.pathname.slice(CORES_R2_PATH_PREFIX.length);
+      const coreObj = await env.CORES.get(key);
+      if (!coreObj) {
+        upstreamResponse = new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+      } else {
+        const etag = coreObj.httpEtag;
+        const ifNoneMatch = request.headers.get('If-None-Match');
+        const coreHeaders = new Headers({
+          'Content-Type': 'application/octet-stream',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        });
+        if (etag) coreHeaders.set('ETag', etag);
+        if (etag && ifNoneMatch === etag) {
+          // Conditional request matched — 304, no body, security headers still applied below.
+          upstreamResponse = new Response(null, { status: 304, headers: coreHeaders });
+        } else {
+          upstreamResponse = new Response(coreObj.body, { status: 200, headers: coreHeaders });
+        }
+      }
     } else {
       upstreamResponse = await env.ASSETS.fetch(request);
       if (
