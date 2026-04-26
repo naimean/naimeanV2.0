@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeCloseBtn = document.getElementById('arcade-close-btn');
   const arcadeBackBtn = document.getElementById('arcade-back-btn');
   const arcadeFullscreenBtn = document.getElementById('arcade-fullscreen-btn');
+  const arcadePickerFsBtn = document.getElementById('arcade-picker-fs-btn');
   const arcadeNowPlaying = document.getElementById('arcade-now-playing');
   const arcadeLoading = document.getElementById('arcade-loading');
   const arcadeStatus = document.getElementById('arcade-status');
@@ -2307,6 +2308,10 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeFullscreenBtn.textContent = 'FULLSCREEN';
         arcadeFullscreenBtn.setAttribute('aria-label', 'Toggle fullscreen');
       }
+      if (arcadePickerFsBtn) {
+        arcadePickerFsBtn.textContent = 'FULLSCREEN';
+        arcadePickerFsBtn.setAttribute('aria-label', 'Toggle fullscreen');
+      }
     }
 
     function toggleArcadeFullscreen() {
@@ -2318,6 +2323,11 @@ document.addEventListener('DOMContentLoaded', function() {
       if (arcadeFullscreenBtn) {
         arcadeFullscreenBtn.textContent = arcadeFullscreen ? 'EXIT FS' : 'FULLSCREEN';
         arcadeFullscreenBtn.setAttribute('aria-label',
+          arcadeFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
+      }
+      if (arcadePickerFsBtn) {
+        arcadePickerFsBtn.textContent = arcadeFullscreen ? 'EXIT FS' : 'FULLSCREEN';
+        arcadePickerFsBtn.setAttribute('aria-label',
           arcadeFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
       }
       setTimeout(function() {
@@ -2456,6 +2466,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (arcadeFullscreenBtn) {
       arcadeFullscreenBtn.addEventListener('click', function() {
+        toggleArcadeFullscreen();
+      });
+    }
+
+    if (arcadePickerFsBtn) {
+      arcadePickerFsBtn.addEventListener('click', function() {
         toggleArcadeFullscreen();
       });
     }
