@@ -20,13 +20,17 @@
 - Discord OAuth PKCE flow and email auth flow
 - worker-side rate limiting and CI-backed route-alignment checks
 - GitHub Actions deployment of Pages + all three Workers
+- self-hosted EmulatorJS arcade with 8 completed plan items
+- EmulatorJS core `.data` files stored in Cloudflare R2 (`retroarch-cores`) and served from the edge with ETag cache validation
+- ROM library with per-system directories and `manifest.json`
+- `radley-gallery` R2 bucket bound as `UPLOADS` for `uploads.naimean.com`
 
 ### Current rough edges
-- four Cloudflare secrets are still missing on `barrelrollcounter-worker`
-- frontend still contains legacy hardcoded tool URLs even though `/go/*` exists server-side
-- `ROUTER_SECRET` is documented in older docs/comments but not used by current runtime code
-- `naimean-sessions` exists in Cloudflare but is not bound anywhere
+- R2 bucket existence and CI token R2:Edit permissions have not been confirmed in the Cloudflare account
+- `uploads.naimean.com` upload-write behavior is still pending a final storage/binding configuration
+- `naimean-sessions` KV namespace exists in Cloudflare but is not bound anywhere
 - Cloudflare metadata reportedly showed `num_tables: 0` for both D1 databases and should be verified directly
+- `ROUTER_SECRET` is documented in older docs/comments but not used by current runtime code
 
 ---
 
@@ -42,18 +46,6 @@
 
 ## P0 — Immediate priority (security, operational clarity, handoff risk)
 
-- [ ] **Set the four missing backend secrets**
-  - `OWNER_DISCORD_ID`
-  - `TOOL_URL_WHITEBOARD`
-  - `TOOL_URL_CAPEX`
-  - `TOOL_URL_SNOW`
-  - confirm `/go/*` and owner-restricted flows work once set
-
-- [ ] **Finish the `/go/*` migration**
-  - remove remaining direct Whiteboard / CapEx / ServiceNow URLs from `public/script.js`
-  - make server-controlled redirects the only production path
-  - keep Cloudflare secret values as the single source of truth
-
 - [ ] **Add Cloudflare edge protections on dynamic routes**
   - WAF managed rules on the `naimean.com` zone
   - edge rate limits for `/hit`, `/increment`, `/auth/*`, `/layout`, and `/api/*`
@@ -67,6 +59,15 @@
 - [ ] **Lock down privileged/internal flows further**
   - put Zero Trust or equivalent controls in front of `/go/*`
   - plan the same for any future admin or layout-management surface
+
+- [ ] **Confirm R2 bucket existence and CI permissions**
+  - verify `retroarch-cores` and `radley-gallery` buckets exist in the Cloudflare account
+  - confirm `CLOUDFLARE_API_TOKEN` in GitHub Actions includes R2:Edit permission
+  - validate CI uploads succeed on the next push to main
+
+- [ ] **Set optional backend secrets if needed**
+  - `OWNER_DISCORD_ID` — if `/layout` writes should be restricted to one Discord account
+  - `TOOL_URL_WHITEBOARD`, `TOOL_URL_CAPEX`, `TOOL_URL_SNOW` — if built-in `/go/*` destinations need overrides
 
 ## P1 — Near-term priority (stability, test confidence, ops maturity)
 
@@ -96,6 +97,10 @@
   - chapel auth gate and `/layout` load/save behavior
   - `naimean-api` contract tests for `/api/health` and `/api/data`
 
+- [ ] **Validate and document the R2 + `uploads.naimean.com` pipeline**
+  - confirm upload-write behavior once storage binding is configured
+  - document the end-to-end flow from upload tool to R2 to CDN URL
+
 ## P2 — Planned priority (maintainability, product quality, performance)
 
 - [ ] **Create a real preview/staging path**
@@ -121,6 +126,10 @@
   - continue mobile interaction refinement
   - continue accessibility passes across hotspot and keyboard flows
 
+- [ ] **Expand the ROM library**
+  - add SNES, GBA, GB, N64, and Sega titles to `manifest.json`
+  - keep ROM file naming consistent with the display-name-from-filename convention
+
 ---
 
 ## Optional future options
@@ -142,4 +151,4 @@
 
 ---
 
-_Last updated: 2026-04-23_
+_Last updated: 2026-04-26_

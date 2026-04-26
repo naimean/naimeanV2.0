@@ -51,6 +51,34 @@
 
 # Update Log
 
+## Emulator Feature Synopsis (as of 2026-04-26)
+
+The EmulatorJS arcade integration is now feature-complete. All eight items from `EMULATOR_PLAN.md` are shipped:
+
+1. **ROM filenames as display names** — the game list shows the raw filename (minus extension) instead of a separate translated `name` field, keeping the UI and the actual file in perfect sync.
+2. **Platform section headers** — games are grouped visually under their console label (NES, SNES, GB, etc.) so the list stays navigable as more ROMs are added.
+3. **Simplified `manifest.json`** — plain filename arrays per system replace the old `{ name, file }` object format; the display name derives directly from the filename.
+4. **Self-hosted EmulatorJS on Cloudflare R2** — `loader.js`, `emulator.min.js`, and `emulator.min.css` are self-hosted in `public/assets/retroarch/`. All 20 core `.data` files (~23 MB) live in the `retroarch-cores` R2 bucket to avoid git bloat. The edge router (`src/index.js`) intercepts `/assets/retroarch/cores/*.data` requests, serves from R2 with ETag/304 cache validation, and applies `Cache-Control: public, max-age=31536000, immutable`. CI uploads/refreshes cores on every push to main via `scripts/upload-cores-to-r2.js`.
+5. **Keyboard/gamepad control overlay** — a brief on-screen control reference appears when a game first loads.
+6. **Escape key closes arcade overlay** — pressing Escape (when not in fullscreen) dismisses the picker/player entirely rather than only exiting fullscreen.
+7. **Per-system keyboard controls in the hint overlay** — the controls hint shows the correct button layout for the active system (NES, SNES, GBA, N64, Sega Genesis, etc.) and updates the title accordingly.
+8. **Remember last-played game** — the last launched game (`system` + `file`) is saved to `localStorage` and auto-selected when the arcade reopens.
+
+The asset tree for the arcade is:
+```
+public/assets/retroarch/
+  loader.js
+  emulator.min.js
+  emulator.min.css
+  cores/          <- .gitignored; served from R2 at runtime
+  compression/    <- 7z decompression utilities
+
+public/assets/roms/
+  manifest.json   <- filename-only arrays per system
+  nes/            <- Legend of Zelda, Super Mario Bros 2, 3, Duck Hunt combo
+  snes/, gb/, gba/, n64/, segaMD/, atari2600/ (ready for ROMs)
+```
+
 ## 2026-04-26 (cores migrated from git to Cloudflare R2 — cache busting)
 - Moved all 20 EmulatorJS core `.data` archives (~23 MB) out of git and into the Cloudflare R2 bucket `retroarch-cores` to prevent git bloat.
 - Added `CORES` R2 binding in `wrangler.toml`; added `/assets/retroarch/cores/` to `run_worker_first` so the edge worker intercepts core requests.
