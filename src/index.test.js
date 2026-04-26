@@ -224,7 +224,7 @@ test('R2 cores route: serves .data file from CORES with ETag and immutable cache
   });
 
   const response = await router.fetch(
-    new Request('https://naimean.com/assets/retroarc/cores/fceumm-wasm.data'),
+    new Request('https://naimean.com/assets/retroarch/cores/fceumm-wasm.data'),
     env,
     {},
   );
@@ -253,7 +253,7 @@ test('R2 cores route: returns 304 on If-None-Match ETag match (cache busting)', 
   });
 
   const response = await router.fetch(
-    new Request('https://naimean.com/assets/retroarc/cores/fceumm-wasm.data', {
+    new Request('https://naimean.com/assets/retroarch/cores/fceumm-wasm.data', {
       headers: { 'If-None-Match': '"abc123"' },
     }),
     env,
@@ -290,7 +290,7 @@ test('R2 cores route: returns 304 only when ETag matches, not when different', a
   });
 
   const response = await router.fetch(
-    new Request('https://naimean.com/assets/retroarc/cores/fceumm-wasm.data', {
+    new Request('https://naimean.com/assets/retroarch/cores/fceumm-wasm.data', {
       headers: { 'If-None-Match': '"oldEtag"' },
     }),
     env,
@@ -309,7 +309,7 @@ test('R2 cores route: returns 404 for unknown core key', async () => {
   });
 
   const response = await router.fetch(
-    new Request('https://naimean.com/assets/retroarc/cores/unknown-wasm.data'),
+    new Request('https://naimean.com/assets/retroarch/cores/unknown-wasm.data'),
     env,
     {},
   );
@@ -321,7 +321,7 @@ test('R2 cores route: non-.data requests under cores path fall through to ASSETS
   const { env, calls } = makeEnv();
 
   const response = await router.fetch(
-    new Request('https://naimean.com/assets/retroarc/cores/reports/fceumm.json'),
+    new Request('https://naimean.com/assets/retroarch/cores/reports/fceumm.json'),
     env,
     {},
   );

@@ -6,4 +6,4 @@
 !.env.example
 
 # EmulatorJS core archives — stored in Cloudflare R2, not git
-public/assets/retroarc/cores/*.data
+public/assets/retroarch/cores/*.data
