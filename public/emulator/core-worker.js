@@ -106,7 +106,11 @@ async function preloadCore(system) {
     for (var i = 0; i < chunks.length; i++) { full.set(chunks[i], off); off += chunks[i].length; }
 
     emit('CORE_PROGRESS', system, 0.85, 'Caching to IndexedDB\u2026');
-    try { await idbPut(system, full.buffer); } catch (_) { /* non-fatal: private mode / quota */ }
+    try { await idbPut(system, full.buffer); } catch (idbErr) {
+      // Non-fatal: private browsing mode or storage quota exceeded.
+      // The core stays in the in-memory pool for this session.
+      console.warn('[core-worker] IndexedDB write failed for', system, '-', idbErr && idbErr.message);
+    }
 
     coreStatus.set(system, 'ready');
     emit('CORE_READY', system, 1, 'Core ready');

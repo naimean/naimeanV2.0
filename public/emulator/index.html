@@ -329,7 +329,7 @@
   </div>
 
   <!-- ── Boot overlay ─────────────────────────────────────────────────────── -->
-  <div id="boot-overlay" aria-live="assertive" aria-label="System boot sequence" hidden>
+  <div id="boot-overlay" aria-live="polite" aria-label="System boot sequence" hidden>
     <div class="boot-scanlines" aria-hidden="true"></div>
     <div class="boot-inner">
       <div id="boot-system-label"></div>
@@ -520,7 +520,9 @@
 
       function onWorkerMessage(msg) {
         if (!msg || !msg.type) return;
-        // Ignore messages that don't match the active pending launch.
+        // Ignore progress/ready/error messages for a system other than the one
+        // currently pending launch (can happen during rapid system switches when
+        // an earlier preload finishes after the user has already changed selection).
         if (msg.system && pendingLaunch && msg.system !== pendingLaunch.system) return;
 
         switch (msg.type) {
