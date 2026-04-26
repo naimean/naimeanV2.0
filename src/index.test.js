@@ -200,3 +200,133 @@ test('uploads subdomain returns 404 for missing assets without HTML fallback', a
   assert.deepEqual(calls.assets, ['/assets/uploads/missing.jpg']);
   assert.deepEqual(calls.counter, []);
 });
+
+test('R2 cores route: serves .data file from CORES with ETag and immutable cache headers', async () => {
+  const coreBody = 'fake-core-binary-data';
+  const { env, calls } = makeEnv({
+    CORES: {
+      async get(key) {
+        calls.assets.push('r2:' + key);
+        if (key === 'fceumm-wasm.data') {
+          return {
+            httpEtag: '"abc123"',
+            body: new ReadableStream({
+              start(controller) {
+                controller.enqueue(new TextEncoder().encode(coreBody));
+                controller.close();
+              },
+            }),
+          };
+        }
+        return null;
+      },
+    },
+  });
+
+  const response = await router.fetch(
+    new Request('https://naimean.com/assets/retroarc/cores/fceumm-wasm.data'),
+    env,
+    {},
+  );
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.headers.get('ETag'), '"abc123"');
+  assert.strictEqual(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
+  assert.strictEqual(response.headers.get('Content-Type'), 'application/octet-stream');
+  assert.deepEqual(calls.assets, ['r2:fceumm-wasm.data']);
+  assert.deepEqual(calls.counter, []);
+});
+
+test('R2 cores route: returns 304 on If-None-Match ETag match (cache busting)', async () => {
+  const { env } = makeEnv({
+    CORES: {
+      async get(key) {
+        if (key === 'fceumm-wasm.data') {
+          return {
+            httpEtag: '"abc123"',
+            body: new ReadableStream({ start(c) { c.close(); } }),
+          };
+        }
+        return null;
+      },
+    },
+  });
+
+  const response = await router.fetch(
+    new Request('https://naimean.com/assets/retroarc/cores/fceumm-wasm.data', {
+      headers: { 'If-None-Match': '"abc123"' },
+    }),
+    env,
+    {},
+  );
+
+  assert.strictEqual(response.status, 304);
+  assert.strictEqual(response.headers.get('ETag'), '"abc123"');
+  assert.strictEqual(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
+  // Security headers must still be applied to 304 responses.
+  assert.strictEqual(response.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.strictEqual(response.headers.get('X-Frame-Options'), 'DENY');
+});
+
+test('R2 cores route: returns 304 only when ETag matches, not when different', async () => {
+  const coreBody = 'updated-core-data';
+  const { env } = makeEnv({
+    CORES: {
+      async get(key) {
+        if (key === 'fceumm-wasm.data') {
+          return {
+            httpEtag: '"newetag456"',
+            body: new ReadableStream({
+              start(controller) {
+                controller.enqueue(new TextEncoder().encode(coreBody));
+                controller.close();
+              },
+            }),
+          };
+        }
+        return null;
+      },
+    },
+  });
+
+  const response = await router.fetch(
+    new Request('https://naimean.com/assets/retroarc/cores/fceumm-wasm.data', {
+      headers: { 'If-None-Match': '"oldEtag"' },
+    }),
+    env,
+    {},
+  );
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.headers.get('ETag'), '"newetag456"');
+});
+
+test('R2 cores route: returns 404 for unknown core key', async () => {
+  const { env } = makeEnv({
+    CORES: {
+      async get() { return null; },
+    },
+  });
+
+  const response = await router.fetch(
+    new Request('https://naimean.com/assets/retroarc/cores/unknown-wasm.data'),
+    env,
+    {},
+  );
+
+  assert.strictEqual(response.status, 404);
+});
+
+test('R2 cores route: non-.data requests under cores path fall through to ASSETS', async () => {
+  const { env, calls } = makeEnv();
+
+  const response = await router.fetch(
+    new Request('https://naimean.com/assets/retroarc/cores/reports/fceumm.json'),
+    env,
+    {},
+  );
+
+  // ASSETS returns 404 in the default mock for this path
+  assert.strictEqual(response.status, 404);
+  assert.ok(calls.assets.some((p) => p.includes('reports/fceumm.json')));
+});
