@@ -2161,6 +2161,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function launchGame(system, file, name) {
       console.log('[Arcade] launchGame: system=' + system + ' file=' + file + ' name="' + name + '"');
+      var coreRetryCount = 0;
       if (window.NaimeanDiag) {
         window.NaimeanDiag.set('arcade:game', name + ' (' + system.toUpperCase() + ')');
         window.NaimeanDiag.set('arcade:rom', file);
@@ -2250,6 +2251,32 @@ document.addEventListener('DOMContentLoaded', function() {
       window.EJS_onLoadError = function(e) {
         var msg = getEjsLoadErrorMessage(e);
         console.error('[Arcade] EJS_onLoadError:', e);
+        // If the core WASM download failed and we have a fallback CDN, retry with it.
+        if (msg.indexOf('downloading core') !== -1 && coreRetryCount < EJS_CDN_URLS.length - 1) {
+          coreRetryCount++;
+          var nextCdn = EJS_CDN_URLS[coreRetryCount];
+          console.warn('[Arcade] EJS_onLoadError: core download failed, retrying with ' + nextCdn);
+          setArcadeStatus('Core download failed — retrying with alternate CDN…');
+          if (window.NaimeanDiag) {
+            window.NaimeanDiag.log('arcade: core retry ' + coreRetryCount + ' → ' + nextCdn);
+          }
+          // Clean up the failed emulator instance before retrying.
+          document.querySelectorAll(
+            'script[id="emulatorjs-loader"], ' +
+            'script[src*="emulatorjs"], script[src*="emulator.min"], ' +
+            'link[href*="emulatorjs"], link[href*="emulator.min"]'
+          ).forEach(function(el) { el.remove(); });
+          var retryEjsGlobals = ['EmulatorJS', 'EJS_STORAGE', 'EJS_DUMMYSTORAGE', 'EJS_COMPRESSION',
+            'EJS_GameManager', 'EJS_ControlHandler', 'EJS_SHADERS'];
+          retryEjsGlobals.forEach(function(k) {
+            if (Object.prototype.hasOwnProperty.call(window, k)) {
+              try { delete window[k]; } catch (e2) { window[k] = undefined; }
+            }
+          });
+          if (arcadeGameContainer) { arcadeGameContainer.innerHTML = ''; }
+          appendLoaderScript(coreRetryCount);
+          return;
+        }
         if (arcadeLoadTimeout) {
           clearTimeout(arcadeLoadTimeout);
           arcadeLoadTimeout = null;
