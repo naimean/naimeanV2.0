@@ -1528,3 +1528,77 @@ body {
     padding: 2px 5px;
   }
 }
+
+/* ── Controls hint overlay ───────────────────────────────────────────────── */
+
+.arcade-controls-hint {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.arcade-controls-hint.active {
+  display: flex;
+  animation: arcade-hint-fade 5s ease-in-out forwards;
+}
+
+@keyframes arcade-hint-fade {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.arcade-controls-hint-inner {
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(142, 240, 178, 0.35);
+  border-radius: 4px;
+  padding: 12px 18px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: 'VT323', monospace;
+  color: var(--mint-bright);
+  pointer-events: auto;
+}
+
+.arcade-controls-hint-title {
+  font-size: 1em;
+  letter-spacing: 0.15em;
+  color: var(--mint);
+  text-shadow: 0 0 8px rgba(140, 240, 178, 0.5);
+  margin-bottom: 2px;
+}
+
+.arcade-controls-hint-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 16px;
+  row-gap: 2px;
+  font-size: 0.9em;
+}
+
+.arcade-controls-key {
+  text-align: right;
+  color: var(--mint);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.arcade-controls-action {
+  text-align: left;
+  color: rgba(142, 240, 178, 0.7);
+  letter-spacing: 0.05em;
+}
+
+.arcade-controls-hint-dismiss {
+  font-size: 0.72em;
+  color: rgba(142, 240, 178, 0.45);
+  letter-spacing: 0.12em;
+  margin-top: 4px;
+}
