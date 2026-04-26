@@ -131,6 +131,7 @@ export default {
             : 'application/octet-stream';
         const coreHeaders = new Headers({
           'Content-Type': coreContentType,
+          'Content-Length': String(coreObj.size),
           'Cache-Control': 'public, max-age=31536000, immutable',
           'Accept-Ranges': 'bytes',
           'Access-Control-Allow-Origin': '*',
