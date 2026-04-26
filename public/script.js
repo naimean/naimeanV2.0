@@ -193,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
     pet:       [['↑↓←→','CURSOR'],['ENTER','RETURN']],
     plus4:     [['↑↓←→','JOYSTICK'],['Z','FIRE']]
   };
+  const ARCADE_SYSTEM_KEYS = ['nes', 'snes', 'gb', 'gba', 'n64', 'segaMD', 'segaMS', 'segaGG', 'sega32x', 'atari2600', 'atari7800', 'atari5200', 'pce', 'lynx', 'vb', 'c64', 'c128', 'vic20', 'pet', 'plus4'];
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
   let arcadeLoadTimeout = null;
@@ -1984,7 +1985,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (screenOn && !puzzleSolved) {
           if (ARCADE_COMMANDS.has(getBootInputSuffix())) {
-            openArcade();
+            openArcadeDirectly();
             return;
           }
           playWrongSound();
@@ -2141,7 +2142,7 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeFsLaunchBtn.classList.remove('ready');
       }
       var manifest = arcadeManifest || {};
-      var systemKeys = ['nes', 'snes', 'gb', 'gba', 'n64', 'segaMD', 'segaMS', 'segaGG', 'sega32x', 'atari2600', 'atari7800', 'atari5200', 'pce', 'lynx', 'vb', 'c64', 'c128', 'vic20', 'pet', 'plus4'];
+      var systemKeys = ARCADE_SYSTEM_KEYS;
       var totalAdded = 0;
       systemKeys.forEach(function(system) {
         var games = Array.isArray(manifest[system]) ? manifest[system] : [];
@@ -2477,6 +2478,59 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
+    // Opens the arcade and immediately launches a game, bypassing the picker.
+    // Uses the last-played game from localStorage, or the first game in the
+    // manifest, falling back to the picker if no games are available.
+    function openArcadeDirectly() {
+      console.log('[Arcade] openArcadeDirectly: launching emulator directly');
+      if (!arcadeOverlay) {
+        console.warn('[Arcade] openArcadeDirectly: arcadeOverlay element not found, aborting');
+        return;
+      }
+      arcadeOverlay.classList.add('visible');
+      arcadeOverlay.setAttribute('aria-hidden', 'false');
+      loadArcadeManifest().then(function() {
+        var gameToLaunch = null;
+        try {
+          var saved = window.localStorage.getItem(ARCADE_LAST_GAME_KEY);
+          if (saved) {
+            var parsed = JSON.parse(saved);
+            if (parsed && typeof parsed.system === 'string' && typeof parsed.file === 'string') {
+              gameToLaunch = parsed;
+              console.log('[Arcade] openArcadeDirectly: resuming last game "' + parsed.file + '" (' + parsed.system + ')');
+            }
+          }
+        } catch (_) {
+          console.debug('[Arcade] openArcadeDirectly: failed to read last game from localStorage', _);
+        }
+        if (!gameToLaunch) {
+          var manifest = arcadeManifest || {};
+          for (var i = 0; i < ARCADE_SYSTEM_KEYS.length; i++) {
+            var sys = ARCADE_SYSTEM_KEYS[i];
+            var games = Array.isArray(manifest[sys]) ? manifest[sys] : [];
+            var valid = games.filter(function(g) { return g && typeof g === 'string'; });
+            if (valid.length > 0) {
+              gameToLaunch = { system: sys, file: valid[0] };
+              console.log('[Arcade] openArcadeDirectly: auto-selecting first game "' + valid[0] + '" (' + sys + ')');
+              break;
+            }
+          }
+        }
+        if (gameToLaunch) {
+          var displayName = gameToLaunch.file.replace(/\.[^.]+$/, '');
+          launchGame(gameToLaunch.system, gameToLaunch.file, displayName);
+        } else {
+          console.warn('[Arcade] openArcadeDirectly: no games in manifest, falling back to picker');
+          showArcadePicker();
+          populateArcadeGameList();
+        }
+      }).catch(function(err) {
+        console.warn('[Arcade] openArcadeDirectly: manifest load failed, falling back to picker:', err);
+        showArcadePicker();
+        populateArcadeGameList();
+      });
+    }
+
     function closeArcade() {
       console.log('[Arcade] closeArcade: closing arcade overlay');
       if (!arcadeOverlay) {
@@ -2540,7 +2594,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const cmd = text.slice(FINAL_PREFIX.length).trim().toLowerCase();
           if (ARCADE_COMMANDS.has(cmd)) {
             resetFinalInput();
-            openArcade();
+            openArcadeDirectly();
             return;
           }
         }
