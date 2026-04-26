@@ -15,7 +15,7 @@ Improvements and housekeeping items for the arcade/emulator feature built on [Em
 
 2. **Add platform/system section headers in the game list**
    - Group entries visually under their console label (NES, SNES, GB, etc.) so the list is easier to browse as more ROMs are added.
-   - _Status: planned_
+   - _Status: done_
 
 3. **Simplify `manifest.json` to filename-only arrays**
    - Drop the `{ name, file }` object format and use plain filename strings per system.
