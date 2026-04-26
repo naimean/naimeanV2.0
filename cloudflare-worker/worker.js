@@ -1195,6 +1195,11 @@ async function handleGoRedirect(pathname, request, env, origin) {
 
 // ── Icon generation ──────────────────────────────────────────────────────────
 const ICON_AI_MODEL = '@cf/stabilityai/stable-diffusion-xl-base-1.0';
+const ICON_ALLOWED_MODELS = new Set([
+  '@cf/stabilityai/stable-diffusion-xl-base-1.0',
+  '@cf/bytedance/stable-diffusion-xl-lightning',
+  '@cf/lykon/dreamshaper-8-lcm',
+]);
 const ICON_COUNT = 3;
 const ICON_MAX_PROMPT_LENGTH = 400;
 const ICON_WORD_MAX_LENGTH = 80;
@@ -1249,10 +1254,16 @@ async function handleIconGenerate(request, env, origin) {
 
   const transparent = body.transparent === true;
 
+  const modelInput = typeof body.model === 'string' ? body.model.trim() : '';
+  const model = ICON_ALLOWED_MODELS.has(modelInput) ? modelInput : ICON_AI_MODEL;
+  // Inform the caller which model was actually used (useful when the requested
+  // model was not in the whitelist and the default was applied silently).
+  const modelUsed = model;
+
   const imageResults = await Promise.all(
     Array.from({ length: ICON_COUNT }, function (_, i) {
       const prompt = buildIconPrompt(subject, words, transparent, i);
-      return env.AI.run(ICON_AI_MODEL, { prompt })
+      return env.AI.run(model, { prompt })
         .then(function (response) {
           // Workers AI returns a ReadableStream of PNG bytes for image models.
           if (response instanceof ReadableStream) {
@@ -1279,7 +1290,7 @@ async function handleIconGenerate(request, env, origin) {
     })
   );
 
-  return jsonResponse({ images: imageResults }, 200, origin, env);
+  return jsonResponse({ images: imageResults, model_used: modelUsed }, 200, origin, env);
 }
 
 export default {
