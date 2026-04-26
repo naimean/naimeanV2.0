@@ -127,12 +127,8 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameAttempts = 0;
   // Self-hosted EmulatorJS assets (loader.js, emulator.min.js, emulator.min.css,
   // system cores, and compression utilities) in /assets/retroarc/.
-  // Used as the first loading source so the arcade works without CDN availability.
+  // All core .data files are committed to the repo; no CDN is needed at runtime.
   const LOCAL_EJS_PATH = '/assets/retroarc/';
-  const EJS_CDN_URLS = [
-    'https://cdn.emulatorjs.org/stable/data/',
-    'https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@latest/data/',
-  ];
   // Native display aspect ratios per EmulatorJS system key.
   // GB/GG/VB use non-4:3 ratios; GBA is 3:2; Lynx is wide; NDS is portrait.
   const EJS_SYSTEM_ASPECT = {
@@ -2260,7 +2256,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function launchGame(system, file, name) {
       console.log('[Arcade] launchGame: system=' + system + ' file=' + file + ' name="' + name + '"');
-      var coreRetryCount = 0;
       if (window.NaimeanDiag) {
         window.NaimeanDiag.set('arcade:game', name + ' (' + system.toUpperCase() + ')');
         window.NaimeanDiag.set('arcade:rom', file);
@@ -2293,7 +2288,7 @@ document.addEventListener('DOMContentLoaded', function() {
       window.EJS_core = system;
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
       window.EJS_startOnLoaded = true;
-      console.log('[Arcade] launchGame: EJS globals set — EJS_core=' + system + ' EJS_gameUrl=' + window.EJS_gameUrl + ' EJS_pathtodata will be set per CDN');
+      console.log('[Arcade] launchGame: EJS globals set — EJS_core=' + system + ' EJS_gameUrl=' + window.EJS_gameUrl + ' EJS_pathtodata=' + LOCAL_EJS_PATH);
       if (window.NaimeanDiag) {
         window.NaimeanDiag.set('arcade:gameUrl', window.EJS_gameUrl);
       }
@@ -2354,32 +2349,6 @@ document.addEventListener('DOMContentLoaded', function() {
       window.EJS_onLoadError = function(e) {
         var msg = getEjsLoadErrorMessage(e);
         console.error('[Arcade] EJS_onLoadError:', e);
-        // If the core WASM download failed and we have a fallback CDN, retry with it.
-        if (msg.indexOf('downloading core') !== -1 && coreRetryCount < EJS_CDN_URLS.length - 1) {
-          coreRetryCount++;
-          var nextCdn = EJS_CDN_URLS[coreRetryCount];
-          console.warn('[Arcade] EJS_onLoadError: core download failed, retrying with ' + nextCdn);
-          setArcadeStatus('Core download failed — retrying with alternate CDN…');
-          if (window.NaimeanDiag) {
-            window.NaimeanDiag.log('arcade: core retry ' + coreRetryCount + ' → ' + nextCdn);
-          }
-          // Clean up the failed emulator instance before retrying.
-          document.querySelectorAll(
-            'script[id="emulatorjs-loader"], ' +
-            'script[src*="emulatorjs"], script[src*="emulator.min"], ' +
-            'link[href*="emulatorjs"], link[href*="emulator.min"]'
-          ).forEach(function(el) { el.remove(); });
-          var retryEjsGlobals = ['EmulatorJS', 'EJS_STORAGE', 'EJS_DUMMYSTORAGE', 'EJS_COMPRESSION',
-            'EJS_GameManager', 'EJS_ControlHandler', 'EJS_SHADERS'];
-          retryEjsGlobals.forEach(function(k) {
-            if (Object.prototype.hasOwnProperty.call(window, k)) {
-              try { delete window[k]; } catch (e2) { window[k] = undefined; }
-            }
-          });
-          if (arcadeGameContainer) { arcadeGameContainer.innerHTML = ''; }
-          appendLoaderScript(coreRetryCount);
-          return;
-        }
         if (arcadeLoadTimeout) {
           clearTimeout(arcadeLoadTimeout);
           arcadeLoadTimeout = null;
@@ -2395,7 +2364,7 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       setArcadeStatus('Loading EmulatorJS…');
       if (window.NaimeanDiag) { window.NaimeanDiag.set('arcade:status', 'loading…'); }
-      console.log('[Arcade] launchGame: starting 30s load timeout, trying local assets then CDN');
+      console.log('[Arcade] launchGame: starting 30s load timeout, loading self-hosted assets');
       arcadeLoadTimeout = setTimeout(function() {
         arcadeLoadTimeout = null;
         if (arcadeLoading) {
@@ -2408,14 +2377,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
-      // sourceIndex: -1 = local self-hosted assets, 0+ = CDN fallbacks.
-      // For local: all EmulatorJS files (loader.js, emulator.min.js/css, and
-      // core binaries) are served from LOCAL_EJS_PATH (/assets/retroarc/).
-      // Core binaries are downloaded at deploy time by scripts/download-ejs-cores.js.
-      function appendLoaderScript(sourceIndex) {
-        var isLocal = (sourceIndex < 0);
-        if (!isLocal && sourceIndex >= EJS_CDN_URLS.length) {
-          console.error('[Arcade] appendLoaderScript: all sources exhausted, cannot load EmulatorJS');
+      // All EmulatorJS assets (loader.js, emulator.min.js/css, core .data files)
+      // are self-hosted under LOCAL_EJS_PATH (/assets/retroarc/).
+      function appendLoaderScript() {
+        // Clean up any EJS_paths override left by a previous attempt.
+        if (Object.prototype.hasOwnProperty.call(window, 'EJS_paths')) {
+          try { delete window.EJS_paths; } catch (e) { window.EJS_paths = undefined; }
+        }
+        window.EJS_pathtodata = LOCAL_EJS_PATH;
+        var loaderSrc = LOCAL_EJS_PATH + 'loader.js';
+        console.log('[Arcade] appendLoaderScript: loading self-hosted → ' + loaderSrc);
+        if (window.NaimeanDiag) {
+          window.NaimeanDiag.set('arcade:cdn', 'local: ' + loaderSrc);
+          window.NaimeanDiag.log('arcade: loading self-hosted loader.js');
+        }
+        var s = document.createElement('script');
+        s.id = 'emulatorjs-loader';
+        s.src = loaderSrc;
+        s.onload = function() {
+          console.log('[Arcade] appendLoaderScript: loader.js loaded OK');
+          if (window.NaimeanDiag) {
+            window.NaimeanDiag.set('arcade:loader', 'OK (local)');
+            window.NaimeanDiag.set('arcade:status', 'loader OK — initialising…');
+            window.NaimeanDiag.log('arcade: loader.js OK');
+          }
+          setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
+        };
+        s.onerror = function() {
+          console.error('[Arcade] appendLoaderScript: failed to load self-hosted loader.js');
+          if (window.NaimeanDiag) {
+            window.NaimeanDiag.set('arcade:loader', 'FAIL (local)');
+            window.NaimeanDiag.log('arcade: loader.js FAIL');
+          }
+          s.remove();
           if (arcadeLoadTimeout) {
             clearTimeout(arcadeLoadTimeout);
             arcadeLoadTimeout = null;
@@ -2423,75 +2417,11 @@ document.addEventListener('DOMContentLoaded', function() {
           if (arcadeLoading) {
             arcadeLoading.classList.remove('active');
           }
-          if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:status', 'ERROR: all sources failed ✗');
-            window.NaimeanDiag.log('arcade: all sources exhausted');
-          }
-          setArcadeStatus('Error: failed to load EmulatorJS — check network / console');
-          return;
-        }
-        // Clean up any EJS_paths override left by a previous attempt.
-        if (Object.prototype.hasOwnProperty.call(window, 'EJS_paths')) {
-          try { delete window.EJS_paths; } catch (e) { window.EJS_paths = undefined; }
-        }
-        var loaderSrc, sourceLabel;
-        if (isLocal) {
-          // All EmulatorJS assets are self-hosted: loader.js, emulator.min.js/css,
-          // and core binaries (.js + .wasm) all live under LOCAL_EJS_PATH.
-          window.EJS_pathtodata = LOCAL_EJS_PATH;
-          loaderSrc = LOCAL_EJS_PATH + 'loader.js';
-          sourceLabel = 'local';
-        } else {
-          var cdnBase = EJS_CDN_URLS[sourceIndex];
-          // Set EJS_pathtodata before appending the script so that loader.js reads
-          // the correct CDN base when it executes (loader.js reads this synchronously,
-          // before the onload callback would fire).
-          window.EJS_pathtodata = cdnBase;
-          loaderSrc = cdnBase + 'loader.js';
-          sourceLabel = 'CDN ' + (sourceIndex + 1) + '/' + EJS_CDN_URLS.length;
-        }
-        console.log('[Arcade] appendLoaderScript: trying ' + sourceLabel + ' → ' + loaderSrc);
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:cdn', sourceLabel + ': ' + loaderSrc);
-          window.NaimeanDiag.log('arcade: trying ' + sourceLabel);
-        }
-        var s = document.createElement('script');
-        s.id = 'emulatorjs-loader';
-        s.src = loaderSrc;
-        s.onload = function() {
-          console.log('[Arcade] appendLoaderScript: loader.js loaded OK from ' + sourceLabel);
-          if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:loader', 'OK (' + sourceLabel + ')');
-            window.NaimeanDiag.set('arcade:status', 'loader OK — initialising…');
-            window.NaimeanDiag.log('arcade: loader.js OK from ' + sourceLabel);
-          }
-          setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
-        };
-        s.onerror = function() {
-          console.warn('[Arcade] appendLoaderScript: failed to load loader.js from ' + sourceLabel);
-          if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:loader', 'FAIL ' + sourceLabel);
-            window.NaimeanDiag.log('arcade: loader.js FAIL from ' + sourceLabel);
-          }
-          s.remove();
-          if (isLocal) {
-            console.log('[Arcade] appendLoaderScript: local assets failed — falling back to CDN');
-            setArcadeStatus('Local assets unavailable — trying CDN…');
-            appendLoaderScript(0);
-          } else {
-            var nextIndex = sourceIndex + 1;
-            if (nextIndex < EJS_CDN_URLS.length) {
-              console.log('[Arcade] appendLoaderScript: retrying with next CDN in 1s…');
-              setArcadeStatus('CDN load failed — trying alternate…');
-              setTimeout(function() { appendLoaderScript(nextIndex); }, 1000);
-            } else {
-              appendLoaderScript(nextIndex);
-            }
-          }
+          setArcadeStatus('Error: failed to load EmulatorJS — check server / console');
         };
         document.head.appendChild(s);
       }
-      appendLoaderScript(-1);
+      appendLoaderScript();
     }
 
     function exitArcadeFullscreen() {
