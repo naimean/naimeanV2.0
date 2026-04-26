@@ -18,6 +18,13 @@
   var TIMEOUT_FAIL_60_MS  = 60000;
   var MAX_DEBUG_LOG_LINES = 50;
 
+  // Global property names set/cleared for each EmulatorJS session.
+  // Kept as a constant so init and destroy stay in sync.
+  var EJS_GLOBALS = [
+    'EJS_player', 'EJS_core', 'EJS_gameUrl', 'EJS_pathtodata',
+    'EJS_startOnLoaded', 'EJS_onLoadState', 'EJS_onLoadError', 'EJS_emulator',
+  ];
+
   // ── State machine states ───────────────────────────────────────────────────
 
   var STATES = {
@@ -134,6 +141,11 @@
 
   // ── Fetch helpers ──────────────────────────────────────────────────────────
 
+  // Returns the .data URL for a given core name.
+  function getCoreDataUrl(core) {
+    return CORES_BASE + core + '-wasm.data';
+  }
+
   function fetchJSON(url) {
     return fetch(url, { cache: 'default' }).then(function (res) {
       if (!res.ok) { throw new Error('HTTP ' + res.status + ' loading ' + url); }
@@ -189,7 +201,7 @@
       dbgLog('no core configured for ' + (system && system.id));
       return Promise.resolve({ cached: false, reason: 'no-core' });
     }
-    var url = CORES_BASE + system.core + '-wasm.data';
+    var url = getCoreDataUrl(system.core);
     dbgLog('prefetching core ' + system.core + ' from ' + url);
     return warmUrl(url).then(function () {
       dbgLog('core ' + system.core + ' cached OK');
@@ -204,7 +216,7 @@
     if (!system || !system.core) {
       return Promise.resolve({ ok: false, reason: 'no-core' });
     }
-    var url = CORES_BASE + system.core + '-wasm.data';
+    var url = getCoreDataUrl(system.core);
     return probeUrl(url).then(function (res) {
       var ok = res.status === 200 || res.status === 206 || res.status === 304;
       return { ok: ok, status: res.status, url: url };
@@ -240,6 +252,9 @@
     return line;
   }
 
+  // runBootAnimation: animates boot lines while the core prefetch runs concurrently.
+  // The corePreloadPromise is started BEFORE this function is called so that the
+  // download begins immediately; we await it here only after the lines have played.
   async function runBootAnimation(system, corePreloadPromise) {
     if (elBootContent) { elBootContent.innerHTML = ''; }
 
@@ -308,8 +323,7 @@
       loaderScript = null;
     }
     // Reset globals
-    ['EJS_player','EJS_core','EJS_gameUrl','EJS_pathtodata',
-     'EJS_startOnLoaded','EJS_onLoadState','EJS_onLoadError','EJS_emulator'].forEach(function (k) {
+    EJS_GLOBALS.forEach(function (k) {
       try { delete window[k]; } catch (_) {}
     });
     if (elGameWrap) {
@@ -396,7 +410,7 @@
       return 'The core .data file URL returned HTML — the file is likely missing from R2 storage.';
     }
     if (m.includes('timeout') || m.includes('timed')) {
-      return 'Core .data download timed out. Verify the file exists at ' + CORES_BASE + (sys && sys.core ? sys.core + '-wasm.data' : '');
+      return 'Core .data download timed out. Verify the file exists at ' + (sys && sys.core ? getCoreDataUrl(sys.core) : CORES_BASE);
     }
     if (!romFile)  { return 'No ROM file was selected or the ROM is missing from the manifest.'; }
     return 'Check /arcade-health.html for detailed diagnostics.';
@@ -675,6 +689,24 @@
     }
 
     renderSystemPicker();
+
+    // Handle optional URL params for deep-linking:
+    //   ?system=nes              → auto-start the NES system
+    //   ?system=nes&file=foo.nes → auto-start NES and launch directly into foo.nes
+    var params    = new URLSearchParams(location.search);
+    var paramSys  = params.get('system') || '';
+    var paramFile = params.get('file')   || '';
+    if (paramSys && systemsConfig && systemsConfig[paramSys]) {
+      dbgLog('deep-link: system=' + paramSys + (paramFile ? ' file=' + paramFile : ''));
+      if (paramFile) {
+        await startSystem(paramSys);
+        if (selectedSystem) {
+          launchRom(selectedSystem, paramFile);
+        }
+      } else {
+        startSystem(paramSys);
+      }
+    }
   }()).catch(function (err) {
     dbgLog('FATAL boot error: ' + (err && err.message ? err.message : String(err)));
   });

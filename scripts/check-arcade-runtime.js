@@ -60,6 +60,10 @@ function ok(msg) {
   process.stdout.write('[ OK ] ' + msg + '\n');
 }
 
+function isValidCore(cfg) {
+  return cfg && typeof cfg.core === 'string' && cfg.core.length > 0;
+}
+
 // ── 1. Required files ────────────────────────────────────────────────────────
 
 for (const f of REQUIRED_FILES) {
@@ -119,7 +123,7 @@ if (systems && manifest) {
 
     if (roms.length > 0) {
       // 4. System with ROMs must have a non-null core
-      if (!cfg.core || typeof cfg.core !== 'string') {
+      if (!isValidCore(cfg)) {
         fail('System "' + systemId + '" has ' + roms.length + ' ROM(s) but core is null in systems.json');
       }
 
