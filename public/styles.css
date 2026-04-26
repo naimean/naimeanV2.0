@@ -1196,7 +1196,32 @@ body {
 }
 
 .arcade-section-header {
-  display: none;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(142, 240, 178, 0.15);
+  border-bottom: 1px solid rgba(142, 240, 178, 0.08);
+  color: rgba(142, 240, 178, 0.55);
+  font-family: 'VT323', monospace;
+  font-size: 0.85em;
+  letter-spacing: 0.15em;
+  padding: 8px 10px 4px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  display: block;
+}
+
+.arcade-section-header::after {
+  content: ' \25B6';
+  font-size: 0.75em;
+  opacity: 0.65;
+}
+
+.arcade-section-header:hover,
+.arcade-section-header:focus-visible {
+  color: var(--mint-bright);
+  background: rgba(142, 240, 178, 0.06);
+  outline: none;
 }
 
 .arcade-game-item {
