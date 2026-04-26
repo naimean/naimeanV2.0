@@ -1226,3 +1226,636 @@ test('rate limit: POST /auth/emaillogin is capped at 5 requests per minute', asy
   const throttled = await makeRlRequest('POST', '/auth/emaillogin', ip);
   assert.strictEqual(throttled.status, 429);
 });
+
+// ─── Additional pure helper tests ────────────────────────────────────────────
+// Following the same convention as the inlined copies at the top of this file
+// (see "Inline copies of the pure helpers from worker.js"), the functions below
+// are faithful copies of helpers that were not yet inlined.  The duplication is
+// intentional: it allows these tests to run under plain Node.js without a
+// Workers-compatible bundler or Miniflare.
+
+function isValidEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const trimmed = email.trim();
+  return trimmed.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+}
+
+function isValidUsername(username) {
+  if (!username || typeof username !== 'string') return false;
+  return /^[a-zA-Z0-9_-]{1,16}$/.test(username.trim());
+}
+
+function isValidLayoutPage(page) {
+  if (typeof page !== 'string' || !page || page.length > 64) return false;
+  return /^[a-zA-Z0-9_\-]+$/.test(page);
+}
+
+function isValidElementId(id) {
+  if (typeof id !== 'string' || !id || id.length > 64) return false;
+  return /^[a-zA-Z0-9_\-.]+$/.test(id);
+}
+
+function parseLayoutNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function buildRelativeUrlWithParam(returnTo, key, value) {
+  const url = new URL(returnTo, 'https://naimean.local');
+  url.searchParams.set(key, value);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+// ── isEnabledEnvFlag ──────────────────────────────────────────────────────────
+
+test('isEnabledEnvFlag – boolean true returns true', () => {
+  assert.strictEqual(isEnabledEnvFlag(true), true);
+});
+
+test('isEnabledEnvFlag – boolean false returns false', () => {
+  assert.strictEqual(isEnabledEnvFlag(false), false);
+});
+
+test('isEnabledEnvFlag – truthy string values return true', () => {
+  assert.strictEqual(isEnabledEnvFlag('true'), true);
+  assert.strictEqual(isEnabledEnvFlag('1'), true);
+  assert.strictEqual(isEnabledEnvFlag('yes'), true);
+  assert.strictEqual(isEnabledEnvFlag('on'), true);
+  assert.strictEqual(isEnabledEnvFlag('TRUE'), true);
+  assert.strictEqual(isEnabledEnvFlag('  Yes  '), true);
+});
+
+test('isEnabledEnvFlag – falsy string values return false', () => {
+  assert.strictEqual(isEnabledEnvFlag('false'), false);
+  assert.strictEqual(isEnabledEnvFlag('0'), false);
+  assert.strictEqual(isEnabledEnvFlag('off'), false);
+  assert.strictEqual(isEnabledEnvFlag(''), false);
+  assert.strictEqual(isEnabledEnvFlag('no'), false);
+});
+
+test('isEnabledEnvFlag – non-string non-boolean values return false', () => {
+  assert.strictEqual(isEnabledEnvFlag(null), false);
+  assert.strictEqual(isEnabledEnvFlag(undefined), false);
+  assert.strictEqual(isEnabledEnvFlag(1), false);
+  assert.strictEqual(isEnabledEnvFlag(0), false);
+});
+
+// ── isNonProductionEnvironment ────────────────────────────────────────────────
+
+test('isNonProductionEnvironment – production/prod values return false', () => {
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: 'production' }), false);
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: 'prod' }), false);
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: '  PRODUCTION  ' }), false);
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: 'PROD' }), false);
+});
+
+test('isNonProductionEnvironment – non-production values return true', () => {
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: 'development' }), true);
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: 'staging' }), true);
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: 'test' }), true);
+});
+
+test('isNonProductionEnvironment – empty or absent APP_ENV returns false', () => {
+  assert.strictEqual(isNonProductionEnvironment({}), false);
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: '' }), false);
+});
+
+test('isNonProductionEnvironment – falls back to ENVIRONMENT when APP_ENV is not a string', () => {
+  assert.strictEqual(isNonProductionEnvironment({ ENVIRONMENT: 'production' }), false);
+  assert.strictEqual(isNonProductionEnvironment({ ENVIRONMENT: 'staging' }), true);
+  // APP_ENV=0 is not a string, so ENVIRONMENT is consulted
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: 0, ENVIRONMENT: 'staging' }), true);
+});
+
+test('isNonProductionEnvironment – empty-string APP_ENV takes precedence, ignoring ENVIRONMENT', () => {
+  // APP_ENV is a string (even though empty), so ENVIRONMENT is never consulted.
+  assert.strictEqual(isNonProductionEnvironment({ APP_ENV: '', ENVIRONMENT: 'staging' }), false);
+});
+
+// ── parseAllowedOriginList ────────────────────────────────────────────────────
+
+test('parseAllowedOriginList – empty or null value returns empty array', () => {
+  assert.deepEqual(parseAllowedOriginList(''), []);
+  assert.deepEqual(parseAllowedOriginList(null), []);
+  assert.deepEqual(parseAllowedOriginList(undefined), []);
+});
+
+test('parseAllowedOriginList – valid https and http origins are normalized and returned', () => {
+  const result = parseAllowedOriginList('https://naimean.com, http://localhost');
+  assert.deepEqual(result, ['https://naimean.com', 'http://localhost']);
+});
+
+test('parseAllowedOriginList – invalid entries and non-http(s) protocols are silently ignored', () => {
+  const result = parseAllowedOriginList('not-a-url, ftp://files.example.com, https://valid.com');
+  assert.deepEqual(result, ['https://valid.com']);
+});
+
+test('parseAllowedOriginList – origin hostname is normalised to lowercase', () => {
+  const result = parseAllowedOriginList('https://NAIMEAN.COM');
+  assert.deepEqual(result, ['https://naimean.com']);
+});
+
+// ── isValidEmail ──────────────────────────────────────────────────────────────
+
+test('isValidEmail – valid email addresses return true', () => {
+  assert.ok(isValidEmail('user@example.com'));
+  assert.ok(isValidEmail('user+tag@sub.domain.org'));
+  assert.ok(isValidEmail('  user@example.com  ')); // trimmed
+});
+
+test('isValidEmail – invalid email addresses return false', () => {
+  assert.strictEqual(isValidEmail(''), false);
+  assert.strictEqual(isValidEmail(null), false);
+  assert.strictEqual(isValidEmail('not-an-email'), false);
+  assert.strictEqual(isValidEmail('user@'), false);
+  assert.strictEqual(isValidEmail('@domain.com'), false);
+  assert.strictEqual(isValidEmail('a b@c.com'), false); // space in local
+});
+
+test('isValidEmail – email exceeding 254 characters returns false', () => {
+  const longEmail = 'a'.repeat(250) + '@b.com';
+  assert.strictEqual(isValidEmail(longEmail), false);
+});
+
+// ── isValidUsername ───────────────────────────────────────────────────────────
+
+test('isValidUsername – valid usernames return true', () => {
+  assert.ok(isValidUsername('alice'));
+  assert.ok(isValidUsername('bob_123'));
+  assert.ok(isValidUsername('user-name'));
+  assert.ok(isValidUsername('a')); // 1 character minimum
+  assert.ok(isValidUsername('1234567890123456')); // 16 characters maximum
+});
+
+test('isValidUsername – invalid usernames return false', () => {
+  assert.strictEqual(isValidUsername(''), false);
+  assert.strictEqual(isValidUsername(null), false);
+  assert.strictEqual(isValidUsername('this-username-is-17chars!'), false); // too long
+  assert.strictEqual(isValidUsername('user name'), false); // space
+  assert.strictEqual(isValidUsername('user@name'), false); // @ symbol
+});
+
+// ── isValidLayoutPage ─────────────────────────────────────────────────────────
+
+test('isValidLayoutPage – valid page names return true', () => {
+  assert.ok(isValidLayoutPage('chapel'));
+  assert.ok(isValidLayoutPage('chapel--vp-390'));
+  assert.ok(isValidLayoutPage('page_1'));
+  assert.ok(isValidLayoutPage('MyPage'));
+});
+
+test('isValidLayoutPage – invalid page names return false', () => {
+  assert.strictEqual(isValidLayoutPage(''), false);
+  assert.strictEqual(isValidLayoutPage(null), false);
+  assert.strictEqual(isValidLayoutPage('../../etc/passwd'), false);
+  assert.strictEqual(isValidLayoutPage('page with spaces'), false);
+  assert.strictEqual(isValidLayoutPage('page.sub'), false); // dot not allowed
+  assert.strictEqual(isValidLayoutPage('a'.repeat(65)), false); // exceeds max length
+});
+
+// ── isValidElementId ──────────────────────────────────────────────────────────
+
+test('isValidElementId – valid element IDs return true', () => {
+  assert.ok(isValidElementId('chapel-tv-counter'));
+  assert.ok(isValidElementId('button.primary'));
+  assert.ok(isValidElementId('element_1'));
+  assert.ok(isValidElementId('a')); // single character
+});
+
+test('isValidElementId – invalid element IDs return false', () => {
+  assert.strictEqual(isValidElementId(''), false);
+  assert.strictEqual(isValidElementId(null), false);
+  assert.strictEqual(isValidElementId('../evil'), false); // path traversal
+  assert.strictEqual(isValidElementId('element id'), false); // space
+  assert.strictEqual(isValidElementId('a'.repeat(65)), false); // exceeds max length
+});
+
+// ── parseLayoutNumber ─────────────────────────────────────────────────────────
+
+test('parseLayoutNumber – finite numbers are returned as-is', () => {
+  assert.strictEqual(parseLayoutNumber(42), 42);
+  assert.strictEqual(parseLayoutNumber(0), 0);
+  assert.strictEqual(parseLayoutNumber(-5.5), -5.5);
+  assert.strictEqual(parseLayoutNumber('3.14'), 3.14);
+  assert.strictEqual(parseLayoutNumber('0'), 0);
+});
+
+test('parseLayoutNumber – non-finite values return null', () => {
+  assert.strictEqual(parseLayoutNumber(NaN), null);
+  assert.strictEqual(parseLayoutNumber(Infinity), null);
+  assert.strictEqual(parseLayoutNumber(-Infinity), null);
+  assert.strictEqual(parseLayoutNumber('abc'), null);
+  assert.strictEqual(parseLayoutNumber(undefined), null);
+});
+
+// ── buildRelativeUrlWithParam ─────────────────────────────────────────────────
+
+test('buildRelativeUrlWithParam – appends a query param to a plain path', () => {
+  assert.strictEqual(buildRelativeUrlWithParam('/page', 'auth', 'success'), '/page?auth=success');
+});
+
+test('buildRelativeUrlWithParam – merges with an existing query string', () => {
+  const result = buildRelativeUrlWithParam('/page?existing=1', 'auth', 'value');
+  assert.ok(result.includes('existing=1'));
+  assert.ok(result.includes('auth=value'));
+});
+
+test('buildRelativeUrlWithParam – works for root path', () => {
+  assert.strictEqual(buildRelativeUrlWithParam('/', 'auth', 'failed'), '/?auth=failed');
+});
+
+// ─── Additional contract tests ────────────────────────────────────────────────
+
+// ── CORS: disallowed origins are rejected on mutating endpoints ───────────────
+
+test('contract: POST /auth/logout from a disallowed origin returns 403', async () => {
+  const res = await worker.fetch(
+    new Request('http://localhost/auth/logout', {
+      method: 'POST',
+      headers: { Origin: 'https://attacker.com' },
+    }),
+    makeContractEnv(),
+  );
+  assert.strictEqual(res.status, 403);
+  const body = await res.json();
+  assert.strictEqual(body.error, 'Forbidden');
+});
+
+test('contract: POST /auth/register from a disallowed origin returns 403', async () => {
+  const res = await worker.fetch(
+    new Request('http://localhost/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.com' },
+      body: JSON.stringify({ email: 'user@example.com', username: 'user', password: 'password123' }),
+    }),
+    makeContractEnv({ SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 403);
+  const body = await res.json();
+  assert.strictEqual(body.error, 'Forbidden');
+});
+
+test('contract: POST /auth/emaillogin from a disallowed origin returns 403', async () => {
+  const res = await worker.fetch(
+    new Request('http://localhost/auth/emaillogin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.com' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'password123' }),
+    }),
+    makeContractEnv({ SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 403);
+  const body = await res.json();
+  assert.strictEqual(body.error, 'Forbidden');
+});
+
+// ── Session validation edge cases ─────────────────────────────────────────────
+
+test('contract: GET /auth/session with an expired session cookie returns authenticated: false', async () => {
+  const secret = LAYOUT_AUTH_SESSION_SECRET;
+  const payload = { sub: 'user123', username: 'testuser', exp: Date.now() - 1000 };
+  const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', keyMaterial, new TextEncoder().encode(encodedPayload));
+  const encodedSig = Buffer.from(sig).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const expiredCookie = `naimean_session=${encodedPayload}.${encodedSig}`;
+
+  const res = await worker.fetch(
+    new Request('http://localhost/auth/session', {
+      method: 'GET',
+      headers: { Cookie: expiredCookie },
+    }),
+    makeContractEnv({ SESSION_SECRET: secret }),
+  );
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(body.authenticated, false);
+});
+
+// ── 503 when SESSION_SECRET is not configured ─────────────────────────────────
+
+test('contract: POST /auth/register returns 503 when SESSION_SECRET is not configured', async () => {
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/register', {
+      email: 'user@example.com',
+      username: 'user',
+      password: 'password123',
+    }),
+    makeContractEnv(), // no SESSION_SECRET
+  );
+  assert.strictEqual(res.status, 503);
+  const body = await res.json();
+  assert.ok(typeof body.error === 'string');
+});
+
+test('contract: POST /auth/emaillogin returns 503 when SESSION_SECRET is not configured', async () => {
+  const res = await worker.fetch(
+    makeEmailAuthRequest('POST', '/auth/emaillogin', {
+      email: 'user@example.com',
+      password: 'password123',
+    }),
+    makeContractEnv(), // no SESSION_SECRET
+  );
+  assert.strictEqual(res.status, 503);
+  const body = await res.json();
+  assert.ok(typeof body.error === 'string');
+});
+
+// ── /go redirect tests with a valid session ───────────────────────────────────
+
+test('contract: GET /go/whiteboard with a valid session returns 303 redirect to an HTTPS URL', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const res = await worker.fetch(
+    new Request('http://localhost/go/whiteboard', {
+      method: 'GET',
+      headers: { Cookie: cookie },
+    }),
+    makeContractEnv({ SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 303);
+  const location = res.headers.get('Location') || '';
+  assert.ok(location.startsWith('https://'), `Location must be an HTTPS URL, got: ${location}`);
+});
+
+test('contract: GET /go/capex with a valid session returns 303 redirect', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const res = await worker.fetch(
+    new Request('http://localhost/go/capex', {
+      method: 'GET',
+      headers: { Cookie: cookie },
+    }),
+    makeContractEnv({ SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 303);
+});
+
+test('contract: GET /go/:tool uses a custom TOOL_URL env var when set', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const customUrl = 'https://custom.whiteboard.example.com/';
+  const res = await worker.fetch(
+    new Request('http://localhost/go/whiteboard', {
+      method: 'GET',
+      headers: { Cookie: cookie },
+    }),
+    makeContractEnv({
+      SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET,
+      TOOL_URL_WHITEBOARD: customUrl,
+    }),
+  );
+  assert.strictEqual(res.status, 303);
+  assert.strictEqual(res.headers.get('Location'), customUrl);
+});
+
+test('contract: GET /go with a valid session but an unknown tool name returns 404', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const res = await worker.fetch(
+    new Request('http://localhost/go/nonexistent-tool', {
+      method: 'GET',
+      headers: { Cookie: cookie },
+    }),
+    makeContractEnv({ SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 404);
+  const body = await res.json();
+  assert.ok(typeof body.error === 'string');
+});
+
+// ── /layout POST input validation tests ──────────────────────────────────────
+
+test('contract: POST /layout with invalid JSON body returns 400', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const res = await worker.fetch(
+    new Request('http://localhost/layout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: '{not valid json}',
+    }),
+    makeContractEnv({ DB: makeLayoutDbCapture(), SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 400);
+  const body = await res.json();
+  assert.ok(typeof body.error === 'string');
+});
+
+test('contract: POST /layout with an array for overrides returns 400', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const res = await worker.fetch(
+    new Request('http://localhost/layout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ page: 'chapel', overrides: [{ top: 1 }] }),
+    }),
+    makeContractEnv({ DB: makeLayoutDbCapture(), SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 400);
+});
+
+test('contract: POST /layout with more than 20 overrides returns 400', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const overrides = {};
+  for (let i = 0; i < 21; i++) {
+    overrides[`element-${i}`] = { top: 10, left: 10, width: 10, height: 10 };
+  }
+  const res = await worker.fetch(
+    new Request('http://localhost/layout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ page: 'chapel', overrides }),
+    }),
+    makeContractEnv({ DB: makeLayoutDbCapture(), SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 400);
+  const body = await res.json();
+  assert.strictEqual(body.error, 'Too many overrides');
+});
+
+test('contract: POST /layout with an invalid element ID returns 400', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const res = await worker.fetch(
+    new Request('http://localhost/layout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        page: 'chapel',
+        overrides: { '../evil/path': { top: 10, left: 10, width: 10, height: 10 } },
+      }),
+    }),
+    makeContractEnv({ DB: makeLayoutDbCapture(), SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 400);
+  const body = await res.json();
+  assert.ok(body.error.includes('Invalid element id'), `Unexpected error: ${body.error}`);
+});
+
+test('contract: POST /layout with a numeric value out of range returns 400', async () => {
+  const cookie = await createTestSessionCookie('user123');
+  const res = await worker.fetch(
+    new Request('http://localhost/layout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        page: 'chapel',
+        overrides: { 'valid-element': { top: 999, left: 10, width: 10, height: 10 } },
+      }),
+    }),
+    makeContractEnv({ DB: makeLayoutDbCapture(), SESSION_SECRET: LAYOUT_AUTH_SESSION_SECRET }),
+  );
+  assert.strictEqual(res.status, 400);
+  const body = await res.json();
+  assert.ok(body.error.includes('Value out of range'), `Unexpected error: ${body.error}`);
+});
+
+// ── Discord OAuth callback failure paths ──────────────────────────────────────
+
+const DISCORD_OAUTH_ENV = makeContractEnv({
+  DISCORD_CLIENT_ID: 'test-client-id',
+  DISCORD_CLIENT_SECRET: 'test-client-secret',
+  DISCORD_REDIRECT_URI: 'https://naimean.com/auth/discord/callback',
+  SESSION_SECRET: EMAIL_AUTH_SESSION_SECRET,
+});
+
+// Helper: mint a signed OAuth state cookie using the same algorithm as the worker.
+async function createTestOAuthCookie(secret, overrides = {}) {
+  const payload = {
+    state: 'valid-state-token',
+    codeVerifier: 'test-code-verifier',
+    returnTo: '/',
+    exp: Date.now() + 600_000,
+    ...overrides,
+  };
+  const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', keyMaterial, new TextEncoder().encode(encodedPayload));
+  const encodedSig = Buffer.from(sig).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `naimean_discord_oauth=${encodedPayload}.${encodedSig}`;
+}
+
+test('contract: GET /auth/discord/callback when OAuth is unconfigured redirects with auth=not_configured', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('GET', '/auth/discord/callback?code=abc&state=xyz'),
+    makeContractEnv(), // no DISCORD_* vars
+  );
+  assert.strictEqual(res.status, 302);
+  const location = res.headers.get('Location') || '';
+  assert.ok(location.includes('auth=not_configured'), `Expected auth=not_configured in ${location}`);
+});
+
+test('contract: GET /auth/discord/callback with no OAuth cookie redirects with auth=missing', async () => {
+  const res = await worker.fetch(
+    makeContractRequest('GET', '/auth/discord/callback?code=some-code&state=some-state'),
+    DISCORD_OAUTH_ENV,
+  );
+  assert.strictEqual(res.status, 302);
+  const location = res.headers.get('Location') || '';
+  assert.ok(location.includes('auth=missing'), `Expected auth=missing in ${location}`);
+});
+
+test('contract: GET /auth/discord/callback with an expired OAuth cookie redirects with auth=expired', async () => {
+  const expiredCookie = await createTestOAuthCookie(EMAIL_AUTH_SESSION_SECRET, {
+    exp: Date.now() - 1000, // already expired
+  });
+  const res = await worker.fetch(
+    new Request('http://localhost/auth/discord/callback?code=some-code&state=valid-state-token', {
+      method: 'GET',
+      headers: { Cookie: expiredCookie },
+    }),
+    DISCORD_OAUTH_ENV,
+  );
+  assert.strictEqual(res.status, 302);
+  const location = res.headers.get('Location') || '';
+  assert.ok(location.includes('auth=expired'), `Expected auth=expired in ${location}`);
+});
+
+test('contract: GET /auth/discord/callback with a state mismatch redirects with auth=state', async () => {
+  const oauthCookie = await createTestOAuthCookie(EMAIL_AUTH_SESSION_SECRET, {
+    state: 'valid-state-token',
+  });
+  const res = await worker.fetch(
+    new Request('http://localhost/auth/discord/callback?code=some-code&state=wrong-state', {
+      method: 'GET',
+      headers: { Cookie: oauthCookie },
+    }),
+    DISCORD_OAUTH_ENV,
+  );
+  assert.strictEqual(res.status, 302);
+  const location = res.headers.get('Location') || '';
+  assert.ok(location.includes('auth=state'), `Expected auth=state in ${location}`);
+});
+
+// ─── Additional rate-limit tests ──────────────────────────────────────────────
+
+test('rate limit: GET /auth/session is capped at 30 requests per minute', async () => {
+  const ip = '198.51.100.30';
+  for (let i = 0; i < 30; i++) {
+    const res = await makeRlRequest('GET', '/auth/session', ip);
+    assert.notStrictEqual(res.status, 429, `request ${i + 1} must not be throttled`);
+  }
+  const throttled = await makeRlRequest('GET', '/auth/session', ip);
+  assert.strictEqual(throttled.status, 429);
+});
+
+test('rate limit: POST /auth/logout is capped at 10 requests per minute', async () => {
+  const ip = '198.51.100.31';
+  for (let i = 0; i < 10; i++) {
+    const res = await makeRlRequest('POST', '/auth/logout', ip);
+    assert.notStrictEqual(res.status, 429, `request ${i + 1} must not be throttled`);
+  }
+  const throttled = await makeRlRequest('POST', '/auth/logout', ip);
+  assert.strictEqual(throttled.status, 429);
+});
+
+test('rate limit: GET /go/* is capped at 30 requests per minute', async () => {
+  const ip = '198.51.100.32';
+  for (let i = 0; i < 30; i++) {
+    const res = await makeRlRequest('GET', '/go/whiteboard', ip);
+    assert.notStrictEqual(res.status, 429, `request ${i + 1} must not be throttled`);
+  }
+  const throttled = await makeRlRequest('GET', '/go/whiteboard', ip);
+  assert.strictEqual(throttled.status, 429);
+});
+
+test('rate limit: POST /layout is capped at 10 requests per minute', async () => {
+  const ip = '198.51.100.33';
+  for (let i = 0; i < 10; i++) {
+    const res = await worker.fetch(
+      new Request('http://localhost/layout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+        body: JSON.stringify({ page: 'chapel', overrides: {} }),
+      }),
+      makeContractEnv({ RATE_LIMIT_ENABLED: 'true' }),
+    );
+    assert.notStrictEqual(res.status, 429, `request ${i + 1} must not be throttled`);
+  }
+  const throttled = await worker.fetch(
+    new Request('http://localhost/layout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+      body: JSON.stringify({ page: 'chapel', overrides: {} }),
+    }),
+    makeContractEnv({ RATE_LIMIT_ENABLED: 'true' }),
+  );
+  assert.strictEqual(throttled.status, 429);
+});
+
+test('rate limit: GET /auth/discord/callback is capped at 5 requests per minute', async () => {
+  const ip = '198.51.100.34';
+  for (let i = 0; i < 5; i++) {
+    const res = await makeRlRequest('GET', '/auth/discord/callback', ip);
+    assert.notStrictEqual(res.status, 429, `request ${i + 1} must not be throttled`);
+  }
+  const throttled = await makeRlRequest('GET', '/auth/discord/callback', ip);
+  assert.strictEqual(throttled.status, 429);
+});
