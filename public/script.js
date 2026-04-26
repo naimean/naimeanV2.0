@@ -125,9 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameActive = false;
   let miniGameTarget = 0;
   let miniGameAttempts = 0;
-  // Self-hosted EmulatorJS assets (loader.js, emulator.min.js, emulator.min.css).
+  // Self-hosted EmulatorJS assets (loader.js, emulator.min.js, emulator.min.css,
+  // system cores, and compression utilities) in /assets/emulatorjs/.
   // Used as the first loading source so the arcade works without CDN availability.
-  // System cores (WASM) are still fetched from CDN via EJS_pathtodata.
   const LOCAL_EJS_PATH = '/assets/emulatorjs/';
   const EJS_CDN_URLS = [
     'https://cdn.emulatorjs.org/stable/data/',
@@ -2396,9 +2396,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var loaderSrc, sourceLabel;
         if (isLocal) {
-          // Use CDN as the data path so system cores still load from there.
-          window.EJS_pathtodata = EJS_CDN_URLS[0];
-          // Override loader.js's file-path lookups to use the self-hosted JS and CSS.
+          // Use the self-hosted data path for cores and compression utilities.
+          // EmulatorJS will auto-fallback to CDN for any core not present locally.
+          window.EJS_pathtodata = LOCAL_EJS_PATH;
+          // Keep EJS_paths so loader.js resolves emulator.min.js/css from the
+          // same local folder regardless of how scriptPath is derived.
           window.EJS_paths = {
             'emulator.min.js': LOCAL_EJS_PATH + 'emulator.min.js',
             'emulator.min.css': LOCAL_EJS_PATH + 'emulator.min.css'
