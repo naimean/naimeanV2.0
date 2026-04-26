@@ -2292,7 +2292,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.localStorage.setItem(ARCADE_LAST_GAME_KEY, JSON.stringify({ system: system, file: file }));
       } catch (_) {}
 
-      var dest = '/arcade-shell.html';
+      var dest = '/arcade-shell.html?system=' + encodeURIComponent(system) + '&file=' + encodeURIComponent(file);
 
       // Fade the page to black, then navigate to the standalone player.
       function doNavigate() {
