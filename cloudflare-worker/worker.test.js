@@ -1228,8 +1228,11 @@ test('rate limit: POST /auth/emaillogin is capped at 5 requests per minute', asy
 });
 
 // ─── Additional pure helper tests ────────────────────────────────────────────
-// These functions are already inlined at the top of this file; the tests below
-// cover branches that the earlier test suite did not exercise.
+// Following the same convention as the inlined copies at the top of this file
+// (see "Inline copies of the pure helpers from worker.js"), the functions below
+// are faithful copies of helpers that were not yet inlined.  The duplication is
+// intentional: it allows these tests to run under plain Node.js without a
+// Workers-compatible bundler or Miniflare.
 
 function isValidEmail(email) {
   if (!email || typeof email !== 'string') return false;

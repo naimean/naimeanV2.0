@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import router from './index.js';
 
 // ─── Inline copies of pure helpers from src/index.js ─────────────────────────
-// These allow testing the helper functions directly without a Workers runtime.
+// These are faithful copies of the unexported pure functions from src/index.js.
+// The duplication is intentional—it follows the same pattern used in
+// cloudflare-worker/worker.test.js so that pure helpers can be unit-tested
+// under plain Node.js without needing a Workers-compatible bundler or Miniflare.
 
 const IMMUTABLE_ASSET_EXTENSIONS_TEST = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff', '.data'];
 
