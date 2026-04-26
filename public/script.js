@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
   const ARCADE_COMMANDS = new Set(['arcade', 'emulator', 'games', 'user\\arcade']);
   const JUKEBOX_COMMANDS = new Set(['jukebox', 'music', 'apple music', 'musicbe']);
+  const OREGON_TRAIL_COMMANDS = new Set(['oregon', 'trail', 'oregon trail']);
   const AUTH_LOGIN_COMMANDS = new Set(['login', 'signin', 'discord']);
   const AUTH_LOGOUT_COMMANDS = new Set(['logout', 'signout']);
   const MINI_GAME_MIN_GUESS = 1;
@@ -1990,6 +1991,10 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/jukebox.html';
             return;
           }
+          if (OREGON_TRAIL_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/oregon-trail/';
+            return;
+          }
           playWrongSound();
         }
       });
@@ -2011,6 +2016,10 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           if (JUKEBOX_COMMANDS.has(getBootInputSuffix())) {
             window.location.href = '/jukebox.html';
+            return;
+          }
+          if (OREGON_TRAIL_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/oregon-trail/';
             return;
           }
           beginJoinDiscordWorkflow();
@@ -2547,6 +2556,10 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           if (JUKEBOX_COMMANDS.has(cmd)) {
             window.location.href = '/jukebox.html';
+            return;
+          }
+          if (OREGON_TRAIL_COMMANDS.has(cmd)) {
+            window.location.href = '/oregon-trail/';
             return;
           }
         }

@@ -521,7 +521,15 @@
       metaEl.textContent = coreText + (romCount ? '  \u2022  ' + romCount + ' ROM' + (romCount !== 1 ? 'S' : '') : '');
       btn.appendChild(labelEl);
       btn.appendChild(metaEl);
-      btn.addEventListener('click', function () { startSystem(id); });
+      btn.addEventListener('click', (function (systemId, systemCfg) {
+        return function () {
+          if (systemCfg.url) {
+            window.location.assign(systemCfg.url);
+          } else {
+            startSystem(systemId);
+          }
+        };
+      }(id, cfg)));
       elSystemGrid.appendChild(btn);
     });
   }
@@ -530,6 +538,12 @@
     var cfg = systemsConfig && systemsConfig[systemId];
     if (!cfg) {
       dbgLog('unknown system: ' + systemId);
+      return;
+    }
+    // URL-type systems navigate directly instead of booting the emulator
+    if (cfg.url) {
+      dbgLog('url-type system ' + systemId + ' — navigating to ' + cfg.url);
+      window.location.assign(cfg.url);
       return;
     }
     selectedSystem = {

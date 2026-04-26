@@ -180,5 +180,16 @@
       "MOS 7501 @ 1.76 MHZ",
       "LOADING VICE XPLUS4 CORE..."
     ]
+  },
+  "oregontrail": {
+    "label": "OREGON TRAIL",
+    "core": null,
+    "url": "/oregon-trail/",
+    "bootLines": [
+      "** THE OREGON TRAIL (1848) **",
+      "INDEPENDENCE, MO \u2192 OREGON CITY",
+      "2,040 MILES OF FRONTIER TRAIL...",
+      "LOADING PIONEER ENGINE..."
+    ]
   }
 }
