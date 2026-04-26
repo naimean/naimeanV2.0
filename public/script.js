@@ -1983,6 +1983,8 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeControlsHint.classList.remove('active');
         arcadeControlsHint.setAttribute('aria-hidden', 'true');
       }
+      // Explicitly remove both listeners regardless of which one triggered the dismiss.
+      // (The once:true option auto-removes the triggered listener, but not the other one.)
       document.removeEventListener('keydown', hideControlsHint);
       if (arcadeGameWrap) {
         arcadeGameWrap.removeEventListener('pointerdown', hideControlsHint);
