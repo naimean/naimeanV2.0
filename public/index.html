@@ -28,8 +28,7 @@
     .shoutbox-container,
     .discord-overlay,
     .static-overlay,
-    .power-off-overlay,
-    .arcade-overlay {
+    .power-off-overlay {
       display: none;
     }
   </style>
@@ -114,49 +113,13 @@
               <div class="shoutbox-hint-cover" aria-hidden="true"></div>
             </div>
             <div class="shoutbox-entry">
-              <input type="text" id="shoutbox-input" maxlength="120" value="C:\Naimean\User\Arcade" aria-label="Shoutbox command input" autocomplete="off" />
+              <input type="text" id="shoutbox-input" maxlength="120" value="C:\Naimean\User\" aria-label="Shoutbox command input" autocomplete="off" />
               <button type="submit" aria-label="Submit command">submit</button>
             </div>
           </form>
         </div>
       </div>
     </div>
-    <div class="arcade-overlay" id="arcade-overlay" aria-hidden="true" aria-label="Arcade emulator">
-      <div class="arcade-picker" id="arcade-picker">
-        <div class="arcade-picker-header">
-          <span class="arcade-title">&#9658; ARCADE</span>
-          <button class="arcade-picker-fs-btn" id="arcade-picker-fs-btn" type="button" aria-label="Toggle fullscreen">FULLSCREEN</button>
-          <button class="arcade-close-btn" id="arcade-close-btn" type="button" aria-label="Close arcade">&#10005; CLOSE</button>
-        </div>
-        <div class="arcade-game-list" id="arcade-game-list" role="listbox" aria-label="Available games"></div>
-        <div id="arcade-status" class="arcade-status" aria-live="polite"></div>
-        <button class="arcade-fs-launch-btn" id="arcade-fs-launch-btn" type="button">LAUNCH</button>
-        <p class="arcade-controller-hint">If you have 2x controllers connected, they should just "work"</p>
-      </div>
-      <div class="arcade-player" id="arcade-player">
-        <div class="arcade-bar">
-          <button class="arcade-bar-btn" id="arcade-back-btn" type="button" aria-label="Back to game menu">&#9664; MENU</button>
-          <span class="arcade-now-playing" id="arcade-now-playing"></span>
-          <button class="arcade-bar-btn" id="arcade-fullscreen-btn" type="button" aria-label="Toggle fullscreen">FULLSCREEN</button>
-        </div>
-        <div class="arcade-game-wrap">
-          <div id="arcade-loading" class="arcade-loading" aria-live="polite" aria-label="Loading game">
-            <div class="arcade-loading-text">LOADING<span class="arcade-loading-dots"></span></div>
-            <div class="arcade-loading-bar-track">
-              <div class="arcade-loading-bar-fill"></div>
-            </div>
-            <div id="arcade-loading-status" class="arcade-loading-status"></div>
-          </div>
-          <div id="game"></div>
-          <div id="arcade-controls-hint" class="arcade-controls-hint" aria-hidden="true">
-            <div class="arcade-controls-hint-inner">
-              <div class="arcade-controls-hint-title" id="arcade-controls-hint-title">KEYBOARD CONTROLS</div>
-              <div class="arcade-controls-hint-grid" id="arcade-controls-hint-grid"></div>
-              <div class="arcade-controls-hint-dismiss">PRESS ANY KEY TO DISMISS</div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
   </main>

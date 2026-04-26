@@ -809,8 +809,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Pre-fills the boot input with the authenticated user's username so they
   // are recognised by the bedroom switcher without typing anything.
-  // Skips when the input is at the default arcade value so that arcade
-  // remains the default regardless of login state.
+  // Skips when the input is already at the default value.
   function applySessionToBootInput() {
     if (!bootInput || !authSession || !authSession.authenticated || !authSession.user) {
       return;

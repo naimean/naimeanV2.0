@@ -7,20 +7,13 @@ const DOCUMENT_CSP = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
-  // 'wasm-unsafe-eval' allows WebAssembly compilation at runtime (required by EmulatorJS cores).
-  // 'unsafe-eval' is required because the EmulatorJS 7-Zip decompression worker (extract7z.js)
-  // is Emscripten-generated and calls eval() internally to decompress .wasm.data core archives.
-  // This is the narrowest viable fix: isolating EmulatorJS in a sandboxed iframe would remove
-  // the need for 'unsafe-eval' on the main document but requires significant restructuring.
-  // Note: 'unsafe-inline' (already present) is the higher XSS risk; 'unsafe-eval' is incremental.
-  // loader.js, emulator.min.js, and emulator.min.css are self-hosted in /assets/retroarc/ and
-  // served via 'self'. CDN is still listed as a fallback and for system cores (WASM).
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:",
+  // 'wasm-unsafe-eval' allows WebAssembly compilation at runtime.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
+  "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net",
   "media-src 'self' data: blob:",
-  "connect-src 'self' https://discord.com https://*.discord.com https://*.workers.dev https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
+  "connect-src 'self' https://discord.com https://*.discord.com https://*.workers.dev",
   "worker-src blob:",
   "frame-src 'self' https://discord.com https://*.discord.com",
   "form-action 'self'",

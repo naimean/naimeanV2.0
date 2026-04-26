@@ -98,43 +98,6 @@ test('edge router serves non-proxied HTML from ASSETS with document security hea
   assert.strictEqual(response.headers.get('Cache-Control'), 'no-cache, must-revalidate');
 });
 
-test('document CSP includes all EmulatorJS-required directives', async () => {
-  const { env } = makeEnv({
-    ASSETS: {
-      async fetch() {
-        return new Response('<!doctype html>', {
-          status: 200,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' },
-        });
-      },
-    },
-  });
-
-  const response = await router.fetch(new Request('https://naimean.com/'), env, {});
-  const csp = response.headers.get('Content-Security-Policy') || '';
-
-  // extract7z.js (7z decompressor) is Emscripten-generated and calls eval() inside a blob Worker
-  assert.match(csp, /'unsafe-eval'/, "script-src must include 'unsafe-eval' for EmulatorJS 7z decompressor");
-
-  // EmulatorJS cores are compiled WebAssembly modules loaded from ArrayBuffers
-  assert.match(csp, /'wasm-unsafe-eval'/, "script-src must include 'wasm-unsafe-eval' for EmulatorJS WASM cores");
-
-  // EmulatorJS core JS module is injected via <script src="blob:..."> from a Blob
-  // Use (?:[^;]|$)* so the pattern works whether or not a trailing ';' is present.
-  assert.match(csp, /script-src(?:[^;]|$)*blob:/, "script-src must include blob: for EmulatorJS core module injection");
-
-  // EmulatorJS decompressor and emulator core run in blob: Workers
-  assert.match(csp, /worker-src(?:[^;]|$)*blob:/, "worker-src must include blob: for EmulatorJS blob Workers");
-
-  // Primary CDN: loader.js, emulator.min.js loaded as <script>; cores/ROMs fetched via XHR
-  assert.match(csp, /script-src(?:[^;]|$)*https:\/\/cdn\.emulatorjs\.org/, "script-src must include cdn.emulatorjs.org");
-  assert.match(csp, /connect-src(?:[^;]|$)*https:\/\/cdn\.emulatorjs\.org/, "connect-src must include cdn.emulatorjs.org for XHR core/asset fetches");
-
-  // Fallback CDN: jsDelivr used when primary CDN fails
-  assert.match(csp, /script-src(?:[^;]|$)*https:\/\/cdn\.jsdelivr\.net/, "script-src must include cdn.jsdelivr.net for CDN fallback");
-  assert.match(csp, /connect-src(?:[^;]|$)*https:\/\/cdn\.jsdelivr\.net/, "connect-src must include cdn.jsdelivr.net for CDN fallback XHR");
-});
-
 test('edge router falls back to extensionless html asset paths', async () => {
   const { env, calls } = makeEnv();
 
