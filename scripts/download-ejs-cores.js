@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 // scripts/download-ejs-cores.js
 //
-// Downloads the EmulatorJS core binaries (.js + .wasm) for every system
-// used by the arcade.  These files are excluded from git (see .gitignore)
-// and must be fetched before deployment or local development.
+// Downloads / refreshes the EmulatorJS core .data files for every system
+// used by the arcade.  In EmulatorJS 4.x the .data file is the complete core
+// (WASM binary + metadata bundled together); there are no separate .js/.wasm
+// files to fetch.
+//
+// The .data files ARE committed to git so this script is only needed when you
+// want to pull updated core versions from the EmulatorJS CDN.
 //
 // Usage:
 //   node scripts/download-ejs-cores.js
 //
 // Files are saved to public/assets/retroarc/cores/ alongside the .data
-// header files that are already committed.  Existing files are skipped so
+// files that are already committed.  Existing files are skipped so
 // re-runs are fast.  Set FORCE=1 to re-download even if the file exists.
 
 import https from 'node:https';
@@ -99,7 +103,8 @@ function downloadFile(url, dest) {
 }
 
 async function main() {
-  console.log('Downloading EmulatorJS core binaries…');
+  console.log('Downloading EmulatorJS core .data files (EmulatorJS 4.x)…');
+  console.log('Note: In EJS 4.x each .data file is the complete core (WASM bundled in).');
   console.log(`Source:      ${CDN_BASE}`);
   console.log(`Destination: ${CORES_DIR}`);
   console.log(`Force re-download: ${FORCE ? 'yes' : 'no'}\n`);
@@ -109,31 +114,28 @@ async function main() {
   let failures = 0;
 
   for (const core of CORES) {
-    const base = `${core}-wasm`;
-    for (const ext of ['.js', '.wasm']) {
-      const filename = base + ext;
-      const url = CDN_BASE + filename;
-      const dest = path.join(CORES_DIR, filename);
-      try {
-        const wasDownloaded = await downloadFile(url, dest);
-        if (wasDownloaded) {
-          downloaded++;
-        } else {
-          skipped++;
-        }
-      } catch (err) {
-        console.warn(`  WARN  ${filename}: ${err.message}`);
-        failures++;
+    const filename = `${core}-wasm.data`;
+    const url = CDN_BASE + filename;
+    const dest = path.join(CORES_DIR, filename);
+    try {
+      const wasDownloaded = await downloadFile(url, dest);
+      if (wasDownloaded) {
+        downloaded++;
+      } else {
+        skipped++;
       }
+    } catch (err) {
+      console.warn(`  WARN  ${filename}: ${err.message}`);
+      failures++;
     }
   }
 
   console.log(`\nResults: ${downloaded} downloaded, ${skipped} skipped, ${failures} failed.`);
   if (failures > 0) {
-    console.warn('Some core binaries could not be downloaded (see warnings above).');
+    console.warn('Some core .data files could not be downloaded (see warnings above).');
     process.exit(1);
   } else {
-    console.log('All core binaries are present.');
+    console.log('All core .data files are present.');
   }
 }
 
@@ -141,3 +143,4 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+

@@ -24,8 +24,10 @@ Improvements and housekeeping items for the arcade/emulator feature built on [Em
 
 4. **Self-host EmulatorJS core assets**
    - Cache `loader.js`, `emulator.min.js`, and `emulator.min.css` in `public/assets/retroarc/` so the arcade is not dependent on CDN availability.
-   - Cores (`.data` header files) and compression utilities are also stored under `public/assets/retroarc/cores/` and `public/assets/retroarc/compression/` respectively.
-   - Full core binaries (`.js` + `.wasm`) are downloaded at deploy time by `scripts/download-ejs-cores.js` and excluded from git; `EJS_pathtodata` now points entirely to the self-hosted path.
+   - In EmulatorJS 4.x all cores ship as a single `{core}-wasm.data` file (WASM binary is bundled in; there are no separate `.js`/`.wasm` files).
+   - All 20 core `.data` files are committed to git under `public/assets/retroarc/cores/` — no download step is needed at deploy time.
+   - `EJS_pathtodata` points entirely to the self-hosted path; CDN fallback logic has been removed from `script.js`.
+   - `scripts/download-ejs-cores.js` has been updated to reflect the 4.x architecture and can be used to refresh the committed `.data` files when a new EmulatorJS release is available.
    - _Status: done_
 
 5. **Keyboard/gamepad control overlay**
