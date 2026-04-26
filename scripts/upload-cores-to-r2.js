@@ -34,27 +34,27 @@ if (!API_TOKEN || !ACCOUNT_ID) {
 }
 
 // All cores used by the arcade (must match the .data files in CORES_DIR).
+// Scoped to pre-N64 hardware (systems released before the Nintendo 64, June 1996).
+// mgba (GBA, 2001) and mupen64plus_next (N64, 1996) are intentionally excluded.
 const CORES = [
-  'a5200',
-  'beetle_vb',
-  'fceumm',
-  'gambatte',
-  'genesis_plus_gx',
-  'handy',
-  'mednafen_pce',
-  'mgba',
-  'mupen64plus_next',
-  'nestopia',
-  'picodrive',
-  'prosystem',
-  'snes9x',
-  'stella2014',
-  'vice_x128',
-  'vice_x64',
-  'vice_x64sc',
-  'vice_xpet',
-  'vice_xplus4',
-  'vice_xvic',
+  'a5200',         // Atari 5200 (1982)
+  'beetle_vb',     // Virtual Boy (1995)
+  'fceumm',        // NES/Famicom (1983)
+  'gambatte',      // Game Boy (1989)
+  'genesis_plus_gx', // Sega Genesis/Mega Drive (1988)
+  'handy',         // Atari Lynx (1989)
+  'mednafen_pce',  // TurboGrafx-16 / PC Engine (1987)
+  'nestopia',      // NES/Famicom (1983)
+  'picodrive',     // Sega Genesis / CD / 32X (1988–1994)
+  'prosystem',     // Atari 7800 (1984)
+  'snes9x',        // SNES / Super Famicom (1990)
+  'stella2014',    // Atari 2600 (1977)
+  'vice_x128',     // Commodore 128 (1985)
+  'vice_x64',      // Commodore 64 (1982)
+  'vice_x64sc',    // Commodore 64SC (1982)
+  'vice_xpet',     // Commodore PET (1977)
+  'vice_xplus4',   // Commodore Plus/4 (1984)
+  'vice_xvic',     // Commodore VIC-20 (1980)
 ];
 
 /**
