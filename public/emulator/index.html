@@ -367,9 +367,10 @@
       // ── Picker ─────────────────────────────────────────────────────────────
 
       function populateSelect(manifest) {
-        // Keep the placeholder option and remove any previously added groups.
+        // Keep only the first option (the placeholder "SELECT A GAME" entry)
+        // and remove every optgroup / option added by a previous manifest load.
         while (gameSelectEl.options.length > 1) {
-          gameSelectEl.remove(1);
+          gameSelectEl.remove(1); // index 1 = first item after the placeholder
         }
 
         var hasSomething = false;
@@ -407,7 +408,7 @@
 
         fetch(MANIFEST_URL)
           .then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
+            if (!r.ok) throw new Error('Failed to fetch manifest.json (HTTP ' + r.status + ')');
             return r.json();
           })
           .then(function (manifest) {
@@ -509,10 +510,16 @@
         };
 
         window.EJS_onLoadError = function (e) {
-          var msg = (e && e.error && e.error.message)
-            || (e && e.message)
-            || String(e)
-            || 'Unknown error';
+          var msg;
+          if (e && e.error && e.error.message) {
+            msg = e.error.message;
+          } else if (e && e.message) {
+            msg = e.message;
+          } else if (e) {
+            msg = String(e);
+          } else {
+            msg = 'Unknown error';
+          }
           console.error('[Emulator] EJS_onLoadError:', msg);
           showPlayerError(msg, name);
         };
