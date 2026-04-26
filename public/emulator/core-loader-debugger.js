@@ -153,7 +153,7 @@ class CoreLoaderDebugger extends EventTarget {
   async _fakeStep(name, progress) {
     this.updateState("loading", progress, name);
     this.log(name + "...");
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(resolve => setTimeout(resolve, 600));
   }
 
   /* -----------------------------
@@ -173,13 +173,13 @@ class CoreLoaderDebugger extends EventTarget {
  *
  * loader.loadCore(async (update) => {
  *   update("init", 0.1, "Allocating memory");
- *   await new Promise(r => setTimeout(r, 500));
+ *   await new Promise(resolve => setTimeout(resolve, 500));
  *
  *   update("init", 0.5, "Loading assets");
- *   await new Promise(r => setTimeout(r, 800));
+ *   await new Promise(resolve => setTimeout(resolve, 800));
  *
  *   update("init", 0.9, "Finalizing");
- *   await new Promise(r => setTimeout(r, 400));
+ *   await new Promise(resolve => setTimeout(resolve, 400));
  * });
  *
  * --------------------------------------------------
