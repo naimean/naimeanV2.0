@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oregon Trail – Arcade</title>
+  <link rel="icon" type="image/jpeg" href="/assets/images/commodore64.v20260424.jpg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── page ── */
+    html, body {
+      width: 100%; min-height: 100%;
+      background: #07070f;
+      font-family: monospace;
+      color: #8ef0b2;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── top nav bar (matches site style) ── */
+    .bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 10px; flex-shrink: 0;
+      border-bottom: 1px solid #333; font-size: 13px;
+    }
+    .bar-title { flex: 1; }
+    .bar a {
+      background: transparent; border: 1px solid #555;
+      color: #8ef0b2; font-family: monospace; font-size: 12px;
+      padding: 2px 8px; cursor: pointer; text-decoration: none;
+      display: inline-block;
+    }
+    .bar a:hover { background: rgba(142,240,178,0.1); }
+
+    /* ── arcade room scene ── */
+    .scene {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 0 36px;
+      /* subtle radial floor light */
+      background:
+        radial-gradient(ellipse 70% 40% at 50% 110%, rgba(74,222,128,0.07) 0%, transparent 70%),
+        #07070f;
+    }
+
+    /* ── cabinet wrapper ── */
+    /*
+     * When /assets/arcade/oregon-cabinet.png exists the image provides the
+     * cabinet shape.  Until then (or if it fails to load) the pure-CSS
+     * fallback below draws the whole cabinet.
+     */
+    .arcade-cabinet {
+      position: relative;
+      width: min(520px, 92vw);
+      /* 3:4 keeps the proportions of a classic upright cabinet */
+      aspect-ratio: 3 / 4;
+      filter: drop-shadow(0 0 28px rgba(74,222,128,0.30));
+    }
+
+    /* cabinet background image – set via JS once we confirm it loaded */
+    .arcade-cabinet.has-image {
+      background: url("/assets/arcade/oregon-cabinet.png") center / contain no-repeat;
+    }
+
+    /* ── screen mount ── */
+    .arcade-screen {
+      position: absolute;
+      /* These percentages match the screen opening of the cabinet image.
+         Adjust left/top/width/height if you swap in a different cabinet PNG. */
+      left: 18%;
+      top: 16%;
+      width: 64%;
+      height: 42%;
+      border: 0;
+      background: #000;
+      /* very mild perspective tilt – looks natural on a real cabinet photo */
+      transform: perspective(900px) rotateX(1deg);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    /* iframe fills the screen area */
+    .arcade-screen iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+
+    /* ── CRT overlay (scanlines + vignette + glow) ── */
+    .arcade-screen::before,
+    .arcade-screen::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+      border-radius: 10px;
+    }
+    /* scanlines */
+    .arcade-screen::before {
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.12) 3px,
+        rgba(0,0,0,0.12) 4px
+      );
+    }
+    /* vignette + outer glow */
+    .arcade-screen::after {
+      background: radial-gradient(
+        ellipse at center,
+        transparent 55%,
+        rgba(0,0,0,0.55) 100%
+      );
+      box-shadow:
+        inset 0 0 18px rgba(0,0,0,0.6),
+        0 0 12px rgba(74,222,128,0.25);
+    }
+
+    /* ── CSS-only cabinet (shown when no cabinet image is available) ── */
+    .cabinet-css {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .cab-marquee {
+      width: 80%;
+      margin-top: 2%;
+      background: linear-gradient(160deg, #1a1a2e 0%, #0f3460 60%, #1a1a2e 100%);
+      border: 2px solid #4ade80;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 6px 0 4px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #4ade80;
+      text-shadow: 0 0 10px #4ade80, 0 0 20px #22c55e;
+      flex-shrink: 0;
+    }
+    .cab-marquee span {
+      font-size: 9px; letter-spacing: 5px; opacity: 0.6; display: block;
+    }
+
+    .cab-bezel {
+      width: 88%;
+      background: linear-gradient(180deg, #1c1c28 0%, #252535 50%, #1c1c28 100%);
+      border: 2px solid #3a3a50;
+      border-top: none;
+      clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+      padding: 14px 8% 12px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .cab-bezel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 8%; right: 8%; height: 2px;
+      background: linear-gradient(90deg, transparent, #4ade80, #22d3ee, #4ade80, transparent);
+      box-shadow: 0 0 8px #4ade80;
+    }
+
+    .cab-screen-shell {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #000;
+      border: 3px solid #222;
+      border-radius: 6px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 14px rgba(74,222,128,0.18);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .cab-control {
+      width: 96%;
+      background: linear-gradient(180deg, #252535 0%, #1a1a28 100%);
+      border: 2px solid #3a3a50;
+      border-top: 3px solid #4ade80;
+      clip-path: polygon(0% 0%, 100% 0%, 96% 100%, 4% 100%);
+      padding: 10px 8% 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .cab-joystick {
+      width: 34px; height: 34px;
+      background: radial-gradient(circle at 38% 32%, #555, #1e1e1e);
+      border-radius: 50%;
+      border: 2px solid #555;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    .cab-joystick::after {
+      content: '';
+      position: absolute;
+      top: 30%; left: 50%;
+      transform: translateX(-50%);
+      width: 9px; height: 18px;
+      background: linear-gradient(180deg, #888, #444);
+      border-radius: 4px 4px 2px 2px;
+    }
+
+    .cab-buttons { display: flex; flex-wrap: wrap; gap: 7px; width: 68px; }
+    .cab-btn {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.35);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.12);
+    }
+    .cab-btn.r { background: radial-gradient(circle at 35% 30%, #f87171, #b91c1c); }
+    .cab-btn.b { background: radial-gradient(circle at 35% 30%, #60a5fa, #1d4ed8); }
+    .cab-btn.y { background: radial-gradient(circle at 35% 30%, #fde047, #a16207); }
+    .cab-btn.g { background: radial-gradient(circle at 35% 30%, #4ade80, #15803d); }
+
+    .cab-coin {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+    }
+    .cab-coin-slot {
+      width: 28px; height: 4px;
+      background: #111; border: 1px solid #444; border-radius: 2px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .cab-coin-label { font-size: 8px; color: #555; letter-spacing: 1px; text-transform: uppercase; }
+    .cab-start {
+      background: linear-gradient(180deg, #4ade80, #166534);
+      border: 1px solid #22c55e;
+      color: #000; font-family: monospace; font-size: 8px; font-weight: bold;
+      letter-spacing: 1px; padding: 3px 7px; border-radius: 3px;
+      cursor: default; text-transform: uppercase;
+      box-shadow: 0 0 6px rgba(74,222,128,0.35);
+    }
+
+    .cab-body {
+      width: 84%;
+      height: 8%;
+      background: linear-gradient(180deg, #18182a 0%, #111120 100%);
+      border: 2px solid #2a2a3a; border-top: none;
+      flex-shrink: 0;
+    }
+    .cab-legs {
+      width: 70%; display: flex; justify-content: space-between; padding: 0 5%;
+    }
+    .cab-leg {
+      width: 12px; height: 18px;
+      background: linear-gradient(90deg, #242434, #181828);
+      border: 1px solid #2a2a3a; border-top: none;
+      border-radius: 0 0 3px 3px;
+    }
+
+    /* ── when image IS loaded, hide the CSS cabinet entirely ── */
+    .arcade-cabinet.has-image .cabinet-css { display: none; }
+    /* and show the real screen overlay */
+    .arcade-cabinet.has-image .arcade-screen { display: block; }
+    /* hide screen overlay until we know which mode we're in */
+    .arcade-cabinet:not(.has-image) .arcade-screen { display: none; }
+
+    /* ── fallback notice ── */
+    .fallback {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.7;
+    }
+    .fallback a {
+      display: inline-block;
+      margin-top: 8px;
+      background: transparent;
+      border: 1px solid #4ade80;
+      color: #4ade80;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 4px 14px;
+      text-decoration: none;
+      letter-spacing: 1px;
+    }
+    .fallback a:hover { background: rgba(74,222,128,0.1); }
+  </style>
+</head>
+<body>
+
+  <!-- nav bar -->
+  <div class="bar">
+    <div class="bar-title">&#9658; OREGON TRAIL – ARCADE</div>
+    <a href="https://oregontrail.ws/games/the-oregon-trail/play/" target="_blank" rel="noopener">OPEN IN TAB</a>
+    <a href="/">&#8962; HOME</a>
+  </div>
+
+  <!-- scene -->
+  <div class="scene">
+
+    <div class="arcade-cabinet" id="arcade-cabinet">
+
+      <!-- ── IMAGE-BASED SCREEN OVERLAY ──
+           Absolutely positioned over the cabinet PNG screen opening.
+           Only shown once has-image class is added by JS below. -->
+      <div class="arcade-screen" id="arcade-screen">
+        <iframe
+          src="https://oregontrail.ws/games/the-oregon-trail/play/"
+          title="The Oregon Trail"
+          allowfullscreen
+          allow="fullscreen"
+          loading="lazy"
+        ></iframe>
+      </div>
+
+      <!-- ── CSS-ONLY FALLBACK CABINET ──
+           Rendered when the cabinet PNG is missing or fails to load.
+           The cab-screen-shell doubles as the iframe container here. -->
+      <div class="cabinet-css" id="cabinet-css">
+        <div class="cab-marquee">
+          The Oregon Trail
+          <span>&#9658; ARCADE EDITION &#9658;</span>
+        </div>
+        <div class="cab-bezel">
+          <div class="cab-screen-shell" id="cab-screen-shell">
+            <!-- iframe injected here by JS in CSS-cabinet mode -->
+          </div>
+        </div>
+        <div class="cab-control">
+          <div class="cab-joystick"></div>
+          <div class="cab-coin">
+            <div class="cab-coin-slot"></div>
+            <div class="cab-coin-label">Insert Coin</div>
+            <div class="cab-start">1 Player</div>
+          </div>
+          <div class="cab-buttons">
+            <div class="cab-btn r"></div>
+            <div class="cab-btn b"></div>
+            <div class="cab-btn y"></div>
+            <div class="cab-btn g"></div>
+          </div>
+        </div>
+        <div class="cab-body"></div>
+        <div class="cab-legs">
+          <div class="cab-leg"></div>
+          <div class="cab-leg"></div>
+        </div>
+      </div>
+
+    </div><!-- /.arcade-cabinet -->
+
+    <!-- fallback notice -->
+    <p class="fallback">
+      If the game does not load, open Oregon Trail in a new tab.<br>
+      <a href="https://oregontrail.ws/games/the-oregon-trail/play/" target="_blank" rel="noopener">
+        &#9658; PLAY OREGON TRAIL
+      </a>
+    </p>
+
+  </div><!-- /.scene -->
+
+  <script>
+    (function () {
+      var cab = document.getElementById('arcade-cabinet');
+      var cssScreen = document.getElementById('cab-screen-shell');
+      var GAME_URL = 'https://oregontrail.ws/games/the-oregon-trail/play/';
+
+      function buildIframe() {
+        var f = document.createElement('iframe');
+        f.src = GAME_URL;
+        f.title = 'The Oregon Trail';
+        f.allowFullscreen = true;
+        f.setAttribute('allow', 'fullscreen');
+        f.setAttribute('loading', 'lazy');
+        f.style.cssText = 'width:100%;height:100%;border:0;display:block;';
+        return f;
+      }
+
+      /* Try to load the cabinet image; use CSS cabinet on failure */
+      var img = new Image();
+      img.onload = function () {
+        cab.classList.add('has-image');
+        /* The image-based screen overlay already has its iframe in HTML */
+      };
+      img.onerror = function () {
+        /* No cabinet image – inject iframe into CSS cabinet screen */
+        cssScreen.appendChild(buildIframe());
+      };
+      img.src = '/assets/arcade/oregon-cabinet.png';
+    }());
+  </script>
+
+</body>
+</html>
