@@ -2136,6 +2136,23 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
+    // Clears any existing selection and selects the given game item button.
+    // Updates arcadeSelectedGame based on the button's data attributes and text.
+    function selectGameItem(btn) {
+      if (!arcadeGameList) { return; }
+      arcadeGameList.querySelectorAll('.arcade-game-item').forEach(function(b) {
+        b.classList.remove('selected');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('selected');
+      btn.setAttribute('aria-selected', 'true');
+      arcadeSelectedGame = {
+        file: btn.dataset.file,
+        name: btn.textContent.trim(),
+        system: btn.dataset.system,
+      };
+    }
+
     function populateArcadeGameList() {
       console.log('[Arcade] populateArcadeGameList: building game list from manifest');
       if (!arcadeGameList) {
@@ -2167,6 +2184,7 @@ document.addEventListener('DOMContentLoaded', function() {
           var btn = document.createElement('button');
           btn.className = 'arcade-game-item';
           btn.textContent = displayName;
+          btn.title = displayName;
           btn.type = 'button';
           btn.setAttribute('role', 'option');
           btn.setAttribute('aria-selected', 'false');
@@ -2174,14 +2192,7 @@ document.addEventListener('DOMContentLoaded', function() {
           btn.dataset.file = game;
           btn.addEventListener('click', (function(sys, file, label) {
             return function() {
-              var allItems = arcadeGameList.querySelectorAll('.arcade-game-item');
-              allItems.forEach(function(b) {
-                b.classList.remove('selected');
-                b.setAttribute('aria-selected', 'false');
-              });
-              btn.classList.add('selected');
-              btn.setAttribute('aria-selected', 'true');
-              arcadeSelectedGame = { file: file, name: label, system: sys };
+              selectGameItem(btn);
               console.log('[Arcade] game selected: "' + label + '" system=' + sys + ' file=' + file);
               // Go fullscreen immediately (in user gesture), then launch game.
               if (arcadeOverlay && document.fullscreenElement !== arcadeOverlay) {
@@ -2216,7 +2227,8 @@ document.addEventListener('DOMContentLoaded', function() {
         for (var i = 0; i < items.length; i++) {
           var btn = items[i];
           if (btn.dataset.system === last.system && btn.dataset.file === last.file) {
-            btn.click();
+            // Pre-select only — do not auto-launch. The user must click to start.
+            selectGameItem(btn);
             btn.scrollIntoView({ block: 'nearest' });
             console.log('[Arcade] restoreLastGame: pre-selected "' + last.file + '" (' + last.system + ')');
             break;
@@ -2321,29 +2333,27 @@ document.addEventListener('DOMContentLoaded', function() {
           clearTimeout(arcadeLoadTimeout);
           arcadeLoadTimeout = null;
         }
-        if (arcadeLoading) {
-          arcadeLoading.classList.remove('active');
-        }
         if (window.NaimeanDiag) {
           window.NaimeanDiag.set('arcade:status', 'EJS ERROR');
           window.NaimeanDiag.log('arcade: EJS_onLoadError — ' + msg);
         }
-        setArcadeStatus('Emulator error: ' + msg);
+        stopEmulator();
+        setArcadeStatus('Emulator error: ' + msg + ' — select a game to try again');
+        showArcadePicker();
       };
       setArcadeStatus('Loading EmulatorJS…');
       if (window.NaimeanDiag) { window.NaimeanDiag.set('arcade:status', 'loading…'); }
       console.log('[Arcade] launchGame: starting 30s load timeout, loading self-hosted assets');
       arcadeLoadTimeout = setTimeout(function() {
         arcadeLoadTimeout = null;
-        if (arcadeLoading) {
-          arcadeLoading.classList.remove('active');
-        }
         console.warn('[Arcade] load timeout: EmulatorJS did not load within 30s');
         if (window.NaimeanDiag) {
           window.NaimeanDiag.set('arcade:status', 'TIMEOUT ✗');
           window.NaimeanDiag.log('arcade: 30s timeout — emulator did not start');
         }
-        setArcadeStatus('Timed out — check browser console for errors');
+        stopEmulator();
+        setArcadeStatus('Timed out loading the emulator — select a game to try again');
+        showArcadePicker();
       }, 30000);
       // All EmulatorJS assets (loader.js, emulator.min.js/css, core .data files)
       // are self-hosted under LOCAL_EJS_PATH (/assets/retroarch/).
@@ -2377,15 +2387,9 @@ document.addEventListener('DOMContentLoaded', function() {
             window.NaimeanDiag.set('arcade:loader', 'FAIL (local)');
             window.NaimeanDiag.log('arcade: loader.js FAIL');
           }
-          s.remove();
-          if (arcadeLoadTimeout) {
-            clearTimeout(arcadeLoadTimeout);
-            arcadeLoadTimeout = null;
-          }
-          if (arcadeLoading) {
-            arcadeLoading.classList.remove('active');
-          }
-          setArcadeStatus('Error: failed to load EmulatorJS — check server / console');
+          stopEmulator();
+          setArcadeStatus('Error: failed to load EmulatorJS — select a game to try again');
+          showArcadePicker();
         };
         document.head.appendChild(s);
       }
