@@ -126,8 +126,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameTarget = 0;
   let miniGameAttempts = 0;
   // Self-hosted EmulatorJS assets (loader.js, emulator.min.js, emulator.min.css,
-  // system cores, and compression utilities) in /assets/retroarc/.
-  // All core .data files are committed to the repo; no CDN is needed at runtime.
+  // and compression utilities) in /assets/retroarc/.
+  // Core .data archives are stored in the R2 bucket and served by the worker at the
+  // same path (/assets/retroarc/cores/*.data), so EJS_pathtodata requires no change.
   const LOCAL_EJS_PATH = '/assets/retroarc/';
   // Native display aspect ratios per EmulatorJS system key.
   // GB/GG/VB use non-4:3 ratios; GBA is 3:2; Lynx is wide; NDS is portrait.

@@ -2,6 +2,12 @@ const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"];
 
 const UPLOADS_HOSTNAME = 'uploads.naimean.com';
 
+// EmulatorJS core archives (.data) are stored in the R2 bucket under this prefix.
+// The worker serves them at the same URL path (/assets/retroarc/cores/*.data) so that
+// EJS_pathtodata and loader.js require no changes.
+const CORES_PATH_PREFIX = '/assets/retroarc/cores/';
+const CORES_R2_PREFIX = 'retroarc/cores/';
+
 const DOCUMENT_CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -30,7 +36,8 @@ const DOCUMENT_CSP = [
 const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
 // Static asset paths that benefit from long-lived caching (content-addressed or versioned).
-const IMMUTABLE_ASSET_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff', '.data'];
+// Note: .data is excluded — core archives are served from R2 with immutable headers directly.
+const IMMUTABLE_ASSET_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff'];
 
 function isImmutableAsset(pathname) {
   const lower = pathname.toLowerCase();
@@ -105,6 +112,26 @@ export default {
       upstreamResponse = await env.ASSETS.fetch(new Request(rewritten.toString(), request));
     } else if (PROXY_PATHS.some((path) => url.pathname.startsWith(path))) {
       upstreamResponse = await env.COUNTER.fetch(request);
+    } else if (
+      url.pathname.startsWith(CORES_PATH_PREFIX) &&
+      url.pathname.endsWith('.data') &&
+      !url.pathname.slice(CORES_PATH_PREFIX.length).includes('/')
+    ) {
+      // Core archives are stored in the R2 bucket; serve them directly.
+      const filename = url.pathname.slice(CORES_PATH_PREFIX.length);
+      const r2Object = await env.UPLOADS.get(`${CORES_R2_PREFIX}${filename}`);
+      if (r2Object === null) {
+        upstreamResponse = new Response('Not Found', { status: 404 });
+      } else {
+        upstreamResponse = new Response(r2Object.body, {
+          status: 200,
+          headers: {
+            'Content-Type': r2Object.httpMetadata?.contentType || 'application/octet-stream',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+            'ETag': r2Object.httpEtag,
+          },
+        });
+      }
     } else {
       upstreamResponse = await env.ASSETS.fetch(request);
       if (
