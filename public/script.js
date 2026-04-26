@@ -1985,7 +1985,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (screenOn && !puzzleSolved) {
           if (ARCADE_COMMANDS.has(getBootInputSuffix())) {
-            openArcadeDirectly();
+            openArcade();
+            if (arcadeOverlay) {
+              arcadeOverlay.requestFullscreen().catch(function() {});
+            }
             return;
           }
           playWrongSound();
@@ -2103,6 +2106,10 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       if (arcadeGameContainer) {
         arcadeGameContainer.innerHTML = '';
+        arcadeGameContainer.style.aspectRatio = '';
+        arcadeGameContainer.style.height = '';
+        arcadeGameContainer.style.width = '';
+        arcadeGameContainer.style.maxWidth = '';
         console.log('[Arcade] stopEmulator: cleared game container');
       }
       if (arcadeLoading) {
@@ -2176,11 +2183,11 @@ document.addEventListener('DOMContentLoaded', function() {
               btn.setAttribute('aria-selected', 'true');
               arcadeSelectedGame = { file: file, name: label, system: sys };
               console.log('[Arcade] game selected: "' + label + '" system=' + sys + ' file=' + file);
-              setArcadeStatus('Selected: ' + label);
-              if (arcadeFsLaunchBtn) {
-                arcadeFsLaunchBtn.textContent = 'LAUNCH  \u25B6  ' + label;
-                arcadeFsLaunchBtn.classList.add('ready');
+              // Go fullscreen immediately (in user gesture), then launch game.
+              if (arcadeOverlay && document.fullscreenElement !== arcadeOverlay) {
+                arcadeOverlay.requestFullscreen().catch(function() {});
               }
+              launchGame(sys, file, label);
             };
           }(system, game, displayName)));
           arcadeGameList.appendChild(btn);
@@ -2232,6 +2239,14 @@ document.addEventListener('DOMContentLoaded', function() {
         window.localStorage.setItem(ARCADE_LAST_GAME_KEY, JSON.stringify({ system: system, file: file }));
       } catch (_) {}
       showArcadePlayer();
+      // Apply the system's native aspect ratio so the game is letterboxed correctly.
+      if (arcadeGameContainer) {
+        var sysRatio = EJS_SYSTEM_ASPECT[system] || (4 / 3);
+        arcadeGameContainer.style.aspectRatio = sysRatio.toFixed(4);
+        arcadeGameContainer.style.height = '100%';
+        arcadeGameContainer.style.width = 'auto';
+        arcadeGameContainer.style.maxWidth = '100%';
+      }
       if (arcadeLoading) {
         arcadeLoading.classList.add('active');
       }
@@ -2594,7 +2609,10 @@ document.addEventListener('DOMContentLoaded', function() {
           const cmd = text.slice(FINAL_PREFIX.length).trim().toLowerCase();
           if (ARCADE_COMMANDS.has(cmd)) {
             resetFinalInput();
-            openArcadeDirectly();
+            openArcade();
+            if (arcadeOverlay) {
+              arcadeOverlay.requestFullscreen().catch(function() {});
+            }
             return;
           }
         }
