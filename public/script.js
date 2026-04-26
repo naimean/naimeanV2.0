@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeLoading = document.getElementById('arcade-loading');
   const arcadeStatus = document.getElementById('arcade-status');
   const arcadeLoadingStatus = document.getElementById('arcade-loading-status');
+  const arcadeControlsHint = document.getElementById('arcade-controls-hint');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
   const BOOT_DEFAULT_SUFFIX = 'Arcade';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
@@ -121,6 +122,10 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameActive = false;
   let miniGameTarget = 0;
   let miniGameAttempts = 0;
+  // Self-hosted EmulatorJS assets (loader.js, emulator.min.js, emulator.min.css).
+  // Used as the first loading source so the arcade works without CDN availability.
+  // System cores (WASM) are still fetched from CDN via EJS_pathtodata.
+  const LOCAL_EJS_PATH = '/assets/emulatorjs/';
   const EJS_CDN_URLS = [
     'https://cdn.emulatorjs.org/stable/data/',
     'https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@latest/data/',
@@ -150,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let arcadeFullscreen = false;
   let arcadeLoadTimeout = null;
   let arcadeCurrentAspect = null;
+  let arcadeHintTimeout = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
   const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
@@ -1968,8 +1974,41 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
+    function hideControlsHint() {
+      if (arcadeHintTimeout) {
+        clearTimeout(arcadeHintTimeout);
+        arcadeHintTimeout = null;
+      }
+      if (arcadeControlsHint) {
+        arcadeControlsHint.classList.remove('active');
+        arcadeControlsHint.setAttribute('aria-hidden', 'true');
+      }
+      // Explicitly remove both listeners regardless of which one triggered the dismiss.
+      // (The once:true option auto-removes the triggered listener, but not the other one.)
+      document.removeEventListener('keydown', hideControlsHint);
+      if (arcadeGameWrap) {
+        arcadeGameWrap.removeEventListener('pointerdown', hideControlsHint);
+      }
+    }
+
+    function showControlsHint() {
+      hideControlsHint();
+      if (!arcadeControlsHint) {
+        return;
+      }
+      arcadeControlsHint.classList.add('active');
+      arcadeControlsHint.setAttribute('aria-hidden', 'false');
+      // Auto-dismiss after the CSS animation completes (5 s).
+      arcadeHintTimeout = setTimeout(hideControlsHint, 5000);
+      document.addEventListener('keydown', hideControlsHint, { once: true });
+      if (arcadeGameWrap) {
+        arcadeGameWrap.addEventListener('pointerdown', hideControlsHint, { once: true });
+      }
+    }
+
     function stopEmulator() {
       console.log('[Arcade] stopEmulator: stopping emulator and cleaning up');
+      hideControlsHint();
       if (arcadeLoadTimeout) {
         clearTimeout(arcadeLoadTimeout);
         arcadeLoadTimeout = null;
@@ -2006,7 +2045,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Keys based on the EmulatorJS stable API; update if the library version changes.
       var ejsKeys = ['EJS_player', 'EJS_core', 'EJS_gameUrl', 'EJS_pathtodata',
         'EJS_startOnLoaded', 'EJS_emulator', 'EJS_Buttons', 'EJS_gameID',
-        'EJS_onGameStart', 'EJS_onLoadError'];
+        'EJS_onGameStart', 'EJS_onLoadError', 'EJS_paths'];
       ejsKeys.forEach(function(k) {
         if (Object.prototype.hasOwnProperty.call(window, k)) {
           try { delete window[k]; } catch (e) { window[k] = undefined; }
@@ -2168,6 +2207,7 @@ document.addEventListener('DOMContentLoaded', function() {
           window.NaimeanDiag.log('arcade: EJS_onGameStart — game running');
         }
         setArcadeStatus('Game started — enjoy!');
+        showControlsHint();
       };
       function getEjsLoadErrorMessage(e) {
         var target = e && (e.target || e.currentTarget);
@@ -2223,9 +2263,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         setArcadeStatus('Emulator error: ' + msg);
       };
-      setArcadeStatus('Fetching EmulatorJS from CDN…');
-      if (window.NaimeanDiag) { window.NaimeanDiag.set('arcade:status', 'fetching CDN…'); }
-      console.log('[Arcade] launchGame: starting 30s load timeout, fetching EmulatorJS from CDN');
+      setArcadeStatus('Loading EmulatorJS…');
+      if (window.NaimeanDiag) { window.NaimeanDiag.set('arcade:status', 'loading…'); }
+      console.log('[Arcade] launchGame: starting 30s load timeout, trying local assets then CDN');
       arcadeLoadTimeout = setTimeout(function() {
         arcadeLoadTimeout = null;
         if (arcadeLoading) {
@@ -2238,9 +2278,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
-      function appendLoaderScript(cdnIndex) {
-        if (cdnIndex >= EJS_CDN_URLS.length) {
-          console.error('[Arcade] appendLoaderScript: all CDN URLs exhausted, cannot load EmulatorJS');
+      // sourceIndex: -1 = local self-hosted assets, 0+ = CDN fallbacks.
+      // When using local, EJS_pathtodata still points to CDN so system cores (WASM) load
+      // correctly. EJS_paths overrides loader.js's emulator.min.* lookups to local paths.
+      function appendLoaderScript(sourceIndex) {
+        var isLocal = (sourceIndex < 0);
+        if (!isLocal && sourceIndex >= EJS_CDN_URLS.length) {
+          console.error('[Arcade] appendLoaderScript: all sources exhausted, cannot load EmulatorJS');
           if (arcadeLoadTimeout) {
             clearTimeout(arcadeLoadTimeout);
             arcadeLoadTimeout = null;
@@ -2249,53 +2293,78 @@ document.addEventListener('DOMContentLoaded', function() {
             arcadeLoading.classList.remove('active');
           }
           if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:status', 'ERROR: all CDNs failed ✗');
-            window.NaimeanDiag.log('arcade: all CDN URLs exhausted');
+            window.NaimeanDiag.set('arcade:status', 'ERROR: all sources failed ✗');
+            window.NaimeanDiag.log('arcade: all sources exhausted');
           }
-          setArcadeStatus('Error: failed to load EmulatorJS from CDN — check network / console');
+          setArcadeStatus('Error: failed to load EmulatorJS — check network / console');
           return;
         }
-        var cdnBase = EJS_CDN_URLS[cdnIndex];
-        // Set EJS_pathtodata before appending the script so that loader.js reads
-        // the correct CDN base when it executes (loader.js reads this synchronously,
-        // before the onload callback would fire).
-        window.EJS_pathtodata = cdnBase;
-        console.log('[Arcade] appendLoaderScript: trying CDN ' + (cdnIndex + 1) + '/' + EJS_CDN_URLS.length + ' → ' + cdnBase + 'loader.js');
+        // Clean up any EJS_paths override left by a previous attempt.
+        if (Object.prototype.hasOwnProperty.call(window, 'EJS_paths')) {
+          try { delete window.EJS_paths; } catch (e) { window.EJS_paths = undefined; }
+        }
+        var loaderSrc, sourceLabel;
+        if (isLocal) {
+          // Use CDN as the data path so system cores still load from there.
+          window.EJS_pathtodata = EJS_CDN_URLS[0];
+          // Override loader.js's file-path lookups to use the self-hosted JS and CSS.
+          window.EJS_paths = {
+            'emulator.min.js': LOCAL_EJS_PATH + 'emulator.min.js',
+            'emulator.min.css': LOCAL_EJS_PATH + 'emulator.min.css'
+          };
+          loaderSrc = LOCAL_EJS_PATH + 'loader.js';
+          sourceLabel = 'local';
+        } else {
+          var cdnBase = EJS_CDN_URLS[sourceIndex];
+          // Set EJS_pathtodata before appending the script so that loader.js reads
+          // the correct CDN base when it executes (loader.js reads this synchronously,
+          // before the onload callback would fire).
+          window.EJS_pathtodata = cdnBase;
+          loaderSrc = cdnBase + 'loader.js';
+          sourceLabel = 'CDN ' + (sourceIndex + 1) + '/' + EJS_CDN_URLS.length;
+        }
+        console.log('[Arcade] appendLoaderScript: trying ' + sourceLabel + ' → ' + loaderSrc);
         if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:cdn', 'CDN ' + (cdnIndex + 1) + ': ' + cdnBase);
-          window.NaimeanDiag.log('arcade: trying CDN ' + (cdnIndex + 1) + '/' + EJS_CDN_URLS.length);
+          window.NaimeanDiag.set('arcade:cdn', sourceLabel + ': ' + loaderSrc);
+          window.NaimeanDiag.log('arcade: trying ' + sourceLabel);
         }
         var s = document.createElement('script');
         s.id = 'emulatorjs-loader';
-        s.src = cdnBase + 'loader.js';
+        s.src = loaderSrc;
         s.onload = function() {
-          console.log('[Arcade] appendLoaderScript: loader.js loaded OK from ' + cdnBase);
+          console.log('[Arcade] appendLoaderScript: loader.js loaded OK from ' + sourceLabel);
           if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:loader', 'OK (CDN ' + (cdnIndex + 1) + ')');
+            window.NaimeanDiag.set('arcade:loader', 'OK (' + sourceLabel + ')');
             window.NaimeanDiag.set('arcade:status', 'loader OK — initialising…');
-            window.NaimeanDiag.log('arcade: loader.js OK from CDN ' + (cdnIndex + 1));
+            window.NaimeanDiag.log('arcade: loader.js OK from ' + sourceLabel);
           }
           setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
         };
         s.onerror = function() {
-          console.warn('[Arcade] appendLoaderScript: failed to load loader.js from ' + cdnBase);
+          console.warn('[Arcade] appendLoaderScript: failed to load loader.js from ' + sourceLabel);
           if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:loader', 'FAIL CDN ' + (cdnIndex + 1));
-            window.NaimeanDiag.log('arcade: loader.js FAIL from CDN ' + (cdnIndex + 1) + ': ' + cdnBase);
+            window.NaimeanDiag.set('arcade:loader', 'FAIL ' + sourceLabel);
+            window.NaimeanDiag.log('arcade: loader.js FAIL from ' + sourceLabel);
           }
           s.remove();
-          var nextIndex = cdnIndex + 1;
-          if (nextIndex < EJS_CDN_URLS.length) {
-            console.log('[Arcade] appendLoaderScript: retrying with next CDN in 1s…');
-            setArcadeStatus('CDN load failed — trying alternate…');
-            setTimeout(function() { appendLoaderScript(nextIndex); }, 1000);
+          if (isLocal) {
+            console.log('[Arcade] appendLoaderScript: local assets failed — falling back to CDN');
+            setArcadeStatus('Local assets unavailable — trying CDN…');
+            appendLoaderScript(0);
           } else {
-            appendLoaderScript(nextIndex);
+            var nextIndex = sourceIndex + 1;
+            if (nextIndex < EJS_CDN_URLS.length) {
+              console.log('[Arcade] appendLoaderScript: retrying with next CDN in 1s…');
+              setArcadeStatus('CDN load failed — trying alternate…');
+              setTimeout(function() { appendLoaderScript(nextIndex); }, 1000);
+            } else {
+              appendLoaderScript(nextIndex);
+            }
           }
         };
         document.head.appendChild(s);
       }
-      appendLoaderScript(0);
+      appendLoaderScript(-1);
     }
 
     function exitArcadeFullscreen() {

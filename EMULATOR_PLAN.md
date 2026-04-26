@@ -24,11 +24,11 @@ Improvements and housekeeping items for the arcade/emulator feature built on [Em
 
 4. **Self-host EmulatorJS core assets**
    - Cache `loader.js`, `emulator.min.js`, and `emulator.min.css` in `public/assets/emulatorjs/` so the arcade is not dependent on CDN availability.
-   - _Status: planned_
+   - _Status: done_
 
 5. **Keyboard/gamepad control overlay**
    - Show a brief on-screen control reference when a game first loads so users know how to play.
-   - _Status: planned_
+   - _Status: done_
 
 ---
 

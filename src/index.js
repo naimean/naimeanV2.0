@@ -14,6 +14,8 @@ const DOCUMENT_CSP = [
   // This is the narrowest viable fix: isolating EmulatorJS in a sandboxed iframe would remove
   // the need for 'unsafe-eval' on the main document but requires significant restructuring.
   // Note: 'unsafe-inline' (already present) is the higher XSS risk; 'unsafe-eval' is incremental.
+  // loader.js, emulator.min.js, and emulator.min.css are self-hosted in /assets/emulatorjs/ and
+  // served via 'self'. CDN is still listed as a fallback and for system cores (WASM).
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net https://cdn.emulatorjs.org https://cdn.jsdelivr.net",
