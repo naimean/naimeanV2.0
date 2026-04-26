@@ -126,9 +126,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameTarget = 0;
   let miniGameAttempts = 0;
   // Self-hosted EmulatorJS assets (loader.js, emulator.min.js, emulator.min.css,
-  // system cores, and compression utilities) in /assets/emulatorjs/.
+  // system cores, and compression utilities) in /assets/retroarc/.
   // Used as the first loading source so the arcade works without CDN availability.
-  const LOCAL_EJS_PATH = '/assets/emulatorjs/';
+  const LOCAL_EJS_PATH = '/assets/retroarc/';
   const EJS_CDN_URLS = [
     'https://cdn.emulatorjs.org/stable/data/',
     'https://cdn.jsdelivr.net/npm/@emulatorjs/emulatorjs@latest/data/',

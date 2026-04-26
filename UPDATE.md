@@ -51,6 +51,15 @@
 
 # Update Log
 
+## 2026-04-26 (retroarc asset reorganisation)
+- Moved all self-hosted EmulatorJS assets from `public/assets/emulatorjs/` to `public/assets/retroarc/`.
+  - Cores (`.data` header files) are now at `public/assets/retroarc/cores/`; core audit reports live under `public/assets/retroarc/cores/reports/`.
+  - Compression utilities moved to `public/assets/retroarc/compression/`.
+  - `loader.js`, `emulator.min.js`, and `emulator.min.css` are now served from `public/assets/retroarc/`.
+- Updated `LOCAL_EJS_PATH` constant in `public/script.js` from `/assets/emulatorjs/` to `/assets/retroarc/`.
+- Updated path comment in `src/index.js` to reflect the new location.
+- Updated `EMULATOR_PLAN.md` item 4 to reference the new `public/assets/retroarc/` tree.
+
 ## 2026-04-24 (Discord invite refresh + polish backlog)
 - Updated Discord invite link to `https://discord.gg/kTkD7N3JN` (30-day Guest invite); added `DISCORD_FALLBACK_INVITE_URL` constant in `public/script.js` and `public/chapel.html` so the invite link is always reachable even if the Discord widget API does not return an `instant_invite`.
 - Fix: chapel roll audio now seeks to compensate for the navigation delay so the rickroll audio continuation feels seamless (#322).
