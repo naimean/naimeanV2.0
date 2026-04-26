@@ -30,7 +30,7 @@ const DOCUMENT_CSP = [
   "media-src 'self' data: blob:",
   "connect-src 'self' https://www.naimean.com https://discord.com https://*.discord.com https://*.workers.dev https://*.naimean.workers.dev https://cdn.emulatorjs.org https://cdn.jsdelivr.net https://api.music.apple.com https://amp-api.music.apple.com https://amp-api-edge.music.apple.com https://static.cloudflareinsights.com",
   "worker-src 'self' blob:",
-  "frame-src 'self' https://discord.com https://*.discord.com https://archive.org",
+  "frame-src 'self' https://discord.com https://*.discord.com https://archive.org https://oregontrail.ws",
   "form-action 'self'",
   "upgrade-insecure-requests",
 ].join('; ');
