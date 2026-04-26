@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARCADE</title>
+  <link rel="icon" type="image/jpeg" href="assets/images/commodore64.v20260424.jpg">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ──────────────────────────────────────────────────────────── */
+
+    .player-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      background: rgba(0, 0, 0, 0.9);
+      border-bottom: 1px solid rgba(142, 240, 178, 0.2);
+      flex-shrink: 0;
+      font-family: 'VT323', monospace;
+      color: rgba(142, 240, 178, 0.8);
+      font-size: 1.1em;
+      z-index: 10;
+    }
+
+    .player-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: 0.05em;
+    }
+
+    .player-btn {
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid rgba(142, 240, 178, 0.4);
+      border-radius: 3px;
+      color: rgba(142, 240, 178, 0.8);
+      font-family: 'VT323', monospace;
+      font-size: 0.9em;
+      padding: 2px 8px;
+      cursor: pointer;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .player-btn:hover,
+    .player-btn:focus-visible {
+      background: rgba(142, 240, 178, 0.12);
+      outline: none;
+    }
+
+    /* ── Game area ────────────────────────────────────────────────────────── */
+
+    .player-game-area {
+      flex: 1 1 auto;
+      min-height: 0;
+      position: relative;
+      background: #000;
+    }
+
+    #game {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Page fade — starts opaque, transitions to clear on load ─────────── */
+
+    .player-fade {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 1;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      z-index: 100;
+    }
+
+    .player-fade.clear {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="player-bar" id="player-bar">
+    <div class="player-title" id="player-title">&#9658; ARCADE</div>
+    <button class="player-btn" id="player-fs-btn" type="button" aria-label="Toggle fullscreen">FULLSCREEN</button>
+    <button class="player-btn" id="player-back-btn" type="button" aria-label="Back to game picker">&#8592; BACK</button>
+  </div>
+  <div class="player-game-area">
+    <div id="game"></div>
+  </div>
+  <div class="player-fade" id="player-fade" aria-hidden="true"></div>
+  <script>
+    (function () {
+      // Must match ARCADE_LAST_GAME_KEY in script.js ('arcade-last-game').
+      var LAST_GAME_KEY  = 'arcade-last-game';
+      var INDEX_FADE_KEY = 'naimean-index-fade-in';
+      var EJS_PATH       = '/assets/retroarch/';
+
+      // ── Read URL params ────────────────────────────────────────────────────
+      var params = new URLSearchParams(location.search);
+      var system = params.get('system') || '';
+      var file   = params.get('file')   || '';
+      var name   = params.get('name')   || (file ? file.replace(/\.[^.]+$/, '') : '');
+
+      if (!system || !file) {
+        location.replace('/');
+        return;
+      }
+
+      // ── Page title ─────────────────────────────────────────────────────────
+      if (name) {
+        document.title = name.toUpperCase() + ' \u2013 ARCADE';
+        var titleEl = document.getElementById('player-title');
+        if (titleEl) {
+          titleEl.textContent = '\u25BA ' + name.toUpperCase();
+        }
+      }
+
+      // ── Persist last played game ───────────────────────────────────────────
+      try {
+        localStorage.setItem(LAST_GAME_KEY, JSON.stringify({ system: system, file: file }));
+      } catch (_) {}
+
+      // ── Fade in ────────────────────────────────────────────────────────────
+      var fadeEl = document.getElementById('player-fade');
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (fadeEl) {
+            fadeEl.classList.add('clear');
+          }
+        });
+      });
+
+      // ── Navigation ─────────────────────────────────────────────────────────
+      function navigateBack() {
+        try {
+          sessionStorage.setItem(INDEX_FADE_KEY, '1');
+        } catch (_) {}
+        if (fadeEl) {
+          fadeEl.classList.remove('clear');
+          setTimeout(function () { location.assign('/'); }, 400);
+        } else {
+          location.assign('/');
+        }
+      }
+
+      document.getElementById('player-back-btn').addEventListener('click', navigateBack);
+
+      // ── Fullscreen ─────────────────────────────────────────────────────────
+      var fsBtn = document.getElementById('player-fs-btn');
+
+      fsBtn.addEventListener('click', function () {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(function () {});
+        } else {
+          document.documentElement.requestFullscreen().catch(function () {});
+        }
+      });
+
+      document.addEventListener('fullscreenchange', function () {
+        var inFs = !!document.fullscreenElement;
+        fsBtn.textContent = inFs ? 'EXIT FS' : 'FULLSCREEN';
+        fsBtn.setAttribute('aria-label', inFs ? 'Exit fullscreen' : 'Toggle fullscreen');
+      });
+
+      // Escape: exit fullscreen if active, otherwise go back to picker.
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') {
+          return;
+        }
+        if (document.fullscreenElement) {
+          // Browser handles the fullscreen exit automatically on Escape.
+          return;
+        }
+        navigateBack();
+      });
+
+      // ── EmulatorJS configuration ───────────────────────────────────────────
+      window.EJS_player        = '#game';
+      window.EJS_core          = system;
+      window.EJS_gameUrl       = '/assets/roms/' + system + '/' + encodeURIComponent(file);
+      window.EJS_pathtodata    = EJS_PATH;
+      window.EJS_startOnLoaded = true;
+      window.EJS_color         = '#8ef0b2';
+
+      // Enable the on-screen virtual gamepad for touch / mobile users.
+      window.EJS_defaultOptions = { 'virtual-gamepad': 'enabled' };
+
+      window.EJS_onGameStart = function () {
+        console.log('[Player] game started: ' + name + ' (' + system + ')');
+      };
+
+      window.EJS_onLoadError = function (e) {
+        var msg = (e && e.error && e.error.message)
+          || (e && e.message)
+          || String(e)
+          || 'Unknown error';
+        console.error('[Player] EJS_onLoadError:', msg);
+
+        var errBanner = document.createElement('div');
+        errBanner.style.cssText = [
+          'position:fixed', 'inset:0', 'display:flex', 'flex-direction:column',
+          'align-items:center', 'justify-content:center', 'background:#000',
+          'color:rgba(255,80,80,0.85)', 'font-family:VT323,monospace',
+          'font-size:1.4em', 'letter-spacing:.05em', 'text-align:center',
+          'padding:20px', 'z-index:50'
+        ].join(';');
+
+        var headline = document.createElement('div');
+        headline.textContent = 'EMULATOR ERROR';
+        var detail = document.createElement('div');
+        detail.style.cssText = 'font-size:.7em;margin-top:8px;color:rgba(255,120,120,0.7);';
+        detail.textContent = msg;
+        var backBtn = document.createElement('button');
+        backBtn.style.cssText = [
+          'margin-top:18px', 'background:transparent',
+          'border:1px solid rgba(142,240,178,.4)', 'border-radius:3px',
+          'color:rgba(142,240,178,.8)', 'font-family:VT323,monospace',
+          'font-size:1em', 'padding:4px 14px', 'cursor:pointer'
+        ].join(';');
+        backBtn.textContent = '\u2190 BACK';
+        backBtn.addEventListener('click', navigateBack);
+
+        errBanner.appendChild(headline);
+        errBanner.appendChild(detail);
+        errBanner.appendChild(backBtn);
+        document.body.appendChild(errBanner);
+      };
+
+      // ── Load EmulatorJS ────────────────────────────────────────────────────
+      var loader = document.createElement('script');
+      loader.src = EJS_PATH + 'loader.js';
+      loader.onerror = function () {
+        console.error('[Player] Failed to load EmulatorJS loader.js');
+        window.EJS_onLoadError(new Error('Failed to load EmulatorJS loader.js'));
+      };
+      document.head.appendChild(loader);
+    }());
+  </script>
+</body>
+</html>
