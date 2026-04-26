@@ -2409,9 +2409,9 @@ document.addEventListener('DOMContentLoaded', function() {
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
       // sourceIndex: -1 = local self-hosted assets, 0+ = CDN fallbacks.
-      // For local: loader.js + emulator.min.js/css come from self-hosted copies;
-      // EJS_pathtodata is set to CDN so system cores (WASM) are fetched from CDN.
-      // EJS_paths overrides loader.js's emulator.min.* lookups to local paths.
+      // For local: all EmulatorJS files (loader.js, emulator.min.js/css, and
+      // core binaries) are served from LOCAL_EJS_PATH (/assets/retroarc/).
+      // Core binaries are downloaded at deploy time by scripts/download-ejs-cores.js.
       function appendLoaderScript(sourceIndex) {
         var isLocal = (sourceIndex < 0);
         if (!isLocal && sourceIndex >= EJS_CDN_URLS.length) {
@@ -2436,18 +2436,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var loaderSrc, sourceLabel;
         if (isLocal) {
-          // Point EJS_pathtodata at the CDN so that EmulatorJS fetches system
-          // cores (WASM) from CDN — only the .data header files are self-hosted,
-          // not the full .js/.wasm core binaries.  EJS_paths then overrides the
-          // emulator.min.js/css lookups back to our self-hosted copies so the
-          // heavy JS/CSS loads from cache rather than CDN.
-          window.EJS_pathtodata = EJS_CDN_URLS[0];
-          // Keep EJS_paths so loader.js resolves emulator.min.js/css from the
-          // same local folder regardless of how scriptPath is derived.
-          window.EJS_paths = {
-            'emulator.min.js': LOCAL_EJS_PATH + 'emulator.min.js',
-            'emulator.min.css': LOCAL_EJS_PATH + 'emulator.min.css'
-          };
+          // All EmulatorJS assets are self-hosted: loader.js, emulator.min.js/css,
+          // and core binaries (.js + .wasm) all live under LOCAL_EJS_PATH.
+          window.EJS_pathtodata = LOCAL_EJS_PATH;
           loaderSrc = LOCAL_EJS_PATH + 'loader.js';
           sourceLabel = 'local';
         } else {
