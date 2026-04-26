@@ -132,6 +132,9 @@ export default {
         const coreHeaders = new Headers({
           'Content-Type': coreContentType,
           'Cache-Control': 'public, max-age=31536000, immutable',
+          'Accept-Ranges': 'bytes',
+          'Access-Control-Allow-Origin': '*',
+          'Cross-Origin-Resource-Policy': 'cross-origin',
         });
         if (etag) coreHeaders.set('ETag', etag);
         if (etag && ifNoneMatch === etag) {

@@ -15,7 +15,8 @@
   var BOOT_LINE_DELAY_MS  = 180;
   var TIMEOUT_WARN_10_MS  = 10000;
   var TIMEOUT_WARN_30_MS  = 30000;
-  var TIMEOUT_FAIL_60_MS  = 60000;
+  var TIMEOUT_WARN_90_MS  = 90000;
+  var TIMEOUT_FAIL_120_MS = 120000;
   var MAX_DEBUG_LOG_LINES = 50;
 
   // Global property names set/cleared for each EmulatorJS session.
@@ -266,13 +267,22 @@
       appendBootLine(bootLines[i], '');
     }
 
-    // Wait for core preload and show result
+    // Wait for core preload and show granular pipeline state
+    var statusLine = null;
+    if (system.core) {
+      statusLine = appendBootLine('CHECKING CORE: ' + system.core + '-wasm.data\u2026', 'boot-line-dim');
+    }
     var preloadResult = await corePreloadPromise;
     if (preloadResult && preloadResult.cached) {
-      appendBootLine('CORE CACHED OK.', 'boot-line-dim');
+      if (statusLine) { statusLine.textContent = 'CORE DATA DOWNLOADED OK.'; }
+      else { appendBootLine('CORE DATA DOWNLOADED OK.', 'boot-line-dim'); }
+      await delay(BOOT_LINE_DELAY_MS);
+      appendBootLine('LOADING WEBASSEMBLY\u2026', 'boot-line-dim');
     } else if (system.core) {
       var reason = preloadResult && preloadResult.reason ? preloadResult.reason : 'unavailable';
-      appendBootLine('CACHE MISS (' + reason + ') — CONTINUING', 'boot-line-dim');
+      var missText = 'CORE CACHE MISS (' + reason + ') — EJS WILL FETCH ON LAUNCH';
+      if (statusLine) { statusLine.textContent = missText; }
+      else { appendBootLine(missText, 'boot-line-dim'); }
     }
 
     await delay(BOOT_LINE_DELAY_MS);
@@ -291,7 +301,7 @@
     }
   }
 
-  function startLaunchTimeouts(onTimeout60) {
+  function startLaunchTimeouts(onTimeout120) {
     clearTimeouts();
     timeoutHandles.push(setTimeout(function () {
       dbgLog('timeout 10s — still loading core');
@@ -304,14 +314,21 @@
     timeoutHandles.push(setTimeout(function () {
       dbgLog('timeout 30s — core loading unusually long');
       if (elTimeoutBanner) {
-        elTimeoutBanner.textContent = 'Core load taking unusually long\u2026 (30 s)';
+        elTimeoutBanner.textContent = 'Core load taking unusually long\u2026 (30 s) — check /arcade-health.html';
       }
     }, TIMEOUT_WARN_30_MS));
 
     timeoutHandles.push(setTimeout(function () {
-      dbgLog('timeout 60s — showing recoverable error');
-      if (typeof onTimeout60 === 'function') { onTimeout60(); }
-    }, TIMEOUT_FAIL_60_MS));
+      dbgLog('timeout 90s — still waiting for core');
+      if (elTimeoutBanner) {
+        elTimeoutBanner.textContent = 'Core still loading\u2026 (90 s) — check /arcade-health.html for diagnostics';
+      }
+    }, TIMEOUT_WARN_90_MS));
+
+    timeoutHandles.push(setTimeout(function () {
+      dbgLog('timeout 120s — showing recoverable error');
+      if (typeof onTimeout120 === 'function') { onTimeout120(); }
+    }, TIMEOUT_FAIL_120_MS));
   }
 
   // ── EmulatorJS launch ──────────────────────────────────────────────────────
@@ -358,6 +375,16 @@
     window.EJS_pathtodata    = EJS_PATH;
     window.EJS_startOnLoaded = true;
 
+    // Log the full EJS launch config for diagnostics.
+    console.log('[NaimeanArcade] EJS launch config:', {
+      EJS_player:        window.EJS_player,
+      EJS_core:          window.EJS_core,
+      EJS_gameUrl:       window.EJS_gameUrl,
+      EJS_pathtodata:    window.EJS_pathtodata,
+      EJS_startOnLoaded: window.EJS_startOnLoaded,
+      coreDataUrl:       sys.core ? getCoreDataUrl(sys.core) : '(none)',
+    });
+
     window.EJS_onLoadError = function (e) {
       clearTimeouts();
       var msg = (e && e.error && e.error.message) || (e && e.message) || String(e) || 'Unknown error';
@@ -366,7 +393,7 @@
     };
 
     startLaunchTimeouts(function () {
-      showError(buildErrorContext(sys, romFile, romUrl, '', 'Timed out after 60 seconds.', 'Core failed to load within 60 s. The .data file may be missing from R2 or the network is slow.'));
+      showError(buildErrorContext(sys, romFile, romUrl, '', 'Timed out after 120 seconds.', 'Core .data download timed out. Verify the file exists at ' + (sys && sys.core ? getCoreDataUrl(sys.core) : CORES_BASE) + ' — check /arcade-health.html for diagnostics.'));
     });
 
     loaderScript = document.createElement('script');
@@ -558,6 +585,39 @@
     selectedRom = { file: romFile, name: romFile.replace(/\.[^.]+$/, '') };
     setState(STATES.LAUNCHING_ROM);
     dbgLog('launching ' + system.id + ' / ' + romFile);
+
+    // Preflight: verify core .data file is present and not an HTML error page.
+    if (system.core) {
+      var coreUrl = getCoreDataUrl(system.core);
+      dbgLog('preflight: HEAD ' + coreUrl);
+      try {
+        var pfRes = await fetch(coreUrl, { method: 'HEAD', cache: 'no-store' });
+        var pfCt  = (pfRes.headers.get('content-type') || '').toLowerCase();
+        var pfCl  = parseInt(pfRes.headers.get('content-length') || '0', 10);
+        dbgLog('preflight: HTTP ' + pfRes.status + '  ct=' + pfCt + '  cl=' + pfCl);
+        if (!pfRes.ok) {
+          showError(buildErrorContext(system, romFile, coreUrl, String(pfRes.status),
+            'Core file returned HTTP ' + pfRes.status,
+            'The .data file is missing from R2. Confirm the file ' + system.core + '-wasm.data is present in the retroarch-cores bucket and CI has run. Check /arcade-health.html.'));
+          return;
+        }
+        if (pfCt && pfCt.includes('text/html')) {
+          showError(buildErrorContext(system, romFile, coreUrl, String(pfRes.status),
+            'Core file returned Content-Type: ' + pfCt,
+            'The URL resolved to an HTML page instead of binary data. The file is likely missing from R2. Check /arcade-health.html.'));
+          return;
+        }
+        if (pfCl > 0 && pfCl < 1024 * 1024) {
+          showError(buildErrorContext(system, romFile, coreUrl, String(pfRes.status),
+            'Core file too small: Content-Length=' + pfCl + ' bytes',
+            'Expected > 1 MB for a valid .data bundle. The file in R2 may be corrupt or incomplete. Check /arcade-health.html.'));
+          return;
+        }
+      } catch (pfErr) {
+        // Network failure — log and continue rather than hard-blocking.
+        dbgLog('WARN preflight fetch failed: ' + (pfErr && pfErr.message ? pfErr.message : String(pfErr)) + ' — continuing anyway');
+      }
+    }
 
     // Verify ROM availability
     var romCheck = await verifyRomAvailable(system.id, romFile);
