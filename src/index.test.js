@@ -477,6 +477,75 @@ test('R2 cores route: falls through to ASSETS when CORES binding is absent', asy
   assert.ok(calls.assets.length > 0, 'ASSETS must be consulted when CORES is absent');
 });
 
+test('R2 cores route: HEAD request returns correct Content-Type and Content-Length without a body', async () => {
+  const { env } = makeEnv({
+    CORES: {
+      async head(key) {
+        if (key === 'fceumm-wasm.data') {
+          return { httpEtag: '"abc123"', size: 12345678 };
+        }
+        return null;
+      },
+    },
+  });
+
+  const response = await router.fetch(
+    new Request('https://naimean.com/assets/retroarch/cores/fceumm-wasm.data', { method: 'HEAD' }),
+    env,
+    {},
+  );
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.headers.get('Content-Type'), 'application/octet-stream');
+  assert.strictEqual(response.headers.get('Content-Length'), '12345678');
+  assert.strictEqual(response.headers.get('ETag'), '"abc123"');
+  assert.strictEqual(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
+  assert.strictEqual(response.headers.get('Access-Control-Allow-Origin'), '*');
+  // Body must be null/empty for a HEAD response.
+  assert.strictEqual(response.body, null);
+});
+
+test('R2 cores route: HEAD request for -legacy-wasm.data returns correct headers', async () => {
+  const { env } = makeEnv({
+    CORES: {
+      async head(key) {
+        if (key === 'fceumm-legacy-wasm.data') {
+          return { httpEtag: '"legacy123"', size: 9876543 };
+        }
+        return null;
+      },
+    },
+  });
+
+  const response = await router.fetch(
+    new Request('https://naimean.com/assets/retroarch/cores/fceumm-legacy-wasm.data', { method: 'HEAD' }),
+    env,
+    {},
+  );
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.headers.get('Content-Type'), 'application/octet-stream');
+  assert.strictEqual(response.headers.get('Content-Length'), '9876543');
+  assert.strictEqual(response.headers.get('ETag'), '"legacy123"');
+  assert.strictEqual(response.body, null);
+});
+
+test('R2 cores route: HEAD request for missing key returns 404', async () => {
+  const { env } = makeEnv({
+    CORES: {
+      async head() { return null; },
+    },
+  });
+
+  const response = await router.fetch(
+    new Request('https://naimean.com/assets/retroarch/cores/missing-wasm.data', { method: 'HEAD' }),
+    env,
+    {},
+  );
+
+  assert.strictEqual(response.status, 404);
+});
+
 // ─── Security header edge-case tests ─────────────────────────────────────────
 
 test('edge router: HSTS is set on HTTPS requests', async () => {

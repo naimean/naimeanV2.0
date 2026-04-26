@@ -118,31 +118,49 @@ export default {
       // Serve EmulatorJS core archives from R2 with ETag-based cache busting.
       // Handles .data (current EJS 4.x format), .js, and .wasm (future-proof).
       const key = url.pathname.slice(CORES_R2_PATH_PREFIX.length);
-      const coreObj = await env.CORES.get(key);
-      if (!coreObj) {
-        upstreamResponse = new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
-      } else {
-        const etag = coreObj.httpEtag;
-        const ifNoneMatch = request.headers.get('If-None-Match');
-        const coreContentType = url.pathname.endsWith('.js')
-          ? 'application/javascript'
-          : url.pathname.endsWith('.wasm')
-            ? 'application/wasm'
-            : 'application/octet-stream';
-        const coreHeaders = new Headers({
+      const coreContentType = url.pathname.endsWith('.js')
+        ? 'application/javascript'
+        : url.pathname.endsWith('.wasm')
+          ? 'application/wasm'
+          : 'application/octet-stream';
+
+      const buildCoreHeaders = (size, etag) => {
+        const h = new Headers({
           'Content-Type': coreContentType,
-          'Content-Length': String(coreObj.size),
+          'Content-Length': String(size),
           'Cache-Control': 'public, max-age=31536000, immutable',
           'Accept-Ranges': 'bytes',
           'Access-Control-Allow-Origin': '*',
           'Cross-Origin-Resource-Policy': 'cross-origin',
         });
-        if (etag) coreHeaders.set('ETag', etag);
-        if (etag && ifNoneMatch === etag) {
-          // Conditional request matched — 304, no body, security headers still applied below.
-          upstreamResponse = new Response(null, { status: 304, headers: coreHeaders });
+        if (etag) h.set('ETag', etag);
+        return h;
+      };
+
+      if (request.method === 'HEAD') {
+        // Use R2 head() for HEAD requests — fetches only metadata, not the body.
+        // This ensures Content-Type and Content-Length are correct without
+        // streaming the full file, and prevents the runtime from zeroing
+        // Content-Length when creating a body-less response.
+        const coreMeta = await env.CORES.head(key);
+        if (!coreMeta) {
+          upstreamResponse = new Response(null, { status: 404 });
         } else {
-          upstreamResponse = new Response(coreObj.body, { status: 200, headers: coreHeaders });
+          upstreamResponse = new Response(null, { status: 200, headers: buildCoreHeaders(coreMeta.size, coreMeta.httpEtag) });
+        }
+      } else {
+        const coreObj = await env.CORES.get(key);
+        if (!coreObj) {
+          upstreamResponse = new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+        } else {
+          const ifNoneMatch = request.headers.get('If-None-Match');
+          const coreHeaders = buildCoreHeaders(coreObj.size, coreObj.httpEtag);
+          if (coreObj.httpEtag && ifNoneMatch === coreObj.httpEtag) {
+            // Conditional request matched — 304, no body, security headers still applied below.
+            upstreamResponse = new Response(null, { status: 304, headers: coreHeaders });
+          } else {
+            upstreamResponse = new Response(coreObj.body, { status: 200, headers: coreHeaders });
+          }
         }
       }
     } else {

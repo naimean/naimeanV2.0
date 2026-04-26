@@ -66,6 +66,14 @@ const CORES = [
   'vice_xvic',     // Commodore VIC-20 (1980)
 ];
 
+// Both the non-legacy and legacy variant of each core are uploaded so that
+// EmulatorJS can fall back to the legacy core on browsers without WebGL2
+// (common on mobile/iOS) without hitting the external CDN.
+const CORE_VARIANTS = [
+  '-wasm.data',        // WebGL2-capable browsers (non-legacy)
+  '-legacy-wasm.data', // Legacy fallback for browsers without WebGL2
+];
+
 /**
  * Lists all object keys in an R2 bucket, following pagination cursors.
  * Returns an array of key strings.
@@ -307,27 +315,29 @@ async function main() {
   let failed = 0;
 
   for (const core of CORES) {
-    const filename = `${core}-wasm.data`;
-    const localPath = path.join(CORES_DIR, filename);
+    for (const variant of CORE_VARIANTS) {
+      const filename = `${core}${variant}`;
+      const localPath = path.join(CORES_DIR, filename);
 
-    if (!fs.existsSync(localPath)) {
-      console.warn(`  MISSING  ${filename} — run download-ejs-cores.js first`);
-      failed++;
-      continue;
-    }
+      if (!fs.existsSync(localPath)) {
+        console.warn(`  MISSING  ${filename} — run download-ejs-cores.js first`);
+        failed++;
+        continue;
+      }
 
-    if (!FORCE && await objectExists(filename)) {
-      console.log(`  skip  ${filename} (already in R2)`);
-      skipped++;
-      continue;
-    }
+      if (!FORCE && await objectExists(filename)) {
+        console.log(`  skip  ${filename} (already in R2)`);
+        skipped++;
+        continue;
+      }
 
-    try {
-      await uploadFile(filename, localPath);
-      uploaded++;
-    } catch (err) {
-      console.error(`  FAIL  ${filename}: ${err.message}`);
-      failed++;
+      try {
+        await uploadFile(filename, localPath);
+        uploaded++;
+      } catch (err) {
+        console.error(`  FAIL  ${filename}: ${err.message}`);
+        failed++;
+      }
     }
   }
 
