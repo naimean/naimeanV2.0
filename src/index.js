@@ -1,4 +1,4 @@
-const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"];
+const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout", "/icon"];
 
 // Paths that are handled by the Worker first but served from R2 (not proxied to COUNTER).
 // Must stay in sync with run_worker_first in wrangler.toml (checked by scripts/check-route-alignment.js).
