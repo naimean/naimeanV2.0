@@ -2395,6 +2395,9 @@ document.addEventListener('DOMContentLoaded', function() {
       showArcadePicker();
       arcadeOverlay.classList.add('visible');
       arcadeOverlay.setAttribute('aria-hidden', 'false');
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.hide === 'function') {
+        window.NaimeanAuth.hide();
+      }
       loadArcadeManifest().then(function() {
         populateArcadeGameList();
         restoreLastGame();
@@ -2416,6 +2419,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       arcadeOverlay.classList.add('visible');
       arcadeOverlay.setAttribute('aria-hidden', 'false');
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.hide === 'function') {
+        window.NaimeanAuth.hide();
+      }
       loadArcadeManifest().then(function() {
         var gameToLaunch = null;
         try {
@@ -2472,6 +2478,9 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeOverlay.classList.remove('visible');
         arcadeOverlay.classList.remove('arcade-fading-out');
         arcadeOverlay.setAttribute('aria-hidden', 'true');
+        if (window.NaimeanAuth && typeof window.NaimeanAuth.show === 'function') {
+          window.NaimeanAuth.show();
+        }
         console.log('[Arcade] closeArcade: overlay hidden');
         if (shoutboxInput) {
           shoutboxInput.value = BOOT_DEFAULT_VALUE;
