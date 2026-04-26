@@ -370,7 +370,7 @@
     var romUrl = '/assets/roms/' + sys.id + '/' + encodeURIComponent(romFile);
 
     window.EJS_player        = '#game';
-    window.EJS_core          = sys.id;
+    window.EJS_core          = sys.core;
     window.EJS_gameUrl       = romUrl;
     window.EJS_pathtodata    = EJS_PATH;
     window.EJS_startOnLoaded = true;
