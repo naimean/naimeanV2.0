@@ -1772,13 +1772,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // The browser exits native fullscreen automatically on Escape.
         return;
       }
-      if (arcadePlayer && arcadePlayer.style.display === 'flex') {
-        // Game is running – go back to picker rather than closing the whole arcade.
-        stopEmulator();
-        showArcadePicker();
-        populateArcadeGameList();
-        return;
-      }
       if (arcadeOverlay && arcadeOverlay.classList.contains('visible')) {
         closeArcade();
         return;
@@ -2196,10 +2189,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return function() {
               selectGameItem(btn);
               console.log('[Arcade] game selected: "' + label + '" system=' + sys + ' file=' + file);
-              // Go fullscreen immediately (in user gesture), then launch game.
-              if (arcadeOverlay && document.fullscreenElement !== arcadeOverlay) {
-                arcadeOverlay.requestFullscreen().catch(function() {});
-              }
               launchGame(sys, file, label);
             };
           }(system, game, displayName)));
@@ -2240,162 +2229,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function launchGame(system, file, name) {
-      console.log('[Arcade] launchGame: system=' + system + ' file=' + file + ' name="' + name + '"');
+      console.log('[Arcade] launchGame: navigating to player — system=' + system + ' file=' + file + ' name="' + name + '"');
       if (window.NaimeanDiag) {
         window.NaimeanDiag.set('arcade:game', name + ' (' + system.toUpperCase() + ')');
         window.NaimeanDiag.set('arcade:rom', file);
         window.NaimeanDiag.set('arcade:status', 'launching…');
         window.NaimeanDiag.log('arcade: launch ' + system + ' / ' + name);
       }
-      stopEmulator();
       // Persist this game so it can be pre-selected when the arcade is reopened.
       try {
         window.localStorage.setItem(ARCADE_LAST_GAME_KEY, JSON.stringify({ system: system, file: file }));
       } catch (_) {}
-      showArcadePlayer();
-      // Apply the system's native aspect ratio so the game is letterboxed correctly.
-      if (arcadeGameContainer) {
-        var sysRatio = EJS_SYSTEM_ASPECT[system] || (4 / 3);
-        arcadeGameContainer.style.aspectRatio = sysRatio.toFixed(4);
-        arcadeGameContainer.style.height = '100%';
-        arcadeGameContainer.style.width = 'auto';
-        arcadeGameContainer.style.maxWidth = '100%';
-      }
-      if (arcadeLoading) {
-        arcadeLoading.classList.add('active');
-      }
-      setArcadeStatus('Launching ' + name + ' (' + system.toUpperCase() + ')…');
-      window.EJS_player = '#game';
-      window.EJS_core = system;
-      window.EJS_color = '#8ef0b2';
-      window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
-      window.EJS_startOnLoaded = true;
-      console.log('[Arcade] launchGame: EJS globals set — EJS_core=' + system + ' EJS_gameUrl=' + window.EJS_gameUrl + ' EJS_pathtodata=' + LOCAL_EJS_PATH);
-      if (window.NaimeanDiag) {
-        window.NaimeanDiag.set('arcade:gameUrl', window.EJS_gameUrl);
-      }
-      window.EJS_onGameStart = function() {
-        console.log('[Arcade] EJS_onGameStart: game started successfully');
-        if (arcadeLoadTimeout) {
-          clearTimeout(arcadeLoadTimeout);
-          arcadeLoadTimeout = null;
-        }
-        if (arcadeLoading) {
-          arcadeLoading.classList.remove('active');
-        }
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:status', 'RUNNING ✓');
-          window.NaimeanDiag.log('arcade: EJS_onGameStart — game running');
-        }
-        setArcadeStatus('Game started — enjoy!');
-        showControlsHint(system);
-      };
-      function getEjsLoadErrorMessage(e) {
-        var target = e && (e.target || e.currentTarget);
-        var targetUrl = target && (target.src || target.href);
-        var errorMessage = e && e.error && e.error.message;
-        var message = e && e.message;
-        var name = e && e.name;
-        var type = e && e.type;
-        var stringValue;
 
-        if (errorMessage) {
-          return errorMessage;
-        }
-        if (message && name && message !== name) {
-          return name + ': ' + message;
-        }
-        if (message) {
-          return message;
-        }
-        if (name && targetUrl) {
-          return name + ' while loading ' + targetUrl;
-        }
-        if (type && targetUrl) {
-          return type + ' while loading ' + targetUrl;
-        }
-        if (type) {
-          return 'Load event: ' + type;
-        }
-        if (name) {
-          return name;
-        }
+      var dest = 'arcade-player.html?' + new URLSearchParams({ system: system, file: file, name: name || '' }).toString();
 
-        stringValue = String(e);
-        if (stringValue && stringValue !== '[object Event]' && stringValue !== '[object Object]') {
-          return stringValue;
+      // Fade the page to black, then navigate to the standalone player.
+      function doNavigate() {
+        var overlay = document.getElementById('page-fade-overlay');
+        if (overlay) {
+          overlay.classList.add('visible');
+          setTimeout(function() { window.location.assign(dest); }, 900);
+        } else {
+          window.location.assign(dest);
         }
+      }
 
-        return 'Unknown load error';
+      // Exit native fullscreen (picker may be fullscreen) before fading.
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(function() {}).finally(doNavigate);
+      } else {
+        doNavigate();
       }
-      window.EJS_onLoadError = function(e) {
-        var msg = getEjsLoadErrorMessage(e);
-        console.error('[Arcade] EJS_onLoadError:', e);
-        if (arcadeLoadTimeout) {
-          clearTimeout(arcadeLoadTimeout);
-          arcadeLoadTimeout = null;
-        }
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:status', 'EJS ERROR');
-          window.NaimeanDiag.log('arcade: EJS_onLoadError — ' + msg);
-        }
-        stopEmulator();
-        setArcadeStatus('Emulator error: ' + msg + ' — select a game to try again');
-        showArcadePicker();
-      };
-      setArcadeStatus('Loading EmulatorJS…');
-      if (window.NaimeanDiag) { window.NaimeanDiag.set('arcade:status', 'loading…'); }
-      console.log('[Arcade] launchGame: starting 30s load timeout, loading self-hosted assets');
-      arcadeLoadTimeout = setTimeout(function() {
-        arcadeLoadTimeout = null;
-        console.warn('[Arcade] load timeout: EmulatorJS did not load within 30s');
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:status', 'TIMEOUT ✗');
-          window.NaimeanDiag.log('arcade: 30s timeout — emulator did not start');
-        }
-        stopEmulator();
-        setArcadeStatus('Timed out loading the emulator — select a game to try again');
-        showArcadePicker();
-      }, 30000);
-      // All EmulatorJS assets (loader.js, emulator.min.js/css, core .data files)
-      // are self-hosted under LOCAL_EJS_PATH (/assets/retroarch/).
-      function appendLoaderScript() {
-        // Clean up any EJS_paths override left by a previous attempt.
-        if (Object.prototype.hasOwnProperty.call(window, 'EJS_paths')) {
-          try { delete window.EJS_paths; } catch (e) { window.EJS_paths = undefined; }
-        }
-        window.EJS_pathtodata = LOCAL_EJS_PATH;
-        var loaderSrc = LOCAL_EJS_PATH + 'loader.js';
-        console.log('[Arcade] appendLoaderScript: loading self-hosted → ' + loaderSrc);
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:cdn', 'local: ' + loaderSrc);
-          window.NaimeanDiag.log('arcade: loading self-hosted loader.js');
-        }
-        var s = document.createElement('script');
-        s.id = 'emulatorjs-loader';
-        s.src = loaderSrc;
-        s.onload = function() {
-          console.log('[Arcade] appendLoaderScript: loader.js loaded OK');
-          if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:loader', 'OK (local)');
-            window.NaimeanDiag.set('arcade:status', 'loader OK — initialising…');
-            window.NaimeanDiag.log('arcade: loader.js OK');
-          }
-          setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
-        };
-        s.onerror = function() {
-          console.error('[Arcade] appendLoaderScript: failed to load self-hosted loader.js');
-          if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:loader', 'FAIL (local)');
-            window.NaimeanDiag.log('arcade: loader.js FAIL');
-          }
-          stopEmulator();
-          setArcadeStatus('Error: failed to load EmulatorJS — select a game to try again');
-          showArcadePicker();
-        };
-        document.head.appendChild(s);
-      }
-      appendLoaderScript();
     }
 
     function exitArcadeFullscreen() {
