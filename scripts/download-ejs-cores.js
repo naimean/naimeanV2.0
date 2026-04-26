@@ -46,17 +46,29 @@ const CORES = [
   'vice_xvic',
 ];
 
+/**
+ * Downloads a single file from `url` and saves it to `dest`.
+ * Skips the download (resolves immediately) if the file already exists and
+ * FORCE is not set.  Uses a `.tmp` sibling while downloading and renames on
+ * success to avoid leaving a partial file on failure.
+ *
+ * @param {string} url  - Full HTTPS URL to fetch.
+ * @param {string} dest - Absolute destination path.
+ * @returns {Promise<boolean>} Resolves with `true` if a new file was downloaded,
+ *                             `false` if it was skipped.
+ */
 function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
     if (!FORCE && fs.existsSync(dest)) {
       console.log(`  skip  ${path.basename(dest)} (already exists)`);
-      resolve();
+      resolve(false);
       return;
     }
     const tmp = dest + '.tmp';
     const file = fs.createWriteStream(tmp);
     const cleanup = () => {
       try { file.close(); } catch (_) {}
+      // Best-effort removal of the temp file; ignore errors (e.g. already gone).
       try { fs.unlinkSync(tmp); } catch (_) {}
     };
     https.get(url, (res) => {
@@ -77,7 +89,7 @@ function downloadFile(url, dest) {
         const stat = fs.statSync(dest);
         const kb = Math.round(stat.size / 1024);
         console.log(`  ok    ${path.basename(dest)} (${kb} KB)`);
-        resolve();
+        resolve(true);
       });
     }).on('error', (err) => {
       cleanup();
@@ -103,12 +115,11 @@ async function main() {
       const url = CDN_BASE + filename;
       const dest = path.join(CORES_DIR, filename);
       try {
-        const existed = !FORCE && fs.existsSync(dest);
-        await downloadFile(url, dest);
-        if (existed) {
-          skipped++;
-        } else {
+        const wasDownloaded = await downloadFile(url, dest);
+        if (wasDownloaded) {
           downloaded++;
+        } else {
+          skipped++;
         }
       } catch (err) {
         console.warn(`  WARN  ${filename}: ${err.message}`);
