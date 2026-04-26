@@ -6,15 +6,20 @@
 // (WASM binary + metadata bundled together); there are no separate .js/.wasm
 // files to fetch.
 //
-// The .data files ARE committed to git so this script is only needed when you
-// want to pull updated core versions from the EmulatorJS CDN.
+// Both the standard (-wasm.data) and legacy (-legacy-wasm.data) variants are
+// downloaded.  EmulatorJS selects the legacy variant on browsers where WebGL2
+// is unavailable (common on mobile/iOS under memory pressure).  Without the
+// legacy files in R2, EmulatorJS falls back to the external CDN which can be
+// slow or blocked on mobile networks.
+//
+// The .data files are gitignored; they are downloaded in CI and uploaded to R2.
 //
 // Usage:
 //   node scripts/download-ejs-cores.js
 //
-// Files are saved to public/assets/retroarch/cores/ alongside the .data
-// files that are already committed.  Existing files are skipped so
-// re-runs are fast.  Set FORCE=1 to re-download even if the file exists.
+// Files are saved to public/assets/retroarch/cores/.  Existing files are
+// skipped so re-runs are fast.  Set FORCE=1 to re-download even if the file
+// exists.
 
 import https from 'node:https';
 import fs from 'node:fs';
@@ -48,6 +53,17 @@ const CORES = [
   'vice_xpet',     // Commodore PET (1977)
   'vice_xplus4',   // Commodore Plus/4 (1984)
   'vice_xvic',     // Commodore VIC-20 (1980)
+];
+
+// EmulatorJS selects either the non-legacy or legacy core variant based on
+// whether the browser supports WebGL2.  On mobile browsers (especially iOS)
+// WebGL2 detection can fail even on capable hardware, causing EmulatorJS to
+// request the -legacy-wasm.data file.  Both variants must be present in R2 so
+// the fallback is served locally instead of hitting the CDN (which is slow /
+// blocked on some mobile networks → 30-second timeout).
+const CORE_VARIANTS = [
+  '-wasm.data',        // WebGL2-capable browsers (non-legacy)
+  '-legacy-wasm.data', // Legacy fallback for browsers without WebGL2
 ];
 
 /**
@@ -114,19 +130,21 @@ async function main() {
   let failures = 0;
 
   for (const core of CORES) {
-    const filename = `${core}-wasm.data`;
-    const url = CDN_BASE + filename;
-    const dest = path.join(CORES_DIR, filename);
-    try {
-      const wasDownloaded = await downloadFile(url, dest);
-      if (wasDownloaded) {
-        downloaded++;
-      } else {
-        skipped++;
+    for (const variant of CORE_VARIANTS) {
+      const filename = `${core}${variant}`;
+      const url = CDN_BASE + filename;
+      const dest = path.join(CORES_DIR, filename);
+      try {
+        const wasDownloaded = await downloadFile(url, dest);
+        if (wasDownloaded) {
+          downloaded++;
+        } else {
+          skipped++;
+        }
+      } catch (err) {
+        console.warn(`  WARN  ${filename}: ${err.message}`);
+        failures++;
       }
-    } catch (err) {
-      console.warn(`  WARN  ${filename}: ${err.message}`);
-      failures++;
     }
   }
 
