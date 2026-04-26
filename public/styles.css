@@ -1218,6 +1218,22 @@ body {
   line-height: 1.4;
 }
 
+.arcade-section-header {
+  font-family: 'VT323', monospace;
+  font-size: 0.78em;
+  letter-spacing: 0.12em;
+  color: rgba(142, 240, 178, 0.5);
+  padding: 8px 6px 2px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(142, 240, 178, 0.12);
+  flex-shrink: 0;
+}
+
+.arcade-section-header:first-child {
+  margin-top: 0;
+  border-top: none;
+}
+
 .arcade-game-item {
   background: transparent;
   border: none;

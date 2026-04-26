@@ -135,6 +135,15 @@ document.addEventListener('DOMContentLoaded', function() {
     segaMD:    4 / 3,
     atari2600: 4 / 3
   };
+  const ARCADE_SYSTEM_LABELS = {
+    nes:       'NES',
+    snes:      'SNES',
+    gb:        'GAME BOY',
+    gba:       'GAME BOY ADVANCE',
+    n64:       'NINTENDO 64',
+    segaMD:    'SEGA GENESIS',
+    atari2600: 'ATARI 2600'
+  };
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
   let arcadeFullscreen = false;
@@ -2060,10 +2069,16 @@ document.addEventListener('DOMContentLoaded', function() {
       var totalAdded = 0;
       systemKeys.forEach(function(system) {
         var games = Array.isArray(manifest[system]) ? manifest[system] : [];
-        games.forEach(function(game) {
-          if (!game || typeof game !== 'string') {
-            return;
-          }
+        var validGames = games.filter(function(g) { return g && typeof g === 'string'; });
+        if (validGames.length === 0) {
+          return;
+        }
+        var header = document.createElement('div');
+        header.className = 'arcade-section-header';
+        header.textContent = ARCADE_SYSTEM_LABELS[system] || system.toUpperCase();
+        header.setAttribute('aria-hidden', 'true');
+        arcadeGameList.appendChild(header);
+        validGames.forEach(function(game) {
           var displayName = game.replace(/\.[^.]+$/, '');
           var btn = document.createElement('button');
           btn.className = 'arcade-game-item';
