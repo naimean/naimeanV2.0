@@ -30,6 +30,21 @@ Improvements and housekeeping items for the arcade/emulator feature built on [Em
    - Show a brief on-screen control reference when a game first loads so users know how to play.
    - _Status: done_
 
+6. **Escape key closes arcade overlay**
+   - Pressing Escape when the arcade is open (and not in fullscreen mode) now closes the overlay.
+   - Previously Escape only exited fullscreen; now it also dismisses the picker/player entirely.
+   - _Status: done_
+
+7. **Per-system keyboard controls in the hint overlay**
+   - The controls hint now shows the correct button layout for the active system (NES, SNES, GBA, N64, Sega Genesis, etc.) instead of a single hardcoded mapping.
+   - The title updates to reflect the system name (e.g. "SNES CONTROLS", "N64 CONTROLS").
+   - _Status: done_
+
+8. **Remember last-played game across sessions**
+   - The last launched game (`system` + `file`) is saved to `localStorage`.
+   - When the arcade is reopened, that game is automatically pre-selected in the list so the user can resume quickly without scrolling.
+   - _Status: done_
+
 ---
 
-_Last updated: 2026-04-25_
+_Last updated: 2026-04-26_

@@ -94,6 +94,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeStatus = document.getElementById('arcade-status');
   const arcadeLoadingStatus = document.getElementById('arcade-loading-status');
   const arcadeControlsHint = document.getElementById('arcade-controls-hint');
+  const arcadeControlsHintTitle = document.getElementById('arcade-controls-hint-title');
+  const arcadeControlsHintGrid = document.getElementById('arcade-controls-hint-grid');
+  const ARCADE_LAST_GAME_KEY = 'arcade-last-game';
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
   const BOOT_DEFAULT_SUFFIX = 'Arcade';
   const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
@@ -149,6 +152,16 @@ document.addEventListener('DOMContentLoaded', function() {
     n64:       'NINTENDO 64',
     segaMD:    'SEGA GENESIS',
     atari2600: 'ATARI 2600'
+  };
+  // Default EmulatorJS keyboard bindings per system: [key label, button/action].
+  const ARCADE_SYSTEM_CONTROLS = {
+    nes:       [['↑↓←→','D-PAD'],['Z','B'],['X','A'],['ENTER','START'],['SHIFT','SELECT']],
+    snes:      [['↑↓←→','D-PAD'],['Z','B'],['X','A'],['A','Y'],['S','X'],['Q','L'],['W','R'],['ENTER','START'],['SHIFT','SELECT']],
+    gb:        [['↑↓←→','D-PAD'],['Z','B'],['X','A'],['ENTER','START'],['SHIFT','SELECT']],
+    gba:       [['↑↓←→','D-PAD'],['Z','B'],['X','A'],['Q','L'],['W','R'],['ENTER','START'],['SHIFT','SELECT']],
+    n64:       [['↑↓←→','D-PAD'],['X','A'],['Z','B'],['Q','L'],['W','Z (TRIG)'],['A','C-UP'],['S','C-DOWN'],['ENTER','START']],
+    segaMD:    [['↑↓←→','D-PAD'],['Z','A'],['X','B'],['C','C'],['ENTER','START']],
+    atari2600: [['↑↓←→','JOYSTICK'],['Z','FIRE']]
   };
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
@@ -1725,9 +1738,15 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   document.addEventListener('keydown', async function(e) {
-    if (e.key === 'Escape' && arcadeFullscreen) {
-      exitArcadeFullscreen();
-      return;
+    if (e.key === 'Escape') {
+      if (arcadeFullscreen) {
+        exitArcadeFullscreen();
+        return;
+      }
+      if (arcadeOverlay && arcadeOverlay.classList.contains('visible')) {
+        closeArcade();
+        return;
+      }
     }
     if (e.key === 'Enter' && !screenOn) {
       const active = document.activeElement;
@@ -1991,10 +2010,29 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    function showControlsHint() {
+    function showControlsHint(system) {
       hideControlsHint();
       if (!arcadeControlsHint) {
         return;
+      }
+      // Populate the grid with system-specific key bindings.
+      var controls = ARCADE_SYSTEM_CONTROLS[system] || ARCADE_SYSTEM_CONTROLS['nes'];
+      if (arcadeControlsHintTitle) {
+        var label = ARCADE_SYSTEM_LABELS[system] || (system ? system.toUpperCase() : '');
+        arcadeControlsHintTitle.textContent = label ? label + ' CONTROLS' : 'KEYBOARD CONTROLS';
+      }
+      if (arcadeControlsHintGrid) {
+        arcadeControlsHintGrid.innerHTML = '';
+        controls.forEach(function(pair) {
+          var keyEl = document.createElement('span');
+          keyEl.className = 'arcade-controls-key';
+          keyEl.textContent = pair[0];
+          var actEl = document.createElement('span');
+          actEl.className = 'arcade-controls-action';
+          actEl.textContent = pair[1];
+          arcadeControlsHintGrid.appendChild(keyEl);
+          arcadeControlsHintGrid.appendChild(actEl);
+        });
       }
       arcadeControlsHint.classList.add('active');
       arcadeControlsHint.setAttribute('aria-hidden', 'false');
@@ -2126,6 +2164,8 @@ document.addEventListener('DOMContentLoaded', function() {
           btn.type = 'button';
           btn.setAttribute('role', 'option');
           btn.setAttribute('aria-selected', 'false');
+          btn.dataset.system = system;
+          btn.dataset.file = game;
           btn.addEventListener('click', (function(sys, file, label) {
             return function() {
               var allItems = arcadeGameList.querySelectorAll('.arcade-game-item');
@@ -2159,6 +2199,26 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
+    function restoreLastGame() {
+      try {
+        var saved = window.localStorage.getItem(ARCADE_LAST_GAME_KEY);
+        if (!saved) { return; }
+        var last = JSON.parse(saved);
+        if (!last || typeof last.system !== 'string' || typeof last.file !== 'string') { return; }
+        if (!arcadeGameList) { return; }
+        var items = arcadeGameList.querySelectorAll('.arcade-game-item');
+        for (var i = 0; i < items.length; i++) {
+          var btn = items[i];
+          if (btn.dataset.system === last.system && btn.dataset.file === last.file) {
+            btn.click();
+            btn.scrollIntoView({ block: 'nearest' });
+            console.log('[Arcade] restoreLastGame: pre-selected "' + last.file + '" (' + last.system + ')');
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+
     function launchGame(system, file, name) {
       console.log('[Arcade] launchGame: system=' + system + ' file=' + file + ' name="' + name + '"');
       var coreRetryCount = 0;
@@ -2169,6 +2229,10 @@ document.addEventListener('DOMContentLoaded', function() {
         window.NaimeanDiag.log('arcade: launch ' + system + ' / ' + name);
       }
       stopEmulator();
+      // Persist this game so it can be pre-selected when the arcade is reopened.
+      try {
+        window.localStorage.setItem(ARCADE_LAST_GAME_KEY, JSON.stringify({ system: system, file: file }));
+      } catch (_) {}
       showArcadePlayer();
       if (arcadeNowPlaying) {
         arcadeNowPlaying.textContent = name;
@@ -2208,7 +2272,7 @@ document.addEventListener('DOMContentLoaded', function() {
           window.NaimeanDiag.log('arcade: EJS_onGameStart — game running');
         }
         setArcadeStatus('Game started — enjoy!');
-        showControlsHint();
+        showControlsHint(system);
       };
       function getEjsLoadErrorMessage(e) {
         var target = e && (e.target || e.currentTarget);
@@ -2488,9 +2552,11 @@ document.addEventListener('DOMContentLoaded', function() {
       arcadeOverlay.setAttribute('aria-hidden', 'false');
       loadArcadeManifest().then(function() {
         populateArcadeGameList();
+        restoreLastGame();
       }).catch(function(err) {
         console.warn('Failed to load arcade manifest:', err);
         populateArcadeGameList();
+        restoreLastGame();
       });
     }
 
