@@ -270,7 +270,7 @@
     // Wait for core preload and show granular pipeline state
     var statusLine = null;
     if (system.core) {
-      statusLine = appendBootLine('CHECKING CORE: ' + system.core + '-wasm.data\u2026', 'boot-line-dim');
+      statusLine = appendBootLine('CHECKING CORE: ' + getCoreDataUrl(system.core).split('/').pop() + '\u2026', 'boot-line-dim');
     }
     var preloadResult = await corePreloadPromise;
     if (preloadResult && preloadResult.cached) {

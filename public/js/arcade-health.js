@@ -14,8 +14,8 @@
   // no separate fceumm_libretro.js/.wasm files at runtime.
   var NES_CORE_FILE = 'fceumm-wasm.data';
   var NES_ROMS = [
-    { label: 'Super Mario Bros 2', path: '/assets/roms/nes/Super%20Mario%20Bros%202%20%28U%29%20%28PRG%201%29.nes' },
-    { label: 'Legend of Zelda (zip)', path: '/assets/roms/nes/Legend%20of%20Zelda%2C%20The%20%28USA%29%20%28Rev%201%29.zip' },
+    { label: 'Super Mario Bros 2', file: 'Super Mario Bros 2 (U) (PRG 1).nes' },
+    { label: 'Legend of Zelda (zip)', file: 'Legend of Zelda, The (USA) (Rev 1).zip' },
   ];
 
   var tbody = document.getElementById('health-tbody');
@@ -253,7 +253,7 @@
 
     // 0b. Detailed NES ROM checks
     for (var ri = 0; ri < NES_ROMS.length; ri++) {
-      await checkNesDetailUrl(NES_ROMS[ri].path, false);
+      await checkNesDetailUrl('/assets/roms/nes/' + encodeURIComponent(NES_ROMS[ri].file), false);
     }
 
     // 1. Static base assets
