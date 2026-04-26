@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NES TEST — fceumm</title>
+  <link rel="icon" type="image/jpeg" href="assets/images/commodore64.v20260424.jpg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-family: monospace;
+      color: #8ef0b2;
+    }
+    .bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 10px; flex-shrink: 0;
+      border-bottom: 1px solid #333; font-size: 13px;
+    }
+    .bar-title { flex: 1; }
+    .bar button, .bar a {
+      background: transparent; border: 1px solid #555;
+      color: #8ef0b2; font-family: monospace; font-size: 12px;
+      padding: 2px 8px; cursor: pointer; text-decoration: none;
+    }
+    .bar button:hover, .bar a:hover { background: rgba(142,240,178,0.1); }
+
+    /* ── Boot phase ────────────────────────────────── */
+    #boot-phase {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .boot-line {
+      font-size: 13px;
+      line-height: 1.65;
+      letter-spacing: 0.03em;
+      color: #8ef0b2;
+    }
+    .boot-dim   { color: rgba(142, 240, 178, 0.55); }
+    .boot-ready { color: #c8ffd9; text-shadow: 0 0 6px rgba(200,255,217,0.35); }
+    .boot-error { color: #f66; }
+    .boot-warn  { color: #f5c842; }
+
+    /* ── Emulator phase ────────────────────────────── */
+    #game-area { flex: 1 1 auto; min-height: 0; display: none; }
+    #game { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <div class="bar-title" id="bar-title">&#9658; NES TEST — fceumm</div>
+    <button id="btn-fs">FULLSCREEN</button>
+    <button id="btn-restart" style="display:none">RESTART</button>
+    <a href="/arcade-health.html">HEALTH</a>
+    <a href="/">&#8962; HOME</a>
+  </div>
+
+  <div id="boot-phase"></div>
+  <div id="game-area"><div id="game"></div></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ── Hardcoded NES config ──────────────────────────────────────────────
+      var EJS_PATH      = '/assets/retroarch/';
+      var CORES_BASE    = '/assets/retroarch/cores/';
+      var NES_SYSTEM    = 'nes';
+      var NES_CORE      = 'fceumm';
+      var NES_CORE_FILE = NES_CORE + '-wasm.data';
+      // Use Super Mario Bros 2 (unzipped .nes) as the stable test ROM.
+      var NES_ROM_FILE  = 'Super Mario Bros 2 (U) (PRG 1).nes';
+      var NES_ROM_URL   = '/assets/roms/nes/' + encodeURIComponent(NES_ROM_FILE);
+      var CORE_DATA_URL = CORES_BASE + NES_CORE_FILE;
+      var PREFLIGHT_MIN_BYTES = 1024 * 1024; // .data must be > 1 MB
+
+      var bootPhase  = document.getElementById('boot-phase');
+      var gameArea   = document.getElementById('game-area');
+      var barTitle   = document.getElementById('bar-title');
+      var btnFs      = document.getElementById('btn-fs');
+      var btnRestart = document.getElementById('btn-restart');
+
+      // ── Boot line helpers ─────────────────────────────────────────────────
+
+      function log(text, cls) {
+        var line = document.createElement('div');
+        line.className = 'boot-line' + (cls ? ' ' + cls : '');
+        line.textContent = text;
+        bootPhase.appendChild(line);
+        bootPhase.scrollTop = bootPhase.scrollHeight;
+        return line;
+      }
+
+      function delay(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+      }
+
+      // ── Fullscreen button ─────────────────────────────────────────────────
+
+      btnFs.addEventListener('click', function () {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(function () {});
+        } else {
+          document.documentElement.requestFullscreen().catch(function () {});
+        }
+      });
+      document.addEventListener('fullscreenchange', function () {
+        btnFs.textContent = document.fullscreenElement ? 'EXIT FS' : 'FULLSCREEN';
+      });
+
+      btnRestart.addEventListener('click', function () {
+        if (window.EJS_emulator && typeof window.EJS_emulator.restart === 'function') {
+          window.EJS_emulator.restart();
+        } else {
+          location.reload();
+        }
+      });
+
+      // ── Main preflight + launch ───────────────────────────────────────────
+
+      (async function main() {
+        log('** NES STABILITY TEST — ' + NES_CORE.toUpperCase() + ' CORE **');
+        log('RICOH 2A03 CPU @ 1.79 MHZ');
+        await delay(150);
+
+        // ── Phase 1: Check core .data file ────────────────────────────────
+
+        log('CHECKING CORE: ' + NES_CORE_FILE + '\u2026', 'boot-dim');
+
+        var coreOk = false;
+        var coreFail = false;
+        var coreFailReason = '';
+
+        try {
+          var t0 = Date.now();
+          var coreRes = await fetch(CORE_DATA_URL, { method: 'HEAD', cache: 'no-store' });
+          var coreMs  = Date.now() - t0;
+          var coreCt  = (coreRes.headers.get('content-type') || '').toLowerCase();
+          var coreCl  = parseInt(coreRes.headers.get('content-length') || '0', 10);
+          var coreEtag = coreRes.headers.get('etag') || '';
+          var coreAo   = coreRes.headers.get('access-control-allow-origin') || '';
+
+          console.log('[NES-TEST] core preflight:', {
+            url:    CORE_DATA_URL,
+            status: coreRes.status,
+            'content-type':    coreCt,
+            'content-length':  coreCl,
+            'cache-control':   coreRes.headers.get('cache-control'),
+            'etag':            coreEtag,
+            'access-control-allow-origin': coreAo,
+            'time-ms': coreMs,
+          });
+
+          if (!coreRes.ok) {
+            coreFail = true;
+            coreFailReason = 'HTTP ' + coreRes.status + ' — file missing from R2';
+          } else if (coreCt && coreCt.includes('text/html')) {
+            coreFail = true;
+            coreFailReason = 'Content-Type is text/html — URL resolved to an error page, not binary data';
+          } else if (coreCl > 0 && coreCl < PREFLIGHT_MIN_BYTES) {
+            coreFail = true;
+            coreFailReason = 'Content-Length=' + coreCl + ' bytes — too small for a valid .data bundle (expect > 1 MB)';
+          } else {
+            coreOk = true;
+          }
+        } catch (err) {
+          coreFail = true;
+          coreFailReason = 'Fetch error: ' + (err && err.message ? err.message : String(err));
+        }
+
+        if (coreFail) {
+          log('CORE PREFLIGHT FAILED', 'boot-error');
+          log('  File:   ' + CORE_DATA_URL, 'boot-error');
+          log('  Reason: ' + coreFailReason, 'boot-error');
+          log('', 'boot-dim');
+          log('The NES core is not serving correctly from R2.', 'boot-warn');
+          log('Visit /arcade-health.html for full diagnostics.', 'boot-warn');
+          log('Visit /arcade-shell.html once the core is fixed.', 'boot-dim');
+          return;
+        }
+
+        log('CORE DATA OK (' + NES_CORE_FILE + ')', 'boot-dim');
+        await delay(150);
+
+        // ── Phase 2: Check ROM file ───────────────────────────────────────
+
+        log('CHECKING ROM: ' + NES_ROM_FILE + '\u2026', 'boot-dim');
+
+        var romOk = false;
+        try {
+          var rt0 = Date.now();
+          var romRes = await fetch(NES_ROM_URL, { method: 'HEAD', cache: 'no-store' });
+          var romMs  = Date.now() - rt0;
+          var romCt  = (romRes.headers.get('content-type') || '').toLowerCase();
+          var romCl  = romRes.headers.get('content-length') || '?';
+
+          console.log('[NES-TEST] ROM preflight:', {
+            url:    NES_ROM_URL,
+            status: romRes.status,
+            'content-type':   romCt,
+            'content-length': romCl,
+            'time-ms': romMs,
+          });
+
+          if (!romRes.ok) {
+            log('ROM NOT FOUND: HTTP ' + romRes.status + ' — ' + NES_ROM_URL, 'boot-error');
+            log('Cannot launch without a ROM. Check /arcade-health.html.', 'boot-warn');
+            return;
+          }
+          if (romCt && romCt.includes('text/html')) {
+            log('ROM URL returned HTML (HTTP ' + romRes.status + ') — file missing.', 'boot-error');
+            log('Check /arcade-health.html.', 'boot-warn');
+            return;
+          }
+          romOk = true;
+        } catch (err) {
+          log('ROM FETCH ERROR: ' + (err && err.message ? err.message : String(err)), 'boot-error');
+          return;
+        }
+
+        log('ROM OK: ' + NES_ROM_FILE, 'boot-dim');
+        await delay(150);
+
+        // ── Phase 3: Launch EmulatorJS ────────────────────────────────────
+
+        log('LOADING WEBASSEMBLY\u2026', 'boot-dim');
+        await delay(150);
+        log('STARTING EMULATOR\u2026', 'boot-dim');
+        await delay(200);
+
+        // Configure EJS globals
+        window.EJS_player        = '#game';
+        window.EJS_core          = NES_SYSTEM;
+        window.EJS_gameUrl       = NES_ROM_URL;
+        window.EJS_pathtodata    = EJS_PATH;
+        window.EJS_startOnLoaded = true;
+
+        // Log full config to console for diagnostics
+        console.log('[NES-TEST] EJS launch config:', {
+          EJS_player:        window.EJS_player,
+          EJS_core:          window.EJS_core,
+          EJS_gameUrl:       window.EJS_gameUrl,
+          EJS_pathtodata:    window.EJS_pathtodata,
+          EJS_startOnLoaded: window.EJS_startOnLoaded,
+          coreDataUrl:       CORE_DATA_URL,
+          romUrl:            NES_ROM_URL,
+        });
+
+        window.EJS_onLoadError = function (e) {
+          var msg = (e && e.error && e.error.message) || (e && e.message) || String(e) || 'Unknown error';
+          console.error('[NES-TEST] EJS_onLoadError:', msg);
+          // Show boot phase again with error
+          gameArea.style.display = 'none';
+          bootPhase.style.display = 'flex';
+          log('EMULATOR ERROR: ' + msg, 'boot-error');
+          log('Check /arcade-health.html for full diagnostics.', 'boot-warn');
+        };
+
+        // Switch to game view
+        bootPhase.style.display = 'none';
+        gameArea.style.display  = '';
+        barTitle.textContent    = '\u25BA ' + NES_ROM_FILE.replace(/\.[^.]+$/, '').toUpperCase();
+        document.title          = NES_ROM_FILE.replace(/\.[^.]+$/, '').toUpperCase() + ' \u2013 NES TEST';
+        btnRestart.style.display = '';
+
+        var loader = document.createElement('script');
+        loader.src = EJS_PATH + 'loader.js';
+        loader.onerror = function () {
+          console.error('[NES-TEST] loader.js failed to load from ' + EJS_PATH);
+          gameArea.style.display  = 'none';
+          bootPhase.style.display = 'flex';
+          log('LOADER ERROR: loader.js not found at ' + EJS_PATH, 'boot-error');
+          log('Re-run download/upload scripts to restore EmulatorJS assets.', 'boot-warn');
+        };
+        document.head.appendChild(loader);
+
+      }()).catch(function (err) {
+        log('FATAL: ' + (err && err.message ? err.message : String(err)), 'boot-error');
+        console.error('[NES-TEST] fatal:', err);
+      });
+    }());
+  </script>
+</body>
+</html>
