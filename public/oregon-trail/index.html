@@ -190,7 +190,8 @@
     ['Harriet', 'James',  'Clara',   'Frederick'   ],
   ];
 
-  var PREY_EMOJI = ['\uD83E\uDD8C','\uD83D\uDC17','\uD83D\uDC07','\uD83E\uDD8E','\uD83D\uDC26','\uD83E\uDD86'];
+  // Prey emoji: deer, boar, rabbit, lizard, bird, duck
+  var PREY_EMOJI = ['🦌', '🐗', '🐇', '🦎', '🐦', '🦆'];
 
   // Store items definition
   var ITEMS = [
@@ -687,7 +688,7 @@
         return -rnd(10);
       }
       G.days += 4;
-      G.money = Math.max(0, G.money - (G.prof === 'carpenter' ? 7 : 15));
+      G.money = Math.max(0, G.money - (G.prof === 'carpenter' ? 7 : 15)); // carpenter discount
       ln('No spare parts! Jury-rigged a fix. Lost 4 days and some money.', 'err');
       return -rnd(20);
     }
@@ -862,8 +863,7 @@
         fn: function () {
           G.days += 1;
           ln('You waited a day.', 'dim');
-          var shallower = {};
-          for (var k in savedLm) { shallower[k] = savedLm[k]; }
+          var shallower = Object.assign({}, savedLm);
           shallower.depth = Math.max(1, savedLevel - 1);
           showRiver(shallower);
         },
@@ -1054,6 +1054,7 @@
     ln('Days on the trail: ' + G.days, 'dim');
     ln('Money remaining:   $' + Math.floor(G.money), 'dim');
     gap();
+    // Score: 500 pts per survivor, −2 per day elapsed, +1 per $5 remaining
     var score = surv.length * 500 - G.days * 2 + Math.floor(G.money / 5);
     ln('FINAL SCORE: ' + score, 'bright');
     gap();
