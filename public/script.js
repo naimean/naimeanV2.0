@@ -2181,10 +2181,12 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeGameList.appendChild(header);
         validGames.forEach(function(game) {
           var displayName = game.replace(/\.[^.]+$/, '');
+          var systemLabel = ARCADE_SYSTEM_LABELS[system] || system.toUpperCase();
+          var prefixedName = '(' + systemLabel + ') ' + displayName;
           var btn = document.createElement('button');
           btn.className = 'arcade-game-item';
-          btn.textContent = displayName;
-          btn.title = displayName;
+          btn.textContent = prefixedName;
+          btn.title = prefixedName;
           btn.type = 'button';
           btn.setAttribute('role', 'option');
           btn.setAttribute('aria-selected', 'false');
@@ -2463,7 +2465,7 @@ document.addEventListener('DOMContentLoaded', function() {
           window.NaimeanDiag.set('arcade:manifest', 'ok — ' + systems);
           window.NaimeanDiag.log('arcade: manifest OK systems=' + systems);
         }
-        setArcadeStatus('Manifest loaded — select a game');
+        setArcadeStatus('');
       } catch (err) {
         console.error('[Arcade] loadArcadeManifest: error —', err);
         console.warn('Failed to load arcade manifest:', err);
