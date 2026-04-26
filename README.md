@@ -105,6 +105,36 @@ naimeanv2
 | `retroarch-cores` | `CORES` | `naimeanv2` | serves EmulatorJS core `.data` files from the edge with ETag/304 cache validation |
 | `radley-gallery` | `UPLOADS` | `naimeanv2` | reserved upload-tool output for `uploads.naimean.com`; live write behavior pending storage setup |
 
+#### `retroarch-cores` bucket contents (as of 2026-04-26)
+
+| Object | Size |
+|---|---|
+| `a5200-legacy-wasm.data` | 880.58 kB |
+| `a5200-wasm.data` | 881.56 kB |
+| `beetle_vb-legacy-wasm.data` | 857.64 kB |
+| `beetle_vb-wasm.data` | 858.31 kB |
+| `fceumm-legacy-wasm.data` | 1.05 MB |
+| `fceumm-wasm.data` | 1.05 MB |
+| `gambatte-legacy-wasm.data` | 967.02 kB |
+| `gambatte-wasm.data` | 967.16 kB |
+| `genesis_plus_gx-legacy-wasm.data` | 1.2 MB |
+| `genesis_plus_gx-wasm.data` | 1.2 MB |
+| `handy-legacy-wasm.data` | 862.94 kB |
+| `handy-wasm.data` | 862.3 kB |
+| `mednafen_pce-legacy-wasm.data` | 995.1 kB |
+| `mednafen_pce-wasm.data` | 994.84 kB |
+| `nestopia-legacy-wasm.data` | 1.22 MB |
+| `nestopia-wasm.data` | 1.22 MB |
+| `picodrive-legacy-wasm.data` | 1.04 MB |
+| `picodrive-wasm.data` | 1.03 MB |
+| `prosystem-legacy-wasm.data` | 852.78 kB |
+| `prosystem-wasm.data` | 852.86 kB |
+| `snes9x-legacy-wasm.data` | 1.09 MB |
+| `snes9x-wasm.data` | 1.09 MB |
+| `stella2014-legacy-wasm.data` | 1.05 MB |
+| `stella2014-wasm.data` | 1.05 MB |
+| `vice_x128-legacy-wasm.data` | 1.6 MB |
+
 ### Cloudflare account
 
 - account name: `Naimean@hotmail.com's Account`
