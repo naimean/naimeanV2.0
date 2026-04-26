@@ -2242,7 +2242,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Apply the system's native aspect ratio so the game is letterboxed correctly.
       if (arcadeGameContainer) {
         var sysRatio = EJS_SYSTEM_ASPECT[system] || (4 / 3);
-        arcadeGameContainer.style.aspectRatio = sysRatio.toFixed(6);
+        arcadeGameContainer.style.aspectRatio = sysRatio.toFixed(4);
         arcadeGameContainer.style.height = '100%';
         arcadeGameContainer.style.width = 'auto';
         arcadeGameContainer.style.maxWidth = '100%';
