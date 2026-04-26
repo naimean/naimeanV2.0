@@ -2409,8 +2409,9 @@ document.addEventListener('DOMContentLoaded', function() {
         setArcadeStatus('Timed out — check browser console for errors');
       }, 30000);
       // sourceIndex: -1 = local self-hosted assets, 0+ = CDN fallbacks.
-      // When using local, EJS_pathtodata still points to CDN so system cores (WASM) load
-      // correctly. EJS_paths overrides loader.js's emulator.min.* lookups to local paths.
+      // For local: loader.js + emulator.min.js/css come from self-hosted copies;
+      // EJS_pathtodata is set to CDN so system cores (WASM) are fetched from CDN.
+      // EJS_paths overrides loader.js's emulator.min.* lookups to local paths.
       function appendLoaderScript(sourceIndex) {
         var isLocal = (sourceIndex < 0);
         if (!isLocal && sourceIndex >= EJS_CDN_URLS.length) {
@@ -2435,9 +2436,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var loaderSrc, sourceLabel;
         if (isLocal) {
-          // Use the self-hosted data path for cores and compression utilities.
-          // EmulatorJS will auto-fallback to CDN for any core not present locally.
-          window.EJS_pathtodata = LOCAL_EJS_PATH;
+          // Point EJS_pathtodata at the CDN so that EmulatorJS fetches system
+          // cores (WASM) from CDN — only the .data header files are self-hosted,
+          // not the full .js/.wasm core binaries.  EJS_paths then overrides the
+          // emulator.min.js/css lookups back to our self-hosted copies so the
+          // heavy JS/CSS loads from cache rather than CDN.
+          window.EJS_pathtodata = EJS_CDN_URLS[0];
           // Keep EJS_paths so loader.js resolves emulator.min.js/css from the
           // same local folder regardless of how scriptPath is derived.
           window.EJS_paths = {
