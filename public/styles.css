@@ -1152,7 +1152,8 @@ body {
   text-shadow: 0 0 6px rgba(140, 240, 178, 0.5);
 }
 
-.arcade-close-btn {
+.arcade-close-btn,
+.arcade-picker-fs-btn {
   background: transparent;
   border: 1px solid rgba(142, 240, 178, 0.4);
   border-radius: 3px;
@@ -1165,7 +1166,9 @@ body {
 }
 
 .arcade-close-btn:hover,
-.arcade-close-btn:focus-visible {
+.arcade-close-btn:focus-visible,
+.arcade-picker-fs-btn:hover,
+.arcade-picker-fs-btn:focus-visible {
   background: rgba(142, 240, 178, 0.12);
   outline: none;
 }
