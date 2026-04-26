@@ -2254,13 +2254,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function launchSystem(system) {
-      console.log('[Arcade] launchSystem: navigating to player — system=' + system);
+      console.log('[Arcade] launchSystem: navigating to shell — system=' + system);
       if (window.NaimeanDiag) {
         window.NaimeanDiag.set('arcade:system', system.toUpperCase());
         window.NaimeanDiag.log('arcade: launch system ' + system);
       }
 
-      var dest = '/arcade-player.html?' + new URLSearchParams({ system: system }).toString();
+      var dest = '/arcade-shell.html';
 
       function doNavigate() {
         var overlay = document.getElementById('page-fade-overlay');
@@ -2280,7 +2280,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function launchGame(system, file, name) {
-      console.log('[Arcade] launchGame: navigating to player — system=' + system + ' file=' + file + ' name="' + name + '"');
+      console.log('[Arcade] launchGame: navigating to shell — system=' + system + ' file=' + file + ' name="' + name + '"');
       if (window.NaimeanDiag) {
         window.NaimeanDiag.set('arcade:game', name + ' (' + system.toUpperCase() + ')');
         window.NaimeanDiag.set('arcade:rom', file);
@@ -2292,7 +2292,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.localStorage.setItem(ARCADE_LAST_GAME_KEY, JSON.stringify({ system: system, file: file }));
       } catch (_) {}
 
-      var dest = '/arcade-player.html?' + new URLSearchParams({ system: system, file: file, name: name || '' }).toString();
+      var dest = '/arcade-shell.html';
 
       // Fade the page to black, then navigate to the standalone player.
       function doNavigate() {

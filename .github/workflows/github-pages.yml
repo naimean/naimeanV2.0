@@ -29,6 +29,8 @@ jobs:
         run: |
           node --check public/script.js
           node --check public/diagnostics.js
+          node --check public/js/arcade-health.js
+          node --check public/js/arcade-shell.js
 
       - name: Check naimean-api worker JS syntax
         run: |
@@ -85,6 +87,9 @@ jobs:
 
       - name: Check route alignment (proxy paths + worker routes)
         run: node scripts/check-route-alignment.js
+
+      - name: Verify arcade runtime files
+        run: node scripts/check-arcade-runtime.js
 
       - name: Verify site assets
         run: |
