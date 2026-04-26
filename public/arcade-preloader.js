@@ -23,7 +23,7 @@
   }
 
   function fetchJSON(path) {
-    return fetch(path, { cache: 'no-cache' }).then(function (res) {
+    return fetch(path, { cache: 'default' }).then(function (res) {
       if (!res.ok) { throw new Error('HTTP ' + res.status); }
       return res.json();
     });

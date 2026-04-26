@@ -245,7 +245,7 @@
       }
 
       function loadRomManifest() {
-        return fetch(ROM_MANIFEST_URL, { cache: 'no-cache' }).then(function (res) {
+        return fetch(ROM_MANIFEST_URL, { cache: 'default' }).then(function (res) {
           if (!res.ok) { throw new Error('Manifest HTTP ' + res.status); }
           return res.json();
         });
