@@ -18,7 +18,7 @@ zone_name = "naimean.com"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"]
+run_worker_first = ["/get", "/hit", "/increment", "/auth", "/go", "/layout", "/icon"]
 
 [[services]]
 binding = "COUNTER"

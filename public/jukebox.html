@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Naimean Jukebox</title>
+  <link rel="stylesheet" href="/css/jukebox.css">
+  <!-- defer preserves execution order: MusicKit loads before jukebox.js -->
+  <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js" defer></script>
+</head>
+<body>
+  <div class="jukebox-shell" id="jukeboxShell">
+
+    <!-- Provider selector + status -->
+    <div class="provider-panel">
+      <h1>&#127926; Jukebox</h1>
+      <p class="subtitle">Choose your source</p>
+      <div class="provider-buttons">
+        <button class="provider-btn" id="appleMusicBtn" type="button">&#63743; Apple Music</button>
+        <button class="provider-btn spotify" id="spotifyBtn" type="button">&#127911; Spotify</button>
+      </div>
+      <p class="status-text" id="statusText">Select a provider to begin.</p>
+      <button class="main-action hidden" id="connectAppleBtn" type="button">Connect Apple Music</button>
+    </div>
+
+    <!-- CRT screen: record window + track info -->
+    <div class="crt-screen">
+      <div class="record-window">
+        <div class="record-disc">
+          <img id="albumArt" src="/assets/jukebox-placeholder.png" alt="Album art">
+        </div>
+      </div>
+      <div>
+        <div class="led-ticker">
+          <span id="tickerText">WELCOME TO NAIMEAN JUKEBOX :: SELECT A PROVIDER ::</span>
+        </div>
+        <div class="track-title" id="trackTitle">&#8212;</div>
+        <div class="track-artist" id="trackArtist">&#8212;</div>
+      </div>
+    </div>
+
+    <!-- Controls: search + results -->
+    <div class="controls-panel">
+      <div class="search-panel hidden" id="searchPanel">
+        <input type="search" id="searchInput" placeholder="Search Apple Music catalog...">
+        <button type="button" id="searchBtn">Search</button>
+      </div>
+      <div class="song-results" id="songResults"></div>
+    </div>
+
+  </div>
+
+  <!-- Wrong-pipe audio (Spotify trap) -->
+  <audio id="wrongAudio" src="/assets/audio/wrong.v20260424.mp3" preload="none"></audio>
+
+  <script src="/js/jukebox.js" defer></script>
+</body>
+</html>

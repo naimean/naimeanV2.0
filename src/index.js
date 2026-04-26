@@ -1,4 +1,4 @@
-const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout"];
+const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout", "/icon"];
 
 const UPLOADS_HOSTNAME = 'uploads.naimean.com';
 
@@ -7,15 +7,14 @@ const DOCUMENT_CSP = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:",
-  // 'wasm-unsafe-eval' allows WebAssembly compilation at runtime.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://js-cdn.music.apple.com https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net",
+  "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net https://*.mzstatic.com",
   "media-src 'self' data: blob:",
-  "connect-src 'self' https://discord.com https://*.discord.com https://*.workers.dev",
-  "worker-src blob:",
-  "frame-src 'self' https://discord.com https://*.discord.com",
+  "connect-src 'self' https://www.naimean.com https://discord.com https://*.discord.com https://*.workers.dev https://*.naimean.workers.dev https://api.music.apple.com https://amp-api.music.apple.com https://amp-api-edge.music.apple.com https://static.cloudflareinsights.com",
+  "worker-src 'self' blob:",
+  "frame-src 'self' https://discord.com https://*.discord.com https://archive.org",
   "form-action 'self'",
   "upgrade-insecure-requests",
 ].join('; ');
@@ -23,7 +22,7 @@ const DOCUMENT_CSP = [
 const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
 // Static asset paths that benefit from long-lived caching (content-addressed or versioned).
-const IMMUTABLE_ASSET_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff'];
+const IMMUTABLE_ASSET_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff', '.data'];
 
 function isImmutableAsset(pathname) {
   const lower = pathname.toLowerCase();

@@ -33,3 +33,6 @@ compatibility_date = "2026-04-18"
 binding = "DB"
 database_name = "barrelroll-counter-db"
 database_id = "22277fbe-031d-4cad-8937-245309e981cd"
+
+[ai]
+binding = "AI"

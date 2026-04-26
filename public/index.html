@@ -102,6 +102,28 @@
     </div>
     <div class="shoutbox-container" id="shoutbox-container">
       <div class="c64-screen">
+        <div class="email-auth-overlay" id="email-auth-overlay" aria-modal="true" role="dialog" aria-labelledby="email-auth-title">
+          <form class="email-auth-form" id="email-auth-form" autocomplete="off" novalidate>
+            <div class="email-auth-title" id="email-auth-title">REGISTER</div>
+            <div class="email-auth-field">
+              <label class="email-auth-label" for="email-auth-email">EMAIL</label>
+              <input class="email-auth-input" id="email-auth-email" type="email" autocomplete="email" maxlength="254" required />
+            </div>
+            <div class="email-auth-field" id="email-auth-username-field">
+              <label class="email-auth-label" for="email-auth-username">USERNAME</label>
+              <input class="email-auth-input" id="email-auth-username" type="text" autocomplete="username" maxlength="16" />
+            </div>
+            <div class="email-auth-field">
+              <label class="email-auth-label" for="email-auth-password">PASSWORD</label>
+              <input class="email-auth-input" id="email-auth-password" type="password" autocomplete="off" maxlength="1024" required />
+            </div>
+            <div class="email-auth-error" id="email-auth-error" role="alert" aria-live="polite"></div>
+            <div class="email-auth-actions">
+              <button class="email-auth-btn" id="email-auth-submit" type="submit">SUBMIT</button>
+              <button class="email-auth-btn email-auth-btn--cancel" id="email-auth-cancel" type="button">CANCEL</button>
+            </div>
+          </form>
+        </div>
         <div class="prank-video-overlay" id="prank-video-overlay" aria-hidden="true">
           <video id="prank-video" src="assets/video/notarickroll-piece-1.v20260424.mp4" playsinline preload="auto"></video>
         </div>
@@ -120,6 +142,7 @@
         </div>
       </div>
     </div>
+
     </div>
   </div>
   </main>

@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
   ]);
   const POWER_BUTTON_COOLDOWN_MS = 5000;
   const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
+  const JUKEBOX_COMMANDS = new Set(['jukebox', 'music', 'apple music', 'musicbe']);
+  const OREGON_TRAIL_COMMANDS = new Set(['oregon', 'trail', 'oregon trail']);
   const AUTH_LOGIN_COMMANDS = new Set(['login', 'signin', 'discord']);
   const AUTH_LOGOUT_COMMANDS = new Set(['logout', 'signout']);
   const MINI_GAME_MIN_GUESS = 1;
@@ -1840,7 +1842,8 @@ document.addEventListener('DOMContentLoaded', function() {
         shoutboxContainer.classList.remove('visible');
         screenOn = true;
         powerButtonCooldownUntil = Date.now() + POWER_BUTTON_COOLDOWN_MS;
-        await runInitialPowerOnSequence();
+        await playStaticTransition();
+        showBlueNedryGateScreen();
       } else {
         if (Date.now() < powerButtonCooldownUntil) {
           return;
@@ -1870,6 +1873,14 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         if (screenOn && !puzzleSolved) {
+          if (JUKEBOX_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/jukebox.html';
+            return;
+          }
+          if (OREGON_TRAIL_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/oregon-trail/';
+            return;
+          }
           playWrongSound();
         }
       });
@@ -1882,6 +1893,14 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         if (screenOn && !puzzleSolved) {
+          if (JUKEBOX_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/jukebox.html';
+            return;
+          }
+          if (OREGON_TRAIL_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/oregon-trail/';
+            return;
+          }
           beginJoinDiscordWorkflow();
         }
       });
@@ -1900,6 +1919,19 @@ document.addEventListener('DOMContentLoaded', function() {
           runPleaseSequence();
           return;
         }
+
+        if (text.startsWith(FINAL_PREFIX)) {
+          const cmd = text.slice(FINAL_PREFIX.length).trim().toLowerCase();
+          if (JUKEBOX_COMMANDS.has(cmd)) {
+            window.location.href = '/jukebox.html';
+            return;
+          }
+          if (OREGON_TRAIL_COMMANDS.has(cmd)) {
+            window.location.href = '/oregon-trail/';
+            return;
+          }
+        }
+
 
         playWrongSound();
         resetFinalInput();
