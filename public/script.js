@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const POWER_BUTTON_COOLDOWN_MS = 5000;
   const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
   const ARCADE_COMMANDS = new Set(['arcade', 'emulator', 'games', 'user\\arcade']);
+  const JUKEBOX_COMMANDS = new Set(['jukebox', 'music', 'apple music', 'musicbe']);
   const AUTH_LOGIN_COMMANDS = new Set(['login', 'signin', 'discord']);
   const AUTH_LOGOUT_COMMANDS = new Set(['logout', 'signout']);
   const MINI_GAME_MIN_GUESS = 1;
@@ -1985,6 +1986,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return;
           }
+          if (JUKEBOX_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/jukebox.html';
+            return;
+          }
           playWrongSound();
         }
       });
@@ -2002,6 +2007,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (arcadeOverlay) {
               arcadeOverlay.requestFullscreen().catch(function() {});
             }
+            return;
+          }
+          if (JUKEBOX_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/jukebox.html';
             return;
           }
           beginJoinDiscordWorkflow();
@@ -2525,6 +2534,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (arcadeOverlay) {
               arcadeOverlay.requestFullscreen().catch(function() {});
             }
+            return;
+          }
+          if (JUKEBOX_COMMANDS.has(cmd)) {
+            window.location.href = '/jukebox.html';
             return;
           }
         }
