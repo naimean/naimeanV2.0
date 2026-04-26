@@ -913,7 +913,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!bootInput || !authSession || !authSession.authenticated || !authSession.user) {
       return;
     }
-    if (bootInput.value === BOOT_DEFAULT_VALUE) {
+    if (bootInput.value !== BOOT_DEFAULT_VALUE) {
       return;
     }
     const username = authSession.user.username;
@@ -1481,8 +1481,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bootInput) {
       bootInput.style.display = 'inline-block';
       resetBootInput();
-      bootInput.focus();
-      selectBootEditableSuffix();
     }
     if (bootSubmit) {
       bootSubmit.style.display = 'inline-flex';
@@ -1498,6 +1496,10 @@ document.addEventListener('DOMContentLoaded', function() {
     updateBootQuickLinkVisibility();
     if (bootScreen) {
       bootScreen.classList.add('visible');
+    }
+    if (bootInput) {
+      bootInput.focus();
+      selectBootEditableSuffix();
     }
     bootScreenUnlockAt = Date.now() + BOOT_SCREEN_SUBMIT_DELAY_MS;
     setTimeout(function() {
@@ -2501,10 +2503,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         console.log('[Arcade] closeArcade: overlay hidden');
         if (shoutboxInput) {
-          shoutboxInput.value = BOOT_DEFAULT_VALUE;
+          resetFinalInput();
           shoutboxInput.focus();
-          var arcadeStart = BOOT_DEFAULT_VALUE.length - BOOT_DEFAULT_SUFFIX.length;
-          shoutboxInput.setSelectionRange(arcadeStart, BOOT_DEFAULT_VALUE.length);
         }
       }, 350);
     }
