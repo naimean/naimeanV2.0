@@ -1102,12 +1102,10 @@ body {
   transition: opacity 0.35s ease;
 }
 
-.arcade-overlay.fullscreen {
-  position: fixed;
-  inset: 0;
+.arcade-overlay:fullscreen,
+.arcade-overlay:-webkit-full-screen {
   width: 100%;
   height: 100%;
-  z-index: 9999;
   border-radius: 0;
 }
 
@@ -1133,7 +1131,8 @@ body {
   overflow: hidden;
 }
 
-.arcade-overlay.fullscreen .arcade-picker {
+.arcade-overlay:fullscreen .arcade-picker,
+.arcade-overlay:-webkit-full-screen .arcade-picker {
   border-radius: 0;
   font-size: 1.3em;
 }
@@ -1334,7 +1333,8 @@ body {
   outline: none;
 }
 
-.arcade-overlay.fullscreen .arcade-fs-launch-btn.ready {
+.arcade-overlay:fullscreen .arcade-fs-launch-btn.ready,
+.arcade-overlay:-webkit-full-screen .arcade-fs-launch-btn.ready {
   display: block;
 }
 
@@ -1447,52 +1447,6 @@ body {
   background: #000;
 }
 
-.arcade-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 3px 8px;
-  background: rgba(6, 14, 8, 0.96);
-  border-bottom: 1px solid rgba(142, 240, 178, 0.18);
-  flex-shrink: 0;
-  gap: 6px;
-  font-family: 'VT323', monospace;
-  min-height: 28px;
-}
-
-.arcade-bar-btn {
-  background: transparent;
-  border: 1px solid rgba(142, 240, 178, 0.35);
-  border-radius: 3px;
-  color: var(--mint);
-  font-family: 'VT323', monospace;
-  font-size: 0.9em;
-  padding: 2px 7px;
-  cursor: pointer;
-  white-space: nowrap;
-  line-height: 1.2;
-  flex-shrink: 0;
-}
-
-.arcade-bar-btn:hover,
-.arcade-bar-btn:focus-visible {
-  background: rgba(142, 240, 178, 0.12);
-  outline: none;
-}
-
-.arcade-now-playing {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--mint);
-  font-family: 'VT323', monospace;
-  font-size: 0.88em;
-  text-align: center;
-  opacity: 0.75;
-}
-
 .arcade-game-wrap {
   flex: 1 1 auto;
   min-height: 0;
@@ -1517,15 +1471,6 @@ body {
     padding: 8px 8px 10px;
     font-size: 1em;
     gap: 4px;
-  }
-
-  .arcade-bar {
-    padding: 3px 6px;
-  }
-
-  .arcade-bar-btn {
-    font-size: 0.8em;
-    padding: 2px 5px;
   }
 }
 
@@ -1601,4 +1546,17 @@ body {
   color: rgba(142, 240, 178, 0.45);
   letter-spacing: 0.12em;
   margin-top: 4px;
+}
+
+/* ── EJS built-in UI overrides ───────────────────────────────────────────── */
+
+/* Make the EJS container fill the game wrap completely */
+.ejs_parent {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Tint the EJS UI with mint accent (matches EJS_color setting) */
+.ejs_menu_bar {
+  background: rgba(6, 14, 8, 0.92) !important;
 }

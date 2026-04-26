@@ -86,10 +86,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadeLaunchBtn = document.getElementById('arcade-launch-btn');
   const arcadeFsLaunchBtn = document.getElementById('arcade-fs-launch-btn');
   const arcadeCloseBtn = document.getElementById('arcade-close-btn');
-  const arcadeBackBtn = document.getElementById('arcade-back-btn');
-  const arcadeFullscreenBtn = document.getElementById('arcade-fullscreen-btn');
+  const arcadeBackBtn = null; // arcade-bar removed; Escape key handles back-to-picker
+  const arcadeFullscreenBtn = null; // arcade-bar removed; fullscreen handled at overlay level
   const arcadePickerFsBtn = document.getElementById('arcade-picker-fs-btn');
-  const arcadeNowPlaying = document.getElementById('arcade-now-playing');
   const arcadeLoading = document.getElementById('arcade-loading');
   const arcadeStatus = document.getElementById('arcade-status');
   const arcadeLoadingStatus = document.getElementById('arcade-loading-status');
@@ -200,9 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
-  let arcadeFullscreen = false;
   let arcadeLoadTimeout = null;
-  let arcadeCurrentAspect = null;
   let arcadeHintTimeout = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
@@ -1774,8 +1771,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.addEventListener('keydown', async function(e) {
     if (e.key === 'Escape') {
-      if (arcadeFullscreen) {
-        exitArcadeFullscreen();
+      if (document.fullscreenElement) {
+        // Browser handles native fullscreen exit on Escape; nothing to do here.
+        return;
+      }
+      if (arcadePlayer && arcadePlayer.style.display === 'flex') {
+        // Game is running – go back to picker rather than closing the whole arcade.
+        stopEmulator();
+        showArcadePicker();
+        populateArcadeGameList();
         return;
       }
       if (arcadeOverlay && arcadeOverlay.classList.contains('visible')) {
@@ -2106,12 +2110,8 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       if (arcadeGameContainer) {
         arcadeGameContainer.innerHTML = '';
-        // Clear inline dimensions set by applyArcadeAspectRatio so CSS takes over again.
-        arcadeGameContainer.style.width = '';
-        arcadeGameContainer.style.height = '';
         console.log('[Arcade] stopEmulator: cleared game container');
       }
-      arcadeCurrentAspect = null;
       if (arcadeLoading) {
         arcadeLoading.classList.remove('active');
       }
@@ -2134,35 +2134,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (arcadeLoadingStatus) {
         arcadeLoadingStatus.textContent = msg;
       }
-    }
-
-    // Sizes #game to the largest rectangle with arcadeCurrentAspect that fits in
-    // .arcade-game-wrap.  EmulatorJS uses canvas{width:100%;height:100%} so it
-    // fills whatever #game is; we must constrain #game's CSS dimensions here.
-    function applyArcadeAspectRatio() {
-      if (!arcadeCurrentAspect) {
-        return;
-      }
-      if (!arcadeGameWrap || !arcadeGameContainer) {
-        return;
-      }
-      var aw = arcadeGameWrap.clientWidth;
-      var ah = arcadeGameWrap.clientHeight;
-      if (aw <= 0 || ah <= 0) {
-        return;
-      }
-      var w, h;
-      if (aw / ah > arcadeCurrentAspect) {
-        // Container is wider than the target ratio — constrain by height
-        h = ah;
-        w = Math.floor(ah * arcadeCurrentAspect);
-      } else {
-        // Container is taller than the target ratio — constrain by width
-        w = aw;
-        h = Math.floor(aw / arcadeCurrentAspect);
-      }
-      arcadeGameContainer.style.width = w + 'px';
-      arcadeGameContainer.style.height = h + 'px';
     }
 
     function populateArcadeGameList() {
@@ -2268,24 +2239,13 @@ document.addEventListener('DOMContentLoaded', function() {
         window.localStorage.setItem(ARCADE_LAST_GAME_KEY, JSON.stringify({ system: system, file: file }));
       } catch (_) {}
       showArcadePlayer();
-      if (arcadeNowPlaying) {
-        arcadeNowPlaying.textContent = name;
-      }
       if (arcadeLoading) {
         arcadeLoading.classList.add('active');
       }
       setArcadeStatus('Launching ' + name + ' (' + system.toUpperCase() + ')…');
-      // Size #game to the native aspect ratio of the chosen system so EmulatorJS
-      // renders at the correct proportions.  The EmulatorJS canvas CSS is
-      // "width:100%;height:100%" (fills its container), so we must constrain #game
-      // rather than relying on window.EJS_width/EJS_height (which EmulatorJS does
-      // not read from loader.js or emulator.min.js).
-      arcadeCurrentAspect = EJS_SYSTEM_ASPECT[system] || (4 / 3);
-      // Defer aspect-ratio sizing until after the browser has reflowed the newly
-      // visible arcade-player container; clientWidth/Height are 0 until then.
-      requestAnimationFrame(function() { applyArcadeAspectRatio(); });
       window.EJS_player = '#game';
       window.EJS_core = system;
+      window.EJS_color = '#8ef0b2';
       window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
       window.EJS_startOnLoaded = true;
       console.log('[Arcade] launchGame: EJS globals set — EJS_core=' + system + ' EJS_gameUrl=' + window.EJS_gameUrl + ' EJS_pathtodata=' + LOCAL_EJS_PATH);
@@ -2425,18 +2385,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function exitArcadeFullscreen() {
-      if (!arcadeFullscreen || !arcadeOverlay) {
-        return;
-      }
-      arcadeFullscreen = false;
-      arcadeOverlay.classList.remove('fullscreen');
-      if (arcadeFullscreenBtn) {
-        arcadeFullscreenBtn.textContent = 'FULLSCREEN';
-        arcadeFullscreenBtn.setAttribute('aria-label', 'Toggle fullscreen');
-      }
-      if (arcadePickerFsBtn) {
-        arcadePickerFsBtn.textContent = 'FULLSCREEN';
-        arcadePickerFsBtn.setAttribute('aria-label', 'Toggle fullscreen');
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(function() {});
       }
     }
 
@@ -2444,22 +2394,33 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!arcadeOverlay) {
         return;
       }
-      arcadeFullscreen = !arcadeFullscreen;
-      arcadeOverlay.classList.toggle('fullscreen', arcadeFullscreen);
-      if (arcadeFullscreenBtn) {
-        arcadeFullscreenBtn.textContent = arcadeFullscreen ? 'EXIT FS' : 'FULLSCREEN';
-        arcadeFullscreenBtn.setAttribute('aria-label',
-          arcadeFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
+      if (document.fullscreenElement === arcadeOverlay) {
+        document.exitFullscreen().catch(function() {});
+      } else {
+        arcadeOverlay.requestFullscreen().catch(function() {});
       }
-      if (arcadePickerFsBtn) {
-        arcadePickerFsBtn.textContent = arcadeFullscreen ? 'EXIT FS' : 'FULLSCREEN';
-        arcadePickerFsBtn.setAttribute('aria-label',
-          arcadeFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
-      }
-      setTimeout(function() {
-        window.dispatchEvent(new Event('resize'));
-      }, 50);
     }
+
+    // Keep picker fullscreen button label in sync with native fullscreen state.
+    // Also redirect any EJS-triggered inner-element fullscreen to the overlay.
+    document.addEventListener('fullscreenchange', function() {
+      var isFullscreen = document.fullscreenElement === arcadeOverlay;
+      if (arcadePickerFsBtn) {
+        arcadePickerFsBtn.textContent = isFullscreen ? 'EXIT FS' : 'FULLSCREEN';
+        arcadePickerFsBtn.setAttribute('aria-label',
+          isFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
+      }
+      // If EJS triggered fullscreen on an inner element, redirect to the overlay.
+      if (document.fullscreenElement && arcadeOverlay &&
+          document.fullscreenElement !== arcadeOverlay &&
+          arcadeOverlay.contains(document.fullscreenElement)) {
+        document.exitFullscreen().then(function() {
+          if (arcadeOverlay) {
+            return arcadeOverlay.requestFullscreen();
+          }
+        }).catch(function() {});
+      }
+    });
 
     async function loadArcadeManifest() {
       if (arcadeManifest !== null) {
@@ -2584,31 +2545,11 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    if (arcadeBackBtn) {
-      arcadeBackBtn.addEventListener('click', function() {
-        stopEmulator();
-        showArcadePicker();
-        populateArcadeGameList();
-      });
-    }
-
-    if (arcadeFullscreenBtn) {
-      arcadeFullscreenBtn.addEventListener('click', function() {
-        toggleArcadeFullscreen();
-      });
-    }
-
     if (arcadePickerFsBtn) {
       arcadePickerFsBtn.addEventListener('click', function() {
         toggleArcadeFullscreen();
       });
     }
-
-    // Re-apply aspect ratio on resize so the canvas stays correct after
-    // fullscreen toggle or browser window resize while a game is running.
-    window.addEventListener('resize', function() {
-      applyArcadeAspectRatio();
-    });
 
     if (shoutboxForm && shoutboxInput) {
       shoutboxForm.addEventListener('submit', async function(e) {
