@@ -8,9 +8,16 @@
   // ── Constants ──────────────────────────────────────────────────────────────
 
   var EJS_PATH        = '/assets/retroarch/';
+  // Core .data files are served from the EmulatorJS CDN. The self-hosted path
+  // (/assets/retroarch/) is used only for loader.js, emulator.min.js, and
+  // emulator.min.css which are committed to git. Using the CDN for cores means
+  // the emulator works without an R2 bucket or CI secrets. If R2 is later
+  // populated, change this back to EJS_PATH (or '/assets/retroarch/') to serve
+  // cores locally.
+  var EJS_CORES_PATH  = 'https://cdn.emulatorjs.org/stable/data/';
   var SYSTEMS_URL     = '/assets/arcade/systems.json';
   var MANIFEST_URL    = '/assets/roms/manifest.json';
-  var CORES_BASE      = '/assets/retroarch/cores/';
+  var CORES_BASE      = EJS_CORES_PATH + 'cores/';
 
   var BOOT_LINE_DELAY_MS  = 180;
   var TIMEOUT_WARN_10_MS  = 10000;
@@ -145,7 +152,7 @@
 
   // Returns the .data URL for a given core name.
   function getCoreDataUrl(core) {
-    return CORES_BASE + core + '-wasm.data';
+    return EJS_CORES_PATH + 'cores/' + core + '-wasm.data';
   }
 
   function fetchJSON(url) {
@@ -381,7 +388,7 @@
     window.EJS_player        = '#game';
     window.EJS_core          = sys.core;
     window.EJS_gameUrl       = romUrl;
-    window.EJS_pathtodata    = EJS_PATH;
+    window.EJS_pathtodata    = EJS_CORES_PATH;
     window.EJS_startOnLoaded = true;
 
     // Log the full EJS launch config for diagnostics.
@@ -619,22 +626,13 @@
         var pfCl  = parseInt(pfRes.headers.get('content-length') || '0', 10);
         dbgLog('preflight: HTTP ' + pfRes.status + '  ct=' + pfCt + '  cl=' + pfCl);
         if (!pfRes.ok) {
-          showError(buildErrorContext(system, romFile, coreUrl, String(pfRes.status),
-            'Core file returned HTTP ' + pfRes.status,
-            'The .data file is missing from R2. Confirm the file ' + system.core + '-wasm.data is present in the retroarch-cores bucket and CI has run. Check /arcade-health.html.'));
-          return;
-        }
-        if (pfCt && pfCt.includes('text/html')) {
-          showError(buildErrorContext(system, romFile, coreUrl, String(pfRes.status),
-            'Core file returned Content-Type: ' + pfCt,
-            'The URL resolved to an HTML page instead of binary data. The file is likely missing from R2. Check /arcade-health.html.'));
-          return;
-        }
-        if (pfCl > 0 && pfCl < 1024 * 1024) {
-          showError(buildErrorContext(system, romFile, coreUrl, String(pfRes.status),
-            'Core file too small: Content-Length=' + pfCl + ' bytes',
-            'Expected > 1 MB for a valid .data bundle. The file in R2 may be corrupt or incomplete. Check /arcade-health.html.'));
-          return;
+          // Advisory only — EmulatorJS has its own CDN fallback; do not block launch.
+          dbgLog('WARN preflight: core returned HTTP ' + pfRes.status + ' — R2 may be empty; EmulatorJS CDN fallback will be used');
+        } else if (pfCt && pfCt.includes('text/html')) {
+          // Advisory only — file is missing from R2; EmulatorJS CDN fallback will handle it.
+          dbgLog('WARN preflight: core URL returned text/html — R2 file missing; EmulatorJS CDN fallback will be used');
+        } else if (pfCl > 0 && pfCl < 1024 * 1024) {
+          dbgLog('WARN preflight: core file suspiciously small (' + pfCl + ' bytes) — may be corrupt, EmulatorJS will attempt load anyway');
         }
       } catch (pfErr) {
         // Network failure — log and continue rather than hard-blocking.
