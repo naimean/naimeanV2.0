@@ -30,7 +30,7 @@ const DOCUMENT_CSP = [
 const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
 // Static asset paths that benefit from long-lived caching (content-addressed or versioned).
-const IMMUTABLE_ASSET_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff'];
+const IMMUTABLE_ASSET_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff', '.data'];
 
 function isImmutableAsset(pathname) {
   const lower = pathname.toLowerCase();
