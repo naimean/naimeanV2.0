@@ -1947,7 +1947,8 @@ document.addEventListener('DOMContentLoaded', function() {
         shoutboxContainer.classList.remove('visible');
         screenOn = true;
         powerButtonCooldownUntil = Date.now() + POWER_BUTTON_COOLDOWN_MS;
-        await runInitialPowerOnSequence();
+        await playStaticTransition();
+        showBlueNedryGateScreen();
       } else {
         if (Date.now() < powerButtonCooldownUntil) {
           return;
@@ -1996,6 +1997,13 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         if (screenOn && !puzzleSolved) {
+          if (ARCADE_COMMANDS.has(getBootInputSuffix())) {
+            openArcade();
+            if (arcadeOverlay) {
+              arcadeOverlay.requestFullscreen().catch(function() {});
+            }
+            return;
+          }
           beginJoinDiscordWorkflow();
         }
       });

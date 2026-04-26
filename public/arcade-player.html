@@ -101,6 +101,7 @@
   <div class="player-bar" id="player-bar">
     <div class="player-title" id="player-title">&#9658; ARCADE</div>
     <button class="player-btn" id="player-fs-btn" type="button" aria-label="Toggle fullscreen">FULLSCREEN</button>
+    <button class="player-btn" id="player-restart-btn" type="button" aria-label="Restart game">&#8635; RESTART</button>
     <button class="player-btn" id="player-back-btn" type="button" aria-label="Back to game picker">&#8592; BACK</button>
   </div>
   <div class="player-game-area">
@@ -163,6 +164,16 @@
       }
 
       document.getElementById('player-back-btn').addEventListener('click', navigateBack);
+
+      // ── Restart ────────────────────────────────────────────────────────────
+      document.getElementById('player-restart-btn').addEventListener('click', function () {
+        if (window.EJS_emulator && typeof window.EJS_emulator.restart === 'function') {
+          window.EJS_emulator.restart();
+        } else {
+          // Fallback: reload the page to get a clean emulator start.
+          location.reload();
+        }
+      });
 
       // ── Fullscreen ─────────────────────────────────────────────────────────
       var fsBtn = document.getElementById('player-fs-btn');
