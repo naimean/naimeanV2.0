@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const POWER_BUTTON_COOLDOWN_MS = 5000;
   const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
   const ARCADE_COMMANDS = new Set(['arcade', 'emulator', 'games', 'user\\arcade']);
+  const JUKEBOX_COMMANDS = new Set(['jukebox', 'music', 'apple music', 'musicbe']);
+  const OREGON_TRAIL_COMMANDS = new Set(['oregon', 'trail', 'oregon trail']);
   const AUTH_LOGIN_COMMANDS = new Set(['login', 'signin', 'discord']);
   const AUTH_LOGOUT_COMMANDS = new Set(['logout', 'signout']);
   const MINI_GAME_MIN_GUESS = 1;
@@ -81,15 +83,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadePlayer = document.getElementById('arcade-player');
   const arcadeGameWrap = document.querySelector('.arcade-game-wrap');
   const arcadeGameContainer = document.getElementById('game');
-  const arcadeSystemSelect = document.getElementById('arcade-system');
   const arcadeGameList = document.getElementById('arcade-game-list');
-  const arcadeLaunchBtn = document.getElementById('arcade-launch-btn');
   const arcadeFsLaunchBtn = document.getElementById('arcade-fs-launch-btn');
   const arcadeCloseBtn = document.getElementById('arcade-close-btn');
-  const arcadeBackBtn = document.getElementById('arcade-back-btn');
-  const arcadeFullscreenBtn = document.getElementById('arcade-fullscreen-btn');
   const arcadePickerFsBtn = document.getElementById('arcade-picker-fs-btn');
-  const arcadeNowPlaying = document.getElementById('arcade-now-playing');
   const arcadeLoading = document.getElementById('arcade-loading');
   const arcadeStatus = document.getElementById('arcade-status');
   const arcadeLoadingStatus = document.getElementById('arcade-loading-status');
@@ -126,10 +123,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let miniGameTarget = 0;
   let miniGameAttempts = 0;
   // Self-hosted EmulatorJS assets (loader.js, emulator.min.js, emulator.min.css,
-  // and compression utilities) in /assets/retroarc/.
-  // Core .data archives are stored in the R2 bucket and served by the worker at the
-  // same path (/assets/retroarc/cores/*.data), so EJS_pathtodata requires no change.
-  const LOCAL_EJS_PATH = '/assets/retroarc/';
+  // system cores, and compression utilities) in /assets/retroarch/.
+  // All core .data files are committed to the repo; no CDN is needed at runtime.
+  const LOCAL_EJS_PATH = '/assets/retroarch/';
   // Native display aspect ratios per EmulatorJS system key.
   // GB/GG/VB use non-4:3 ratios; GBA is 3:2; Lynx is wide; NDS is portrait.
   const EJS_SYSTEM_ASPECT = {
@@ -199,11 +195,10 @@ document.addEventListener('DOMContentLoaded', function() {
     pet:       [['↑↓←→','CURSOR'],['ENTER','RETURN']],
     plus4:     [['↑↓←→','JOYSTICK'],['Z','FIRE']]
   };
+  const ARCADE_SYSTEM_KEYS = ['nes', 'snes', 'gb', 'gba', 'n64', 'segaMD', 'segaMS', 'segaGG', 'sega32x', 'atari2600', 'atari7800', 'atari5200', 'pce', 'lynx', 'vb', 'c64', 'c128', 'vic20', 'pet', 'plus4'];
   let arcadeManifest = null;
   let arcadeSelectedGame = null;
-  let arcadeFullscreen = false;
   let arcadeLoadTimeout = null;
-  let arcadeCurrentAspect = null;
   let arcadeHintTimeout = null;
   const ROCK_ROLL_CONTINUATION_KEY = 'naimean-rock-roll-continuation';
   const ROCK_ROLL_CONTINUATION_PENDING_KEY = 'naimean-rock-roll-continuation-pending';
@@ -1775,8 +1770,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.addEventListener('keydown', async function(e) {
     if (e.key === 'Escape') {
-      if (arcadeFullscreen) {
-        exitArcadeFullscreen();
+      if (document.fullscreenElement) {
+        // The browser exits native fullscreen automatically on Escape.
         return;
       }
       if (arcadeOverlay && arcadeOverlay.classList.contains('visible')) {
@@ -1954,7 +1949,8 @@ document.addEventListener('DOMContentLoaded', function() {
         shoutboxContainer.classList.remove('visible');
         screenOn = true;
         powerButtonCooldownUntil = Date.now() + POWER_BUTTON_COOLDOWN_MS;
-        await runInitialPowerOnSequence();
+        await playStaticTransition();
+        showBlueNedryGateScreen();
       } else {
         if (Date.now() < powerButtonCooldownUntil) {
           return;
@@ -1986,6 +1982,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (screenOn && !puzzleSolved) {
           if (ARCADE_COMMANDS.has(getBootInputSuffix())) {
             openArcade();
+            if (arcadeOverlay) {
+              arcadeOverlay.requestFullscreen().catch(function() {});
+            }
+            return;
+          }
+          if (JUKEBOX_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/jukebox.html';
+            return;
+          }
+          if (OREGON_TRAIL_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/oregon-trail/';
             return;
           }
           playWrongSound();
@@ -2002,6 +2009,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (screenOn && !puzzleSolved) {
           if (ARCADE_COMMANDS.has(getBootInputSuffix())) {
             openArcade();
+            if (arcadeOverlay) {
+              arcadeOverlay.requestFullscreen().catch(function() {});
+            }
+            return;
+          }
+          if (JUKEBOX_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/jukebox.html';
+            return;
+          }
+          if (OREGON_TRAIL_COMMANDS.has(getBootInputSuffix())) {
+            window.location.href = '/oregon-trail/';
             return;
           }
           beginJoinDiscordWorkflow();
@@ -2107,12 +2125,12 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       if (arcadeGameContainer) {
         arcadeGameContainer.innerHTML = '';
-        // Clear inline dimensions set by applyArcadeAspectRatio so CSS takes over again.
-        arcadeGameContainer.style.width = '';
+        arcadeGameContainer.style.aspectRatio = '';
         arcadeGameContainer.style.height = '';
+        arcadeGameContainer.style.width = '';
+        arcadeGameContainer.style.maxWidth = '';
         console.log('[Arcade] stopEmulator: cleared game container');
       }
-      arcadeCurrentAspect = null;
       if (arcadeLoading) {
         arcadeLoading.classList.remove('active');
       }
@@ -2137,33 +2155,21 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    // Sizes #game to the largest rectangle with arcadeCurrentAspect that fits in
-    // .arcade-game-wrap.  EmulatorJS uses canvas{width:100%;height:100%} so it
-    // fills whatever #game is; we must constrain #game's CSS dimensions here.
-    function applyArcadeAspectRatio() {
-      if (!arcadeCurrentAspect) {
-        return;
-      }
-      if (!arcadeGameWrap || !arcadeGameContainer) {
-        return;
-      }
-      var aw = arcadeGameWrap.clientWidth;
-      var ah = arcadeGameWrap.clientHeight;
-      if (aw <= 0 || ah <= 0) {
-        return;
-      }
-      var w, h;
-      if (aw / ah > arcadeCurrentAspect) {
-        // Container is wider than the target ratio — constrain by height
-        h = ah;
-        w = Math.floor(ah * arcadeCurrentAspect);
-      } else {
-        // Container is taller than the target ratio — constrain by width
-        w = aw;
-        h = Math.floor(aw / arcadeCurrentAspect);
-      }
-      arcadeGameContainer.style.width = w + 'px';
-      arcadeGameContainer.style.height = h + 'px';
+    // Clears any existing selection and selects the given game item button.
+    // Updates arcadeSelectedGame based on the button's data attributes and text.
+    function selectGameItem(btn) {
+      if (!arcadeGameList) { return; }
+      arcadeGameList.querySelectorAll('.arcade-game-item').forEach(function(b) {
+        b.classList.remove('selected');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('selected');
+      btn.setAttribute('aria-selected', 'true');
+      arcadeSelectedGame = {
+        file: btn.dataset.file,
+        name: btn.textContent.trim(),
+        system: btn.dataset.system,
+      };
     }
 
     function populateArcadeGameList() {
@@ -2179,7 +2185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeFsLaunchBtn.classList.remove('ready');
       }
       var manifest = arcadeManifest || {};
-      var systemKeys = ['nes', 'snes', 'gb', 'gba', 'n64', 'segaMD', 'segaMS', 'segaGG', 'sega32x', 'atari2600', 'atari7800', 'atari5200', 'pce', 'lynx', 'vb', 'c64', 'c128', 'vic20', 'pet', 'plus4'];
+      var systemKeys = ARCADE_SYSTEM_KEYS;
       var totalAdded = 0;
       systemKeys.forEach(function(system) {
         var games = Array.isArray(manifest[system]) ? manifest[system] : [];
@@ -2187,16 +2193,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (validGames.length === 0) {
           return;
         }
-        var header = document.createElement('div');
+        var header = document.createElement('button');
+        header.type = 'button';
         header.className = 'arcade-section-header';
-        header.textContent = ARCADE_SYSTEM_LABELS[system] || system.toUpperCase();
-        header.setAttribute('aria-hidden', 'true');
+        var systemDisplayLabel = ARCADE_SYSTEM_LABELS[system] || system.toUpperCase();
+        header.textContent = systemDisplayLabel;
+        header.setAttribute('aria-label', 'Launch ' + systemDisplayLabel + ' — select ROM');
+        header.addEventListener('click', (function(sys) {
+          return function() {
+            console.log('[Arcade] system header clicked: ' + sys);
+            launchSystem(sys);
+          };
+        }(system)));
         arcadeGameList.appendChild(header);
         validGames.forEach(function(game) {
           var displayName = game.replace(/\.[^.]+$/, '');
+          var systemLabel = ARCADE_SYSTEM_LABELS[system] || system.toUpperCase();
+          var prefixedName = '(' + systemLabel + ') ' + displayName;
           var btn = document.createElement('button');
           btn.className = 'arcade-game-item';
-          btn.textContent = displayName;
+          btn.textContent = prefixedName;
+          btn.title = prefixedName;
           btn.type = 'button';
           btn.setAttribute('role', 'option');
           btn.setAttribute('aria-selected', 'false');
@@ -2204,20 +2221,9 @@ document.addEventListener('DOMContentLoaded', function() {
           btn.dataset.file = game;
           btn.addEventListener('click', (function(sys, file, label) {
             return function() {
-              var allItems = arcadeGameList.querySelectorAll('.arcade-game-item');
-              allItems.forEach(function(b) {
-                b.classList.remove('selected');
-                b.setAttribute('aria-selected', 'false');
-              });
-              btn.classList.add('selected');
-              btn.setAttribute('aria-selected', 'true');
-              arcadeSelectedGame = { file: file, name: label, system: sys };
+              selectGameItem(btn);
               console.log('[Arcade] game selected: "' + label + '" system=' + sys + ' file=' + file);
-              setArcadeStatus('Selected: ' + label);
-              if (arcadeFsLaunchBtn) {
-                arcadeFsLaunchBtn.textContent = 'LAUNCH  \u25B6  ' + label;
-                arcadeFsLaunchBtn.classList.add('ready');
-              }
+              launchGame(sys, file, label);
             };
           }(system, game, displayName)));
           arcadeGameList.appendChild(btn);
@@ -2246,7 +2252,8 @@ document.addEventListener('DOMContentLoaded', function() {
         for (var i = 0; i < items.length; i++) {
           var btn = items[i];
           if (btn.dataset.system === last.system && btn.dataset.file === last.file) {
-            btn.click();
+            // Pre-select only — do not auto-launch. The user must click to start.
+            selectGameItem(btn);
             btn.scrollIntoView({ block: 'nearest' });
             console.log('[Arcade] restoreLastGame: pre-selected "' + last.file + '" (' + last.system + ')');
             break;
@@ -2255,189 +2262,69 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch (_) {}
     }
 
+    function launchSystem(system) {
+      console.log('[Arcade] launchSystem: navigating to shell — system=' + system);
+      if (window.NaimeanDiag) {
+        window.NaimeanDiag.set('arcade:system', system.toUpperCase());
+        window.NaimeanDiag.log('arcade: launch system ' + system);
+      }
+
+      var dest = '/arcade-shell.html';
+
+      function doNavigate() {
+        var overlay = document.getElementById('page-fade-overlay');
+        if (overlay) {
+          overlay.classList.add('visible');
+          setTimeout(function() { window.location.assign(dest); }, 900);
+        } else {
+          window.location.assign(dest);
+        }
+      }
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(function() {}).finally(doNavigate);
+      } else {
+        doNavigate();
+      }
+    }
+
     function launchGame(system, file, name) {
-      console.log('[Arcade] launchGame: system=' + system + ' file=' + file + ' name="' + name + '"');
+      console.log('[Arcade] launchGame: navigating to shell — system=' + system + ' file=' + file + ' name="' + name + '"');
       if (window.NaimeanDiag) {
         window.NaimeanDiag.set('arcade:game', name + ' (' + system.toUpperCase() + ')');
         window.NaimeanDiag.set('arcade:rom', file);
         window.NaimeanDiag.set('arcade:status', 'launching…');
         window.NaimeanDiag.log('arcade: launch ' + system + ' / ' + name);
       }
-      stopEmulator();
       // Persist this game so it can be pre-selected when the arcade is reopened.
       try {
         window.localStorage.setItem(ARCADE_LAST_GAME_KEY, JSON.stringify({ system: system, file: file }));
       } catch (_) {}
-      showArcadePlayer();
-      if (arcadeNowPlaying) {
-        arcadeNowPlaying.textContent = name;
-      }
-      if (arcadeLoading) {
-        arcadeLoading.classList.add('active');
-      }
-      setArcadeStatus('Launching ' + name + ' (' + system.toUpperCase() + ')…');
-      // Size #game to the native aspect ratio of the chosen system so EmulatorJS
-      // renders at the correct proportions.  The EmulatorJS canvas CSS is
-      // "width:100%;height:100%" (fills its container), so we must constrain #game
-      // rather than relying on window.EJS_width/EJS_height (which EmulatorJS does
-      // not read from loader.js or emulator.min.js).
-      arcadeCurrentAspect = EJS_SYSTEM_ASPECT[system] || (4 / 3);
-      // Defer aspect-ratio sizing until after the browser has reflowed the newly
-      // visible arcade-player container; clientWidth/Height are 0 until then.
-      requestAnimationFrame(function() { applyArcadeAspectRatio(); });
-      window.EJS_player = '#game';
-      window.EJS_core = system;
-      window.EJS_gameUrl = '/assets/roms/' + system + '/' + encodeURIComponent(file);
-      window.EJS_startOnLoaded = true;
-      console.log('[Arcade] launchGame: EJS globals set — EJS_core=' + system + ' EJS_gameUrl=' + window.EJS_gameUrl + ' EJS_pathtodata=' + LOCAL_EJS_PATH);
-      if (window.NaimeanDiag) {
-        window.NaimeanDiag.set('arcade:gameUrl', window.EJS_gameUrl);
-      }
-      window.EJS_onGameStart = function() {
-        console.log('[Arcade] EJS_onGameStart: game started successfully');
-        if (arcadeLoadTimeout) {
-          clearTimeout(arcadeLoadTimeout);
-          arcadeLoadTimeout = null;
-        }
-        if (arcadeLoading) {
-          arcadeLoading.classList.remove('active');
-        }
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:status', 'RUNNING ✓');
-          window.NaimeanDiag.log('arcade: EJS_onGameStart — game running');
-        }
-        setArcadeStatus('Game started — enjoy!');
-        showControlsHint(system);
-      };
-      function getEjsLoadErrorMessage(e) {
-        var target = e && (e.target || e.currentTarget);
-        var targetUrl = target && (target.src || target.href);
-        var errorMessage = e && e.error && e.error.message;
-        var message = e && e.message;
-        var name = e && e.name;
-        var type = e && e.type;
-        var stringValue;
 
-        if (errorMessage) {
-          return errorMessage;
-        }
-        if (message && name && message !== name) {
-          return name + ': ' + message;
-        }
-        if (message) {
-          return message;
-        }
-        if (name && targetUrl) {
-          return name + ' while loading ' + targetUrl;
-        }
-        if (type && targetUrl) {
-          return type + ' while loading ' + targetUrl;
-        }
-        if (type) {
-          return 'Load event: ' + type;
-        }
-        if (name) {
-          return name;
-        }
+      var dest = '/arcade-shell.html?system=' + encodeURIComponent(system) + '&file=' + encodeURIComponent(file);
 
-        stringValue = String(e);
-        if (stringValue && stringValue !== '[object Event]' && stringValue !== '[object Object]') {
-          return stringValue;
+      // Fade the page to black, then navigate to the standalone player.
+      function doNavigate() {
+        var overlay = document.getElementById('page-fade-overlay');
+        if (overlay) {
+          overlay.classList.add('visible');
+          setTimeout(function() { window.location.assign(dest); }, 900);
+        } else {
+          window.location.assign(dest);
         }
+      }
 
-        return 'Unknown load error';
+      // Exit native fullscreen (picker may be fullscreen) before fading.
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(function() {}).finally(doNavigate);
+      } else {
+        doNavigate();
       }
-      window.EJS_onLoadError = function(e) {
-        var msg = getEjsLoadErrorMessage(e);
-        console.error('[Arcade] EJS_onLoadError:', e);
-        if (arcadeLoadTimeout) {
-          clearTimeout(arcadeLoadTimeout);
-          arcadeLoadTimeout = null;
-        }
-        if (arcadeLoading) {
-          arcadeLoading.classList.remove('active');
-        }
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:status', 'EJS ERROR');
-          window.NaimeanDiag.log('arcade: EJS_onLoadError — ' + msg);
-        }
-        setArcadeStatus('Emulator error: ' + msg);
-      };
-      setArcadeStatus('Loading EmulatorJS…');
-      if (window.NaimeanDiag) { window.NaimeanDiag.set('arcade:status', 'loading…'); }
-      console.log('[Arcade] launchGame: starting 30s load timeout, loading self-hosted assets');
-      arcadeLoadTimeout = setTimeout(function() {
-        arcadeLoadTimeout = null;
-        if (arcadeLoading) {
-          arcadeLoading.classList.remove('active');
-        }
-        console.warn('[Arcade] load timeout: EmulatorJS did not load within 30s');
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:status', 'TIMEOUT ✗');
-          window.NaimeanDiag.log('arcade: 30s timeout — emulator did not start');
-        }
-        setArcadeStatus('Timed out — check browser console for errors');
-      }, 30000);
-      // All EmulatorJS assets (loader.js, emulator.min.js/css, core .data files)
-      // are self-hosted under LOCAL_EJS_PATH (/assets/retroarc/).
-      function appendLoaderScript() {
-        // Clean up any EJS_paths override left by a previous attempt.
-        if (Object.prototype.hasOwnProperty.call(window, 'EJS_paths')) {
-          try { delete window.EJS_paths; } catch (e) { window.EJS_paths = undefined; }
-        }
-        window.EJS_pathtodata = LOCAL_EJS_PATH;
-        var loaderSrc = LOCAL_EJS_PATH + 'loader.js';
-        console.log('[Arcade] appendLoaderScript: loading self-hosted → ' + loaderSrc);
-        if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('arcade:cdn', 'local: ' + loaderSrc);
-          window.NaimeanDiag.log('arcade: loading self-hosted loader.js');
-        }
-        var s = document.createElement('script');
-        s.id = 'emulatorjs-loader';
-        s.src = loaderSrc;
-        s.onload = function() {
-          console.log('[Arcade] appendLoaderScript: loader.js loaded OK');
-          if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:loader', 'OK (local)');
-            window.NaimeanDiag.set('arcade:status', 'loader OK — initialising…');
-            window.NaimeanDiag.log('arcade: loader.js OK');
-          }
-          setArcadeStatus('EmulatorJS loader OK — initialising emulator…');
-        };
-        s.onerror = function() {
-          console.error('[Arcade] appendLoaderScript: failed to load self-hosted loader.js');
-          if (window.NaimeanDiag) {
-            window.NaimeanDiag.set('arcade:loader', 'FAIL (local)');
-            window.NaimeanDiag.log('arcade: loader.js FAIL');
-          }
-          s.remove();
-          if (arcadeLoadTimeout) {
-            clearTimeout(arcadeLoadTimeout);
-            arcadeLoadTimeout = null;
-          }
-          if (arcadeLoading) {
-            arcadeLoading.classList.remove('active');
-          }
-          setArcadeStatus('Error: failed to load EmulatorJS — check server / console');
-        };
-        document.head.appendChild(s);
-      }
-      appendLoaderScript();
     }
 
     function exitArcadeFullscreen() {
-      if (!arcadeFullscreen || !arcadeOverlay) {
-        return;
-      }
-      arcadeFullscreen = false;
-      arcadeOverlay.classList.remove('fullscreen');
-      if (arcadeFullscreenBtn) {
-        arcadeFullscreenBtn.textContent = 'FULLSCREEN';
-        arcadeFullscreenBtn.setAttribute('aria-label', 'Toggle fullscreen');
-      }
-      if (arcadePickerFsBtn) {
-        arcadePickerFsBtn.textContent = 'FULLSCREEN';
-        arcadePickerFsBtn.setAttribute('aria-label', 'Toggle fullscreen');
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(function() {});
       }
     }
 
@@ -2445,22 +2332,31 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!arcadeOverlay) {
         return;
       }
-      arcadeFullscreen = !arcadeFullscreen;
-      arcadeOverlay.classList.toggle('fullscreen', arcadeFullscreen);
-      if (arcadeFullscreenBtn) {
-        arcadeFullscreenBtn.textContent = arcadeFullscreen ? 'EXIT FS' : 'FULLSCREEN';
-        arcadeFullscreenBtn.setAttribute('aria-label',
-          arcadeFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
+      if (document.fullscreenElement === arcadeOverlay) {
+        document.exitFullscreen().catch(function() {});
+      } else {
+        arcadeOverlay.requestFullscreen().catch(function() {});
       }
-      if (arcadePickerFsBtn) {
-        arcadePickerFsBtn.textContent = arcadeFullscreen ? 'EXIT FS' : 'FULLSCREEN';
-        arcadePickerFsBtn.setAttribute('aria-label',
-          arcadeFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
-      }
-      setTimeout(function() {
-        window.dispatchEvent(new Event('resize'));
-      }, 50);
     }
+
+    // Keep picker fullscreen button label in sync with native fullscreen state.
+    // Also redirect any EJS-triggered inner-element fullscreen to the overlay.
+    document.addEventListener('fullscreenchange', function() {
+      var isFullscreen = document.fullscreenElement === arcadeOverlay;
+      if (arcadePickerFsBtn) {
+        arcadePickerFsBtn.textContent = isFullscreen ? 'EXIT FS' : 'FULLSCREEN';
+        arcadePickerFsBtn.setAttribute('aria-label',
+          isFullscreen ? 'Exit fullscreen' : 'Toggle fullscreen');
+      }
+      // If EJS triggered fullscreen on an inner element, redirect to the overlay.
+      if (document.fullscreenElement && arcadeOverlay &&
+          document.fullscreenElement !== arcadeOverlay &&
+          arcadeOverlay.contains(document.fullscreenElement)) {
+        document.exitFullscreen().then(function() {
+          return arcadeOverlay.requestFullscreen();
+        }).catch(function() {});
+      }
+    });
 
     async function loadArcadeManifest() {
       if (arcadeManifest !== null) {
@@ -2493,7 +2389,7 @@ document.addEventListener('DOMContentLoaded', function() {
           window.NaimeanDiag.set('arcade:manifest', 'ok — ' + systems);
           window.NaimeanDiag.log('arcade: manifest OK systems=' + systems);
         }
-        setArcadeStatus('Manifest loaded — select a game');
+        setArcadeStatus('');
       } catch (err) {
         console.error('[Arcade] loadArcadeManifest: error —', err);
         console.warn('Failed to load arcade manifest:', err);
@@ -2517,6 +2413,9 @@ document.addEventListener('DOMContentLoaded', function() {
       showArcadePicker();
       arcadeOverlay.classList.add('visible');
       arcadeOverlay.setAttribute('aria-hidden', 'false');
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.hide === 'function') {
+        window.NaimeanAuth.hide();
+      }
       loadArcadeManifest().then(function() {
         populateArcadeGameList();
         restoreLastGame();
@@ -2524,6 +2423,62 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('Failed to load arcade manifest:', err);
         populateArcadeGameList();
         restoreLastGame();
+      });
+    }
+
+    // Opens the arcade and immediately launches a game, bypassing the picker.
+    // Uses the last-played game from localStorage, or the first game in the
+    // manifest, falling back to the picker if no games are available.
+    function openArcadeDirectly() {
+      console.log('[Arcade] openArcadeDirectly: launching emulator directly');
+      if (!arcadeOverlay) {
+        console.warn('[Arcade] openArcadeDirectly: arcadeOverlay element not found, aborting');
+        return;
+      }
+      arcadeOverlay.classList.add('visible');
+      arcadeOverlay.setAttribute('aria-hidden', 'false');
+      if (window.NaimeanAuth && typeof window.NaimeanAuth.hide === 'function') {
+        window.NaimeanAuth.hide();
+      }
+      loadArcadeManifest().then(function() {
+        var gameToLaunch = null;
+        try {
+          var saved = window.localStorage.getItem(ARCADE_LAST_GAME_KEY);
+          if (saved) {
+            var parsed = JSON.parse(saved);
+            if (parsed && typeof parsed.system === 'string' && typeof parsed.file === 'string') {
+              gameToLaunch = parsed;
+              console.log('[Arcade] openArcadeDirectly: resuming last game "' + parsed.file + '" (' + parsed.system + ')');
+            }
+          }
+        } catch (_) {
+          console.debug('[Arcade] openArcadeDirectly: failed to read last game from localStorage', _);
+        }
+        if (!gameToLaunch) {
+          var manifest = arcadeManifest || {};
+          for (var i = 0; i < ARCADE_SYSTEM_KEYS.length; i++) {
+            var sys = ARCADE_SYSTEM_KEYS[i];
+            var games = Array.isArray(manifest[sys]) ? manifest[sys] : [];
+            var valid = games.filter(function(g) { return g && typeof g === 'string'; });
+            if (valid.length > 0) {
+              gameToLaunch = { system: sys, file: valid[0] };
+              console.log('[Arcade] openArcadeDirectly: auto-selecting first game "' + valid[0] + '" (' + sys + ')');
+              break;
+            }
+          }
+        }
+        if (gameToLaunch) {
+          var displayName = gameToLaunch.file.replace(/\.[^.]+$/, '');
+          launchGame(gameToLaunch.system, gameToLaunch.file, displayName);
+        } else {
+          console.warn('[Arcade] openArcadeDirectly: no games in manifest, falling back to picker');
+          showArcadePicker();
+          populateArcadeGameList();
+        }
+      }).catch(function(err) {
+        console.warn('[Arcade] openArcadeDirectly: manifest load failed, falling back to picker:', err);
+        showArcadePicker();
+        populateArcadeGameList();
       });
     }
 
@@ -2541,6 +2496,9 @@ document.addEventListener('DOMContentLoaded', function() {
         arcadeOverlay.classList.remove('visible');
         arcadeOverlay.classList.remove('arcade-fading-out');
         arcadeOverlay.setAttribute('aria-hidden', 'true');
+        if (window.NaimeanAuth && typeof window.NaimeanAuth.show === 'function') {
+          window.NaimeanAuth.show();
+        }
         console.log('[Arcade] closeArcade: overlay hidden');
         if (shoutboxInput) {
           shoutboxInput.value = BOOT_DEFAULT_VALUE;
@@ -2557,25 +2515,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    if (arcadeSystemSelect) {
-      arcadeSystemSelect.addEventListener('change', function() {
-        arcadeSelectedGame = null;
-        if (arcadeLaunchBtn) {
-          arcadeLaunchBtn.disabled = true;
-        }
-        populateArcadeGameList();
-      });
-    }
-
-    if (arcadeLaunchBtn) {
-      arcadeLaunchBtn.addEventListener('click', function() {
-        if (!arcadeSelectedGame || !arcadeSystemSelect) {
-          return;
-        }
-        launchGame(arcadeSystemSelect.value, arcadeSelectedGame.file, arcadeSelectedGame.name);
-      });
-    }
-
     if (arcadeFsLaunchBtn) {
       arcadeFsLaunchBtn.addEventListener('click', function() {
         if (!arcadeSelectedGame) {
@@ -2585,31 +2524,11 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    if (arcadeBackBtn) {
-      arcadeBackBtn.addEventListener('click', function() {
-        stopEmulator();
-        showArcadePicker();
-        populateArcadeGameList();
-      });
-    }
-
-    if (arcadeFullscreenBtn) {
-      arcadeFullscreenBtn.addEventListener('click', function() {
-        toggleArcadeFullscreen();
-      });
-    }
-
     if (arcadePickerFsBtn) {
       arcadePickerFsBtn.addEventListener('click', function() {
         toggleArcadeFullscreen();
       });
     }
-
-    // Re-apply aspect ratio on resize so the canvas stays correct after
-    // fullscreen toggle or browser window resize while a game is running.
-    window.addEventListener('resize', function() {
-      applyArcadeAspectRatio();
-    });
 
     if (shoutboxForm && shoutboxInput) {
       shoutboxForm.addEventListener('submit', async function(e) {
@@ -2630,6 +2549,17 @@ document.addEventListener('DOMContentLoaded', function() {
           if (ARCADE_COMMANDS.has(cmd)) {
             resetFinalInput();
             openArcade();
+            if (arcadeOverlay) {
+              arcadeOverlay.requestFullscreen().catch(function() {});
+            }
+            return;
+          }
+          if (JUKEBOX_COMMANDS.has(cmd)) {
+            window.location.href = '/jukebox.html';
+            return;
+          }
+          if (OREGON_TRAIL_COMMANDS.has(cmd)) {
+            window.location.href = '/oregon-trail/';
             return;
           }
         }

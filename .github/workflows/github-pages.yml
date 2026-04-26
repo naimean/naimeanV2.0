@@ -29,6 +29,8 @@ jobs:
         run: |
           node --check public/script.js
           node --check public/diagnostics.js
+          node --check public/js/arcade-health.js
+          node --check public/js/arcade-shell.js
 
       - name: Check naimean-api worker JS syntax
         run: |
@@ -56,6 +58,9 @@ jobs:
           grep -qE 'compatibility_date = "[0-9]{4}-[0-9]{2}-[0-9]{2}"' cloudflare-worker/wrangler.toml
           # Confirm run_worker_first is present so proxy routes are worker-handled
            grep -q 'run_worker_first' wrangler.toml
+           # Confirm CORES R2 bucket binding is declared for EmulatorJS core archives
+           grep -q 'binding = "CORES"' wrangler.toml
+           grep -q 'bucket_name = "retroarch-cores"' wrangler.toml
            # Confirm D1 database binding is declared in the counter worker config
            grep -q '\[\[d1_databases\]\]' cloudflare-worker/wrangler.toml
            grep -q 'binding = "DB"' cloudflare-worker/wrangler.toml
@@ -82,6 +87,9 @@ jobs:
 
       - name: Check route alignment (proxy paths + worker routes)
         run: node scripts/check-route-alignment.js
+
+      - name: Verify arcade runtime files
+        run: node scripts/check-arcade-runtime.js
 
       - name: Verify site assets
         run: |
@@ -141,9 +149,6 @@ jobs:
           test -d public/assets/uploads
           ls public/assets/video/joinourdiscord.*.mp4
 
-      - name: Download EmulatorJS core binaries
-        run: node scripts/download-ejs-cores.js
-
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
@@ -183,6 +188,18 @@ jobs:
             echo "::error::Missing CLOUDFLARE_ACCOUNT_ID. Set it as an Actions secret or variable."
             exit 1
           fi
+
+      - name: Download EmulatorJS core binaries
+        run: node scripts/download-ejs-cores.js
+
+      - name: Upload EmulatorJS cores to R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          FORCE: 1
+          PURGE: 1
+          TYPO_BUCKET: ${{ vars.R2_TYPO_BUCKET }}
+        run: node scripts/upload-cores-to-r2.js
 
       - name: Clear existing naimeanv2 routes (prevent Wrangler 4 error 10020)
         env:

@@ -3,7 +3,7 @@
  *
  * Verifies that:
  *   1. PROXY_PATHS in src/index.js and run_worker_first in wrangler.toml are
- *      exactly in sync (bidirectional check).
+ *      exactly in sync (bidirectional check), where run_worker_first = PROXY_PATHS + R2_PATHS.
  *   2. The router worker declares the expected custom-domain routes.
  *   3. The naimean-api worker declares the expected /api/* route.
  *
@@ -31,6 +31,12 @@ if (!proxyMatch) {
   process.exit(1);
 }
 
+const r2Match = src.match(/const R2_PATHS\s*=\s*\[([^\]]+)\]/);
+if (!r2Match) {
+  process.stderr.write('R2_PATHS not found in src/index.js\n');
+  process.exit(1);
+}
+
 const workerFirstMatch = routerToml.match(/run_worker_first\s*=\s*\[([^\]]+)\]/);
 if (!workerFirstMatch) {
   process.stderr.write('run_worker_first not found in wrangler.toml\n');
@@ -39,7 +45,10 @@ if (!workerFirstMatch) {
 
 const extract = (s) => [...s.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 const proxyPaths = extract(proxyMatch[1]);
+const r2Paths = extract(r2Match[1]);
 const workerFirstPaths = extract(workerFirstMatch[1]);
+// Combined set of paths that must be in run_worker_first.
+const expectedWorkerFirstPaths = [...proxyPaths, ...r2Paths];
 // Each [[routes]] block is isolated by splitting on the next TOML section header.
 const extractRoutePatterns = (toml) => toml
   .split(/\[\[routes\]\]/)
@@ -54,15 +63,15 @@ const routerRoutes = extractRoutePatterns(routerToml);
 const apiRoutes = extractRoutePatterns(apiToml);
 
 let ok = true;
-for (const p of proxyPaths) {
+for (const p of expectedWorkerFirstPaths) {
   if (!workerFirstPaths.includes(p)) {
-    process.stderr.write('PROXY_PATHS has "' + p + '" but run_worker_first does not\n');
+    process.stderr.write('PROXY_PATHS/R2_PATHS has "' + p + '" but run_worker_first does not\n');
     ok = false;
   }
 }
 for (const p of workerFirstPaths) {
-  if (!proxyPaths.includes(p)) {
-    process.stderr.write('run_worker_first has "' + p + '" but PROXY_PATHS does not\n');
+  if (!expectedWorkerFirstPaths.includes(p)) {
+    process.stderr.write('run_worker_first has "' + p + '" but neither PROXY_PATHS nor R2_PATHS does\n');
     ok = false;
   }
 }
@@ -83,5 +92,6 @@ for (const route of EXPECTED_API_ROUTES) {
 
 if (!ok) process.exit(1);
 console.log('Route alignment OK: ' + proxyPaths.join(', '));
+console.log('R2 paths OK: ' + r2Paths.join(', '));
 console.log('Router routes OK: ' + EXPECTED_ROUTER_ROUTES.join(', '));
 console.log('API routes OK: ' + EXPECTED_API_ROUTES.join(', '));

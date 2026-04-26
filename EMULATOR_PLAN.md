@@ -23,11 +23,17 @@ Improvements and housekeeping items for the arcade/emulator feature built on [Em
    - _Status: done_
 
 4. **Self-host EmulatorJS core assets**
-   - Cache `loader.js`, `emulator.min.js`, and `emulator.min.css` in `public/assets/retroarc/` so the arcade is not dependent on CDN availability.
+   - Cache `loader.js`, `emulator.min.js`, and `emulator.min.css` in `public/assets/retroarch/` so the arcade is not dependent on CDN availability.
    - In EmulatorJS 4.x all cores ship as a single `{core}-wasm.data` file (WASM binary is bundled in; there are no separate `.js`/`.wasm` files).
-   - All 20 core `.data` files are committed to git under `public/assets/retroarc/cores/` — no download step is needed at deploy time.
-   - `EJS_pathtodata` points entirely to the self-hosted path; CDN fallback logic has been removed from `script.js`.
-   - `scripts/download-ejs-cores.js` has been updated to reflect the 4.x architecture and can be used to refresh the committed `.data` files when a new EmulatorJS release is available.
+   - All 20 core `.data` files are stored in the **Cloudflare R2 bucket `retroarch-cores`** to avoid bloating the git repository (~23 MB of binary blobs).
+   - The edge router (`src/index.js`) intercepts every `/assets/retroarch/cores/*.data` request and serves the file from R2 with:
+     - `ETag` header (R2 content hash) enabling HTTP cache validation
+     - `304 Not Modified` responses when `If-None-Match` matches — avoiding full re-downloads (cache busting)
+     - `Cache-Control: public, max-age=31536000, immutable` for long-lived browser caching
+   - `scripts/upload-cores-to-r2.js` (no external deps) uploads/refreshes cores in R2 using the Cloudflare REST API.
+   - `scripts/download-ejs-cores.js` can still be used to refresh local `.data` files before re-uploading to R2 when a new EmulatorJS release ships.
+   - CI (`deploy-workers` job) downloads cores and uploads them to R2 on every push to main so R2 always stays current.
+   - `EJS_pathtodata` in `public/script.js` still points to `/assets/retroarch/` — EmulatorJS constructs the full `.data` URL transparently; the edge worker intercepts and re-routes to R2.
    - _Status: done_
 
 5. **Keyboard/gamepad control overlay**

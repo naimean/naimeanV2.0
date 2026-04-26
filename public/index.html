@@ -103,6 +103,28 @@
     </div>
     <div class="shoutbox-container" id="shoutbox-container">
       <div class="c64-screen">
+        <div class="email-auth-overlay" id="email-auth-overlay" aria-modal="true" role="dialog" aria-labelledby="email-auth-title">
+          <form class="email-auth-form" id="email-auth-form" autocomplete="off" novalidate>
+            <div class="email-auth-title" id="email-auth-title">REGISTER</div>
+            <div class="email-auth-field">
+              <label class="email-auth-label" for="email-auth-email">EMAIL</label>
+              <input class="email-auth-input" id="email-auth-email" type="email" autocomplete="email" maxlength="254" required />
+            </div>
+            <div class="email-auth-field" id="email-auth-username-field">
+              <label class="email-auth-label" for="email-auth-username">USERNAME</label>
+              <input class="email-auth-input" id="email-auth-username" type="text" autocomplete="username" maxlength="16" />
+            </div>
+            <div class="email-auth-field">
+              <label class="email-auth-label" for="email-auth-password">PASSWORD</label>
+              <input class="email-auth-input" id="email-auth-password" type="password" autocomplete="off" maxlength="1024" required />
+            </div>
+            <div class="email-auth-error" id="email-auth-error" role="alert" aria-live="polite"></div>
+            <div class="email-auth-actions">
+              <button class="email-auth-btn" id="email-auth-submit" type="submit">SUBMIT</button>
+              <button class="email-auth-btn email-auth-btn--cancel" id="email-auth-cancel" type="button">CANCEL</button>
+            </div>
+          </form>
+        </div>
         <div class="prank-video-overlay" id="prank-video-overlay" aria-hidden="true">
           <video id="prank-video" src="assets/video/notarickroll-piece-1.v20260424.mp4" playsinline preload="auto"></video>
         </div>
@@ -132,30 +154,6 @@
         <div id="arcade-status" class="arcade-status" aria-live="polite"></div>
         <button class="arcade-fs-launch-btn" id="arcade-fs-launch-btn" type="button">LAUNCH</button>
         <p class="arcade-controller-hint">If you have 2x controllers connected, they should just "work"</p>
-      </div>
-      <div class="arcade-player" id="arcade-player">
-        <div class="arcade-bar">
-          <button class="arcade-bar-btn" id="arcade-back-btn" type="button" aria-label="Back to game menu">&#9664; MENU</button>
-          <span class="arcade-now-playing" id="arcade-now-playing"></span>
-          <button class="arcade-bar-btn" id="arcade-fullscreen-btn" type="button" aria-label="Toggle fullscreen">FULLSCREEN</button>
-        </div>
-        <div class="arcade-game-wrap">
-          <div id="arcade-loading" class="arcade-loading" aria-live="polite" aria-label="Loading game">
-            <div class="arcade-loading-text">LOADING<span class="arcade-loading-dots"></span></div>
-            <div class="arcade-loading-bar-track">
-              <div class="arcade-loading-bar-fill"></div>
-            </div>
-            <div id="arcade-loading-status" class="arcade-loading-status"></div>
-          </div>
-          <div id="game"></div>
-          <div id="arcade-controls-hint" class="arcade-controls-hint" aria-hidden="true">
-            <div class="arcade-controls-hint-inner">
-              <div class="arcade-controls-hint-title" id="arcade-controls-hint-title">KEYBOARD CONTROLS</div>
-              <div class="arcade-controls-hint-grid" id="arcade-controls-hint-grid"></div>
-              <div class="arcade-controls-hint-dismiss">PRESS ANY KEY TO DISMISS</div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>

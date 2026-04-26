@@ -65,10 +65,13 @@ Key principle: `naimeanv2` stays intentionally thin. It handles routing, securit
 |---|---|---|
 | `ASSETS` | Worker Assets | static files from `public/` |
 | `COUNTER` | Service binding | `barrelrollcounter-worker` |
+| `UPLOADS` | R2 | `radley-gallery` bucket |
+| `CORES` | R2 | `retroarch-cores` bucket |
 
 ### Behavior
 
 - if the request path matches `PROXY_PATHS` (`/get`, `/hit`, `/increment`, `/auth`, `/go`, `/layout`), forward to `env.COUNTER`
+- if the request path matches `/assets/retroarch/cores/*.data`, serve from the `CORES` R2 bucket with ETag + `304 Not Modified` + `Cache-Control: public, max-age=31536000, immutable`
 - otherwise, serve from `env.ASSETS`
 - apply CSP and security headers to every response
 - attempt `.html` fallback for extensionless routes
@@ -214,6 +217,34 @@ wrangler d1 execute naimean-db --file=naimean-api/migrations/0000_create_entries
 |---|---|---|---|
 | `naimean-kv` | `dff7175059ce478eab8c910949ca330f` | `KV` on `naimean-api` | required for deploy |
 | `naimean-sessions` | `8d766501be57403ab84a9f3a3112e8d5` | none | undocumented legacy resource; current usage unknown |
+
+## R2 buckets
+
+| Bucket | Binding | Worker | Purpose |
+|---|---|---|---|
+| `retroarch-cores` | `CORES` | `naimeanv2` | stores 20 EmulatorJS core `.data` files (~23 MB total); served from edge with ETag cache validation |
+| `radley-gallery` | `UPLOADS` | `naimeanv2` | reserved for upload-tool output on `uploads.naimean.com`; live writes pending storage setup |
+
+### R2 management
+
+Upload or refresh EmulatorJS cores:
+
+```bash
+# Download latest cores locally first (if needed):
+node scripts/download-ejs-cores.js
+
+# Upload to R2 (requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID):
+node scripts/upload-cores-to-r2.js
+
+# Force re-upload even if already present:
+FORCE=1 node scripts/upload-cores-to-r2.js
+```
+
+CI (`deploy-workers` job) automatically downloads cores and uploads them to R2 on every push to main.
+
+### Required R2 token permissions
+
+The `CLOUDFLARE_API_TOKEN` used in CI must include **R2:Edit** (or `Workers R2 Storage:Account:Edit`) in addition to the Worker/D1/KV permissions already listed.
 
 ---
 
@@ -383,6 +414,8 @@ wrangler d1 execute naimean-db --command "SELECT name FROM sqlite_master WHERE t
 - [ ] keep root and API worker route declarations in `wrangler.toml` aligned with the Cloudflare dashboard state
 - [ ] add a documented D1 backup/export cadence for both databases
 - [ ] keep all Cloudflare/GitHub handoff docs aligned on routes, payloads, and secret inventory
+- [ ] confirm both R2 buckets (`retroarch-cores`, `radley-gallery`) exist in the account; verify `CLOUDFLARE_API_TOKEN` has R2:Edit permission for CI uploads
+- [ ] validate that `uploads.naimean.com` correctly serves from the `UPLOADS` R2 binding once live upload writes are configured
 
 ### P2 — planned
 
@@ -402,6 +435,8 @@ wrangler d1 execute naimean-db --command "SELECT name FROM sqlite_master WHERE t
 | Counter/users/layout data | `barrelroll-counter-db` | `cloudflare-worker/schema.sql` |
 | Entries data | `naimean-db` | `naimean-api/migrations/0000_create_entries.sql` |
 | KV storage | `naimean-kv` | `naimean-api/wrangler.toml` |
+| EmulatorJS cores | `retroarch-cores` (R2) | `scripts/upload-cores-to-r2.js`; bound as `CORES` in `wrangler.toml` |
+| Upload-tool assets | `radley-gallery` (R2) | `public/assets/uploads/`; bound as `UPLOADS` in `wrangler.toml` |
 | Static site | GitHub Pages + Worker Assets | `public/` |
 | Route config | Worker routes in Cloudflare | each `wrangler.toml` |
 | Secrets | Cloudflare secret store | not committed in repo |

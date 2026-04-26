@@ -1080,12 +1080,11 @@ body {
 /* ─── Arcade overlay ──────────────────────────────────────────────────────── */
 
 .arcade-overlay {
-  position: absolute;
-  left: var(--screen-left);
-  top: var(--screen-top);
-  width: var(--screen-width);
-  height: var(--screen-height);
-  border-radius: 8px;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
   background: var(--screen-black);
   z-index: 13;
   display: none;
@@ -1102,12 +1101,10 @@ body {
   transition: opacity 0.35s ease;
 }
 
-.arcade-overlay.fullscreen {
-  position: fixed;
-  inset: 0;
+.arcade-overlay:fullscreen,
+.arcade-overlay:-webkit-full-screen {
   width: 100%;
   height: 100%;
-  z-index: 9999;
   border-radius: 0;
 }
 
@@ -1133,7 +1130,13 @@ body {
   overflow: hidden;
 }
 
-.arcade-overlay.fullscreen .arcade-picker {
+.arcade-picker {
+  border-radius: 0 !important;
+  font-size: 1.3em;
+}
+
+.arcade-overlay:fullscreen .arcade-picker,
+.arcade-overlay:-webkit-full-screen .arcade-picker {
   border-radius: 0;
   font-size: 1.3em;
 }
@@ -1173,35 +1176,6 @@ body {
   outline: none;
 }
 
-.arcade-system-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.arcade-label {
-  font-size: 0.9em;
-  white-space: nowrap;
-  opacity: 0.8;
-}
-
-.arcade-select {
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(142, 240, 178, 0.45);
-  border-radius: 3px;
-  color: var(--mint);
-  font-family: 'VT323', monospace;
-  font-size: 1em;
-  padding: 2px 6px;
-  outline: none;
-  cursor: pointer;
-}
-
-.arcade-select:focus {
-  border-color: var(--mint-bright);
-}
-
 .arcade-game-list {
   flex: 1 1 auto;
   min-height: 0;
@@ -1222,19 +1196,32 @@ body {
 }
 
 .arcade-section-header {
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(142, 240, 178, 0.15);
+  border-bottom: 1px solid rgba(142, 240, 178, 0.08);
+  color: rgba(142, 240, 178, 0.55);
   font-family: 'VT323', monospace;
-  font-size: 0.78em;
-  letter-spacing: 0.12em;
-  color: rgba(142, 240, 178, 0.5);
-  padding: 8px 6px 2px;
-  margin-top: 4px;
-  border-top: 1px solid rgba(142, 240, 178, 0.12);
-  flex-shrink: 0;
+  font-size: 0.85em;
+  letter-spacing: 0.15em;
+  padding: 8px 10px 4px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  display: block;
 }
 
-.arcade-section-header:first-child {
-  margin-top: 0;
-  border-top: none;
+.arcade-section-header::after {
+  content: ' \25B6';
+  font-size: 0.75em;
+  opacity: 0.65;
+}
+
+.arcade-section-header:hover,
+.arcade-section-header:focus-visible {
+  color: var(--mint-bright);
+  background: rgba(142, 240, 178, 0.06);
+  outline: none;
 }
 
 .arcade-game-item {
@@ -1253,6 +1240,7 @@ body {
   box-sizing: border-box;
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .arcade-game-item::before {
@@ -1276,34 +1264,6 @@ body {
 .arcade-game-item:focus-visible {
   outline: 1px dashed rgba(142, 240, 178, 0.5);
   outline-offset: -1px;
-}
-
-.arcade-launch-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px 14px;
-  border: 1px solid rgba(142, 240, 178, 0.5);
-  border-radius: 3px;
-  background: rgba(22, 58, 30, 0.8);
-  color: var(--mint-bright);
-  font-family: 'VT323', monospace;
-  font-size: 1em;
-  cursor: pointer;
-  letter-spacing: 0.06em;
-  align-self: flex-start;
-  flex-shrink: 0;
-}
-
-.arcade-launch-btn:hover:not(:disabled),
-.arcade-launch-btn:focus-visible:not(:disabled) {
-  background: rgba(36, 94, 49, 0.98);
-  outline: none;
-}
-
-.arcade-launch-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 /* ── Fullscreen launch button ────────────────────────────────────────────── */
@@ -1334,7 +1294,8 @@ body {
   outline: none;
 }
 
-.arcade-overlay.fullscreen .arcade-fs-launch-btn.ready {
+.arcade-overlay:fullscreen .arcade-fs-launch-btn.ready,
+.arcade-overlay:-webkit-full-screen .arcade-fs-launch-btn.ready {
   display: block;
 }
 
@@ -1349,12 +1310,7 @@ body {
 }
 
 .arcade-controller-hint {
-  font-family: 'VT323', monospace;
-  font-size: 0.78em;
-  color: rgba(142, 240, 178, 0.5);
-  margin: 0;
-  padding: 0;
-  flex-shrink: 0;
+  display: none;
 }
 
 /* ── Loading indicator (shown while EmulatorJS initialises) ─────────────── */
@@ -1447,52 +1403,6 @@ body {
   background: #000;
 }
 
-.arcade-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 3px 8px;
-  background: rgba(6, 14, 8, 0.96);
-  border-bottom: 1px solid rgba(142, 240, 178, 0.18);
-  flex-shrink: 0;
-  gap: 6px;
-  font-family: 'VT323', monospace;
-  min-height: 28px;
-}
-
-.arcade-bar-btn {
-  background: transparent;
-  border: 1px solid rgba(142, 240, 178, 0.35);
-  border-radius: 3px;
-  color: var(--mint);
-  font-family: 'VT323', monospace;
-  font-size: 0.9em;
-  padding: 2px 7px;
-  cursor: pointer;
-  white-space: nowrap;
-  line-height: 1.2;
-  flex-shrink: 0;
-}
-
-.arcade-bar-btn:hover,
-.arcade-bar-btn:focus-visible {
-  background: rgba(142, 240, 178, 0.12);
-  outline: none;
-}
-
-.arcade-now-playing {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--mint);
-  font-family: 'VT323', monospace;
-  font-size: 0.88em;
-  text-align: center;
-  opacity: 0.75;
-}
-
 .arcade-game-wrap {
   flex: 1 1 auto;
   min-height: 0;
@@ -1505,8 +1415,8 @@ body {
 }
 
 #game {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1517,15 +1427,6 @@ body {
     padding: 8px 8px 10px;
     font-size: 1em;
     gap: 4px;
-  }
-
-  .arcade-bar {
-    padding: 3px 6px;
-  }
-
-  .arcade-bar-btn {
-    font-size: 0.8em;
-    padding: 2px 5px;
   }
 }
 
@@ -1601,4 +1502,17 @@ body {
   color: rgba(142, 240, 178, 0.45);
   letter-spacing: 0.12em;
   margin-top: 4px;
+}
+
+/* ── EJS built-in UI overrides ───────────────────────────────────────────── */
+
+/* Make the EJS container fill the game wrap completely */
+.ejs_parent {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Tint the EJS UI with mint accent (matches EJS_color setting) */
+.ejs_menu_bar {
+  background: rgba(6, 14, 8, 0.92) !important;
 }

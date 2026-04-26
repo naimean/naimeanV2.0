@@ -1,0 +1,195 @@
+{
+  "nes": {
+    "label": "NES",
+    "core": "fceumm",
+    "bootLines": [
+      "** NINTENDO ENTERTAINMENT SYSTEM **",
+      "RICOH 2A03 CPU @ 1.79 MHZ",
+      "RICOH 2C02 PPU",
+      "LOADING FCEUMM CORE..."
+    ]
+  },
+  "snes": {
+    "label": "SNES",
+    "core": "snes9x",
+    "bootLines": [
+      "** SUPER NINTENDO ENTERTAINMENT SYSTEM **",
+      "RICOH 5A22 CPU @ 3.58 MHZ",
+      "LOADING SNES9X CORE..."
+    ]
+  },
+  "gb": {
+    "label": "GAME BOY",
+    "core": "gambatte",
+    "bootLines": [
+      "** NINTENDO GAME BOY **",
+      "SHARP LR35902 @ 4.19 MHZ",
+      "LOADING GAMBATTE CORE..."
+    ]
+  },
+  "gba": {
+    "label": "GAME BOY ADVANCE",
+    "core": null,
+    "bootLines": [
+      "** GAME BOY ADVANCE **",
+      "ARM7TDMI @ 16.78 MHZ",
+      "LOADING MGBA CORE..."
+    ]
+  },
+  "n64": {
+    "label": "NINTENDO 64",
+    "core": null,
+    "bootLines": [
+      "** NINTENDO 64 **",
+      "NEC VR4300 @ 93.75 MHZ",
+      "LOADING MUPEN64PLUS CORE..."
+    ]
+  },
+  "segaMD": {
+    "label": "SEGA GENESIS",
+    "core": "genesis_plus_gx",
+    "bootLines": [
+      "** SEGA MEGA DRIVE / GENESIS **",
+      "MOTOROLA 68000 @ 7.67 MHZ",
+      "LOADING GENESIS_PLUS_GX CORE..."
+    ]
+  },
+  "segaMS": {
+    "label": "SEGA MASTER SYSTEM",
+    "core": "genesis_plus_gx",
+    "bootLines": [
+      "** SEGA MASTER SYSTEM **",
+      "ZILOG Z80 @ 3.58 MHZ",
+      "LOADING GENESIS_PLUS_GX CORE..."
+    ]
+  },
+  "segaGG": {
+    "label": "SEGA GAME GEAR",
+    "core": "genesis_plus_gx",
+    "bootLines": [
+      "** SEGA GAME GEAR **",
+      "ZILOG Z80 @ 3.58 MHZ",
+      "LOADING GENESIS_PLUS_GX CORE..."
+    ]
+  },
+  "sega32x": {
+    "label": "SEGA 32X",
+    "core": "picodrive",
+    "bootLines": [
+      "** SEGA 32X **",
+      "HITACHI SH2 @ 23 MHZ",
+      "LOADING PICODRIVE CORE..."
+    ]
+  },
+  "atari2600": {
+    "label": "ATARI 2600",
+    "core": "stella2014",
+    "bootLines": [
+      "** ATARI 2600 **",
+      "MOS 6507 @ 1.19 MHZ",
+      "LOADING STELLA2014 CORE..."
+    ]
+  },
+  "atari7800": {
+    "label": "ATARI 7800",
+    "core": "prosystem",
+    "bootLines": [
+      "** ATARI 7800 PROSYSTEM **",
+      "MOS 6502C @ 1.79 MHZ",
+      "LOADING PROSYSTEM CORE..."
+    ]
+  },
+  "atari5200": {
+    "label": "ATARI 5200",
+    "core": "a5200",
+    "bootLines": [
+      "** ATARI 5200 SUPERSYSTEM **",
+      "MOS 6502C @ 1.79 MHZ",
+      "LOADING A5200 CORE..."
+    ]
+  },
+  "pce": {
+    "label": "PC ENGINE",
+    "core": "mednafen_pce",
+    "bootLines": [
+      "** NEC PC ENGINE / TURBOGRAFX-16 **",
+      "HuC6280 CPU @ 7.16 MHZ",
+      "LOADING MEDNAFEN_PCE CORE..."
+    ]
+  },
+  "lynx": {
+    "label": "ATARI LYNX",
+    "core": "handy",
+    "bootLines": [
+      "** ATARI LYNX **",
+      "MOS 65SC02 @ 4 MHZ",
+      "LOADING HANDY CORE..."
+    ]
+  },
+  "vb": {
+    "label": "VIRTUAL BOY",
+    "core": "beetle_vb",
+    "bootLines": [
+      "** NINTENDO VIRTUAL BOY **",
+      "NEC V810 @ 20 MHZ",
+      "LOADING BEETLE_VB CORE..."
+    ]
+  },
+  "c64": {
+    "label": "COMMODORE 64",
+    "core": "vice_x64sc",
+    "bootLines": [
+      "** COMMODORE 64 **",
+      "MOS 6510 @ 1 MHZ",
+      "64K RAM SYSTEM  38911 BASIC BYTES FREE",
+      "LOADING VICE X64SC CORE..."
+    ]
+  },
+  "c128": {
+    "label": "COMMODORE 128",
+    "core": "vice_x128",
+    "bootLines": [
+      "** COMMODORE 128 **",
+      "MOS 8502 @ 2 MHZ",
+      "LOADING VICE X128 CORE..."
+    ]
+  },
+  "vic20": {
+    "label": "VIC-20",
+    "core": "vice_xvic",
+    "bootLines": [
+      "** COMMODORE VIC-20 **",
+      "MOS 6502A @ 1.02 MHZ",
+      "LOADING VICE XVIC CORE..."
+    ]
+  },
+  "pet": {
+    "label": "COMMODORE PET",
+    "core": "vice_xpet",
+    "bootLines": [
+      "** COMMODORE PET **",
+      "MOS 6502 @ 1 MHZ",
+      "LOADING VICE XPET CORE..."
+    ]
+  },
+  "plus4": {
+    "label": "PLUS/4",
+    "core": "vice_xplus4",
+    "bootLines": [
+      "** COMMODORE PLUS/4 **",
+      "MOS 7501 @ 1.76 MHZ",
+      "LOADING VICE XPLUS4 CORE..."
+    ]
+  },
+  "oregontrail": {
+    "label": "OREGON TRAIL",
+    "core": null,
+    "url": "/oregon-trail/",
+    "bootLines": [
+      "** THE OREGON TRAIL (1848) **",
+      "INDEPENDENCE, MO \u2192 OREGON CITY",
+      "2,040 MILES OF FRONTIER TRAIL...",
+      "LOADING PIONEER ENGINE..."
+    ]
+  }
+}

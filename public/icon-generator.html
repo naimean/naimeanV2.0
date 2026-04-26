@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Generator — Naimean</title>
+  <link rel="icon" type="image/jpeg" href="/assets/images/commodore64.v20260424.jpg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #4aff7a;
+      --green-dim: #1a6630;
+      --green-glow: rgba(74, 255, 122, 0.18);
+      --amber: #ffb347;
+      --bg: #060906;
+      --panel: #0a100a;
+      --border: rgba(74, 255, 122, 0.4);
+      --radius: 12px;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: #c8ffc8;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px 48px;
+    }
+
+    .shell {
+      width: min(760px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      padding: 18px 0 8px;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      letter-spacing: 0.12em;
+      color: var(--green);
+      text-shadow: 0 0 14px rgba(74, 255, 122, 0.5);
+    }
+
+    .header p {
+      margin-top: 6px;
+      color: rgba(200, 255, 200, 0.55);
+      font-size: 0.82rem;
+    }
+
+    /* ── Panels ─────────────────────────────────────────── */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 0 20px var(--green-glow);
+    }
+
+    .panel-title {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 14px;
+      opacity: 0.75;
+    }
+
+    /* ── Form inputs ────────────────────────────────────── */
+    label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      color: rgba(200, 255, 200, 0.65);
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      background: #030703;
+      border: 1px solid var(--green-dim);
+      border-radius: 6px;
+      color: #c8ffc8;
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 2px var(--green-glow);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    select option {
+      background: #0a100a;
+    }
+
+    /* ── Phrase row ─────────────────────────────────────── */
+    .phrase-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 520px) {
+      .phrase-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Options row ────────────────────────────────────── */
+    .options-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 14px 24px;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 520px) {
+      .options-row { grid-template-columns: 1fr; }
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 0.85rem;
+      color: #c8ffc8;
+    }
+
+    input[type="checkbox"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--green-dim);
+      border-radius: 3px;
+      background: #030703;
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+
+    input[type="checkbox"]:checked {
+      border-color: var(--green);
+      background: var(--green-dim);
+    }
+
+    input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 5px;
+      height: 9px;
+      border: 2px solid var(--green);
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+
+    /* ── Buttons ────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 20px;
+      border: 1px solid var(--green);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--green);
+      font-family: inherit;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: rgba(74, 255, 122, 0.08);
+      box-shadow: 0 0 10px var(--green-glow);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      width: 100%;
+      margin-top: 16px;
+      padding: 11px;
+      font-size: 0.9rem;
+    }
+
+    .btn-download {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .btn-download:hover:not(:disabled) {
+      background: rgba(255, 179, 71, 0.08);
+      box-shadow: 0 0 10px rgba(255, 179, 71, 0.2);
+    }
+
+    /* ── Status / error ─────────────────────────────────── */
+    .status-bar {
+      font-size: 0.8rem;
+      min-height: 1.4em;
+      color: rgba(200, 255, 200, 0.6);
+      text-align: center;
+    }
+
+    .status-bar.error {
+      color: #ff6b6b;
+    }
+
+    /* ── Results grid ───────────────────────────────────── */
+    .results-panel { display: none; }
+    .results-panel.visible { display: block; }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .results-grid { grid-template-columns: 1fr; }
+    }
+
+    .icon-card {
+      border: 2px solid rgba(74, 255, 122, 0.2);
+      border-radius: 10px;
+      background: #030703;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .icon-card:hover {
+      border-color: var(--green);
+      box-shadow: 0 0 14px var(--green-glow);
+      transform: translateY(-2px);
+    }
+
+    .icon-card.selected {
+      border-color: var(--green);
+      box-shadow: 0 0 18px rgba(74, 255, 122, 0.35);
+    }
+
+    .icon-card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: contain;
+      display: block;
+      background: repeating-conic-gradient(rgba(255,255,255,0.04) 0% 25%, transparent 0% 50%) 0 0 / 12px 12px;
+    }
+
+    .icon-card-label {
+      padding: 7px 10px;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      color: rgba(200, 255, 200, 0.55);
+      width: 100%;
+      text-align: center;
+      border-top: 1px solid rgba(74, 255, 122, 0.12);
+    }
+
+    .icon-card.selected .icon-card-label {
+      color: var(--green);
+    }
+
+    /* ── Download panel ─────────────────────────────────── */
+    .download-panel { display: none; }
+    .download-panel.visible { display: block; }
+
+    .download-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    @media (max-width: 480px) {
+      .download-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+
+    <div class="header">
+      <h1>&#9670; ICON GENERATOR</h1>
+      <p>Describe your icon, pick a result, download as .ico</p>
+    </div>
+
+    <!-- ── Form ─────────────────────────────────────────── -->
+    <div class="panel">
+      <div class="panel-title">&#9654; Input</div>
+
+      <div class="phrase-row">
+        <div>
+          <label for="phrase1">Phrase 1</label>
+          <input type="text" id="phrase1" placeholder="e.g. fire" maxlength="80" autocomplete="off">
+        </div>
+        <div>
+          <label for="phrase2">Phrase 2</label>
+          <input type="text" id="phrase2" placeholder="e.g. crystal" maxlength="80" autocomplete="off">
+        </div>
+        <div>
+          <label for="phrase3">Phrase 3</label>
+          <input type="text" id="phrase3" placeholder="e.g. sword" maxlength="80" autocomplete="off">
+        </div>
+      </div>
+
+      <div>
+        <label for="prompt">Narrative prompt</label>
+        <textarea id="prompt" maxlength="400" placeholder="Describe what you want the icon to look like in detail…"></textarea>
+      </div>
+
+      <div class="options-row">
+        <label class="checkbox-label">
+          <input type="checkbox" id="transparent">
+          Transparent background
+        </label>
+        <div>
+          <label for="agent">Agent</label>
+          <select id="agent">
+            <option value="@cf/stabilityai/stable-diffusion-xl-base-1.0">Stable Diffusion XL</option>
+            <option value="@cf/bytedance/stable-diffusion-xl-lightning">SDXL Lightning (fast)</option>
+            <option value="@cf/lykon/dreamshaper-8-lcm">DreamShaper 8</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="generateBtn" type="button">&#9670; GENERATE</button>
+      <div class="status-bar" id="statusBar" aria-live="polite"></div>
+    </div>
+
+    <!-- ── Results ───────────────────────────────────────── -->
+    <div class="panel results-panel" id="resultsPanel">
+      <div class="panel-title">&#9654; Results — click to select</div>
+      <div class="results-grid" id="resultsGrid"></div>
+    </div>
+
+    <!-- ── Download ─────────────────────────────────────── -->
+    <div class="panel download-panel" id="downloadPanel">
+      <div class="panel-title">&#9654; Download</div>
+      <div class="download-row">
+        <div>
+          <label for="filename">File name</label>
+          <input type="text" id="filename" placeholder="my-icon" maxlength="120" autocomplete="off">
+        </div>
+        <button class="btn btn-download" id="downloadBtn" type="button">&#8659; DOWNLOAD .ICO</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      // 74×74 px — the target .ico image size.  Windows supports non-standard
+      // sizes; 74 was chosen to match the product's icon grid spec.
+      const ICON_SIZE = 74;
+
+      const generateBtn = document.getElementById('generateBtn');
+      const statusBar   = document.getElementById('statusBar');
+      const resultsPanel = document.getElementById('resultsPanel');
+      const resultsGrid  = document.getElementById('resultsGrid');
+      const downloadPanel = document.getElementById('downloadPanel');
+      const downloadBtn   = document.getElementById('downloadBtn');
+      const filenameInput = document.getElementById('filename');
+
+      let selectedDataUrl = null;
+
+      // ── Helpers ──────────────────────────────────────────
+
+      function setStatus(msg, isError) {
+        statusBar.textContent = msg;
+        statusBar.className = 'status-bar' + (isError ? ' error' : '');
+      }
+
+      // Resize an image data-url to ICON_SIZE×ICON_SIZE via canvas and return
+      // a Promise that resolves to a Uint8Array of PNG bytes.
+      function resizeToPng(dataUrl) {
+        return new Promise(function (resolve, reject) {
+          var img = new Image();
+          img.onload = function () {
+            var canvas = document.createElement('canvas');
+            canvas.width = ICON_SIZE;
+            canvas.height = ICON_SIZE;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, ICON_SIZE, ICON_SIZE);
+            canvas.toBlob(function (blob) {
+              if (!blob) { reject(new Error('canvas.toBlob failed')); return; }
+              blob.arrayBuffer().then(function (buf) {
+                resolve(new Uint8Array(buf));
+              }).catch(reject);
+            }, 'image/png');
+          };
+          img.onerror = function () { reject(new Error('Image load failed')); };
+          img.src = dataUrl;
+        });
+      }
+
+      // Wrap PNG bytes in a minimal single-image ICO container.
+      // ICO format (Windows Vista+ PNG variant — RFC-compatible):
+      //   ICONDIR      (6 bytes):  reserved | type=1 | count=1
+      //   ICONDIRENTRY (16 bytes): width, height, colorCount, reserved,
+      //                            planes, bitCount, bytesInRes, imageOffset
+      //   PNG data     at offset 22
+      // Windows Vista+ allows a raw PNG stream as the image payload, so no
+      // BMP conversion is required — the browser-generated PNG is used as-is.
+      function buildIco(pngBytes) {
+        var pngSize   = pngBytes.length;
+        var dataOffset = 22; // 6 (ICONDIR) + 16 (ICONDIRENTRY)
+        var total      = dataOffset + pngSize;
+        var buf  = new ArrayBuffer(total);
+        var view = new DataView(buf);
+        var u8   = new Uint8Array(buf);
+
+        // ICONDIR
+        view.setUint16(0, 0, true); // reserved
+        view.setUint16(2, 1, true); // type: ICO
+        view.setUint16(4, 1, true); // image count: 1
+
+        // ICONDIRENTRY
+        u8[6]  = ICON_SIZE; // width
+        u8[7]  = ICON_SIZE; // height
+        u8[8]  = 0;         // color count (0 = 256+)
+        u8[9]  = 0;         // reserved
+        view.setUint16(10, 1,          true); // planes
+        view.setUint16(12, 32,         true); // bits per pixel
+        view.setUint32(14, pngSize,    true); // size of image data
+        view.setUint32(18, dataOffset, true); // offset to image data
+
+        // PNG data
+        u8.set(pngBytes, dataOffset);
+        return buf;
+      }
+
+      function sanitizeFilename(raw) {
+        // Strip non-filesystem-safe characters, collapse spaces to hyphens.
+        var stripped    = raw.trim().replace(/[^a-zA-Z0-9_\-. ]/g, '').trim();
+        var hyphenated  = stripped.replace(/\s+/g, '-') || 'icon';
+        // Remove trailing dots to avoid hidden files / Windows naming issues.
+        var name = hyphenated.replace(/\.+$/, '');
+        return name;
+      }
+
+      // ── Generate ─────────────────────────────────────────
+
+      generateBtn.addEventListener('click', function () {
+        var prompt = document.getElementById('prompt').value.trim();
+        if (!prompt) { setStatus('Narrative prompt is required.', true); return; }
+
+        var words = [
+          document.getElementById('phrase1').value.trim(),
+          document.getElementById('phrase2').value.trim(),
+          document.getElementById('phrase3').value.trim(),
+        ].filter(function (w) { return w.length > 0; });
+
+        var transparent = document.getElementById('transparent').checked;
+        var model       = document.getElementById('agent').value;
+
+        generateBtn.disabled = true;
+        setStatus('Generating… this may take 20–60 seconds.', false);
+
+        // Reset previous results
+        selectedDataUrl = null;
+        resultsGrid.innerHTML = '';
+        resultsPanel.classList.remove('visible');
+        downloadPanel.classList.remove('visible');
+
+        fetch('/icon', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: prompt, words: words, transparent: transparent, model: model }),
+        })
+          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (result) {
+            generateBtn.disabled = false;
+            if (!result.ok || !Array.isArray(result.data.images)) {
+              setStatus((result.data && result.data.error) || 'Generation failed.', true);
+              return;
+            }
+            setStatus('Done! Select an image below.', false);
+            renderResults(result.data.images);
+          })
+          .catch(function (err) {
+            generateBtn.disabled = false;
+            setStatus('Network error: ' + err.message, true);
+          });
+      });
+
+      // ── Render results ───────────────────────────────────
+
+      function renderResults(images) {
+        resultsGrid.innerHTML = '';
+        images.forEach(function (dataUrl, i) {
+          var card = document.createElement('div');
+          card.className = 'icon-card';
+          card.setAttribute('role', 'button');
+          card.setAttribute('tabindex', '0');
+          card.setAttribute('aria-label', 'Select image ' + (i + 1));
+
+          var img = document.createElement('img');
+          img.src = dataUrl;
+          img.alt = 'Generated icon option ' + (i + 1);
+          img.loading = 'lazy';
+
+          var lbl = document.createElement('div');
+          lbl.className = 'icon-card-label';
+          lbl.textContent = 'OPTION ' + (i + 1);
+
+          card.appendChild(img);
+          card.appendChild(lbl);
+          resultsGrid.appendChild(card);
+
+          function select() {
+            // Clear other selections
+            Array.from(resultsGrid.querySelectorAll('.icon-card')).forEach(function (c) {
+              c.classList.remove('selected');
+            });
+            card.classList.add('selected');
+            selectedDataUrl = dataUrl;
+            downloadPanel.classList.add('visible');
+            // Pre-fill filename from prompt if empty
+            if (!filenameInput.value.trim()) {
+              var suggestion = document.getElementById('prompt').value.trim()
+                .toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
+                .split(/\s+/).slice(0, 3).join('-');
+              filenameInput.value = suggestion || 'icon';
+            }
+            downloadPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+
+          card.addEventListener('click', select);
+          card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); }
+          });
+        });
+
+        resultsPanel.classList.add('visible');
+      }
+
+      // ── Download ─────────────────────────────────────────
+
+      downloadBtn.addEventListener('click', function () {
+        if (!selectedDataUrl) { return; }
+
+        var name = sanitizeFilename(filenameInput.value);
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = 'Building…';
+
+        resizeToPng(selectedDataUrl)
+          .then(function (pngBytes) {
+            var icoBuf = buildIco(pngBytes);
+            var blob = new Blob([icoBuf], { type: 'image/x-icon' });
+            var url  = URL.createObjectURL(blob);
+            var a    = document.createElement('a');
+            a.href     = url;
+            a.download = name + '.ico';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // Revoke the blob URL after a delay to allow slow browsers to
+            // complete the download before the resource is released.
+            setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+          })
+          .catch(function (err) {
+            setStatus('Download failed: ' + err.message, true);
+          })
+          .finally(function () {
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = '\u21D3 DOWNLOAD .ICO';
+          });
+      });
+    })();
+  </script>
+</body>
+</html>
