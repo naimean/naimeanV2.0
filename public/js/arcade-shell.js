@@ -24,6 +24,7 @@
   var EJS_GLOBALS = [
     'EJS_player', 'EJS_core', 'EJS_gameUrl', 'EJS_pathtodata',
     'EJS_startOnLoaded', 'EJS_onLoadState', 'EJS_onLoadError', 'EJS_emulator',
+    'EJS_defaultOptions',
   ];
 
   // ── State machine states ───────────────────────────────────────────────────
@@ -368,6 +369,14 @@
     }
 
     var romUrl = '/assets/roms/' + sys.id + '/' + encodeURIComponent(romFile);
+
+    // EJS_defaultOptions: set webgl2Enabled so EmulatorJS picks the non-legacy
+    // core variant (e.g. fceumm-wasm.data) by default.  Without this, EmulatorJS
+    // resolves webgl2Enabled to null even on capable devices and falls back to
+    // fceumm-legacy-wasm.data, which is not hosted in R2 and causes a CDN
+    // fallback that times out on mobile.  The user can still override this via
+    // the in-emulator settings (localStorage wins over defaultOptions).
+    window.EJS_defaultOptions = { webgl2Enabled: 'enabled' };
 
     window.EJS_player        = '#game';
     window.EJS_core          = sys.core;
