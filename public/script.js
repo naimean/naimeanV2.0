@@ -1992,7 +1992,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
           if (OREGON_TRAIL_COMMANDS.has(getBootInputSuffix())) {
-            window.location.href = '/oregon-trail/';
+            window.location.href = 'https://oregontrail.ws/games/the-oregon-trail/play/';
             return;
           }
           playWrongSound();
@@ -2019,7 +2019,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
           if (OREGON_TRAIL_COMMANDS.has(getBootInputSuffix())) {
-            window.location.href = '/oregon-trail/';
+            window.location.href = 'https://oregontrail.ws/games/the-oregon-trail/play/';
             return;
           }
           beginJoinDiscordWorkflow();
@@ -2559,7 +2559,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
           if (OREGON_TRAIL_COMMANDS.has(cmd)) {
-            window.location.href = '/oregon-trail/';
+            window.location.href = 'https://oregontrail.ws/games/the-oregon-trail/play/';
             return;
           }
         }
