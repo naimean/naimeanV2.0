@@ -4,3 +4,9 @@
 !.dev.vars.example
 .env*
 !.env.example
+
+# EmulatorJS core binaries — large files downloaded at deploy time.
+# Run `node scripts/download-ejs-cores.js` to populate them locally.
+# The .data header files remain committed; only the .js/.wasm binaries are excluded.
+public/assets/retroarc/cores/*.js
+public/assets/retroarc/cores/*.wasm

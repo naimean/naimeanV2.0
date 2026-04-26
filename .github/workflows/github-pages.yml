@@ -141,6 +141,9 @@ jobs:
           test -d public/assets/uploads
           ls public/assets/video/joinourdiscord.*.mp4
 
+      - name: Download EmulatorJS core binaries
+        run: node scripts/download-ejs-cores.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
