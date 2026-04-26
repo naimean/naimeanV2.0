@@ -66,6 +66,7 @@ const RATE_LIMITS = {
   go: 30,             // GET  /go/*          – authenticated redirects
   layout_read: 60,    // GET  /layout        – read layout overrides
   layout_write: 10,   // POST /layout        – save layout overrides (auth required)
+  icon: 3,            // POST /icon          – AI icon generation (expensive)
 };
 
 // Key format: `${ip}:${routeKey}` → { count, windowStart }
@@ -1192,6 +1193,94 @@ async function handleGoRedirect(pathname, request, env, origin) {
   });
 }
 
+// ── Icon generation ──────────────────────────────────────────────────────────
+const ICON_AI_MODEL = '@cf/stabilityai/stable-diffusion-xl-base-1.0';
+const ICON_COUNT = 3;
+const ICON_MAX_PROMPT_LENGTH = 400;
+const ICON_WORD_MAX_LENGTH = 80;
+const ICON_WORDS_MAX_COUNT = 8;
+
+function buildIconPrompt(subject, words, transparent, variationIndex) {
+  const parts = [subject.trim()];
+  if (words.length > 0) {
+    parts.push(words.join(', '));
+  }
+  parts.push('icon, simple, clean, sharp detail');
+  if (transparent) {
+    parts.push('transparent background, isolated on white');
+  }
+  // Lightweight variation hint to encourage diverse outputs.
+  if (variationIndex === 1) {
+    parts.push('bold colors, high contrast');
+  } else if (variationIndex === 2) {
+    parts.push('minimal linework, subtle shading');
+  }
+  return parts.join(', ');
+}
+
+async function handleIconGenerate(request, env, origin) {
+  if (request.method !== 'POST') {
+    return jsonResponse({ error: 'Method not allowed' }, 405, origin, env);
+  }
+
+  if (!env.AI) {
+    return jsonResponse({ error: 'AI service not available' }, 503, origin, env);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return jsonResponse({ error: 'Invalid JSON body' }, 400, origin, env);
+  }
+
+  const subject = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+  if (!subject || subject.length > ICON_MAX_PROMPT_LENGTH) {
+    return jsonResponse({ error: 'prompt is required and must be ≤ 400 characters' }, 400, origin, env);
+  }
+
+  const rawWords = Array.isArray(body.words) ? body.words : [];
+  if (rawWords.length > ICON_WORDS_MAX_COUNT) {
+    return jsonResponse({ error: 'Too many words (max 8)' }, 400, origin, env);
+  }
+  const words = rawWords
+    .map((w) => (typeof w === 'string' ? w.trim() : ''))
+    .filter((w) => w.length > 0 && w.length <= ICON_WORD_MAX_LENGTH);
+
+  const transparent = body.transparent === true;
+
+  const imageResults = await Promise.all(
+    Array.from({ length: ICON_COUNT }, function (_, i) {
+      const prompt = buildIconPrompt(subject, words, transparent, i);
+      return env.AI.run(ICON_AI_MODEL, { prompt })
+        .then(function (response) {
+          // Workers AI returns a ReadableStream of PNG bytes for image models.
+          if (response instanceof ReadableStream) {
+            return new Response(response).arrayBuffer();
+          }
+          // Some bindings return an ArrayBuffer or Uint8Array directly.
+          if (response instanceof ArrayBuffer) {
+            return response;
+          }
+          if (response instanceof Uint8Array) {
+            return response.buffer;
+          }
+          throw new Error('Unexpected AI response type');
+        })
+        .then(function (buffer) {
+          const bytes = new Uint8Array(buffer);
+          let binary = '';
+          for (let j = 0; j < bytes.length; j++) {
+            binary += String.fromCharCode(bytes[j]);
+          }
+          return 'data:image/png;base64,' + btoa(binary);
+        });
+    })
+  );
+
+  return jsonResponse({ images: imageResults }, 200, origin, env);
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -1204,15 +1293,16 @@ export default {
     const isAuthRoute = pathname.startsWith('/auth/');
     const isGoRoute = pathname.startsWith('/go/');
     const isLayoutRoute = pathname === '/layout';
+    const isIconRoute = pathname === '/icon';
     const withApiSecurityHeaders = (response) => applyApiSecurityHeaders(response, isSecureTransport);
 
     // This worker is backend-only. Non-API routes are owned by the edge router.
-    if (!isCounterRoute && !isAuthRoute && !isGoRoute && !isLayoutRoute) {
+    if (!isCounterRoute && !isAuthRoute && !isGoRoute && !isLayoutRoute && !isIconRoute) {
       return withApiSecurityHeaders(jsonResponse({ error: 'Not found' }, 404, origin, env));
     }
 
     // Handle CORS pre-flight for API routes.
-    if ((isCounterRoute || isAuthRoute || isGoRoute || isLayoutRoute) && request.method === 'OPTIONS') {
+    if ((isCounterRoute || isAuthRoute || isGoRoute || isLayoutRoute || isIconRoute) && request.method === 'OPTIONS') {
       return withApiSecurityHeaders(new Response(null, { status: 204, headers: corsHeaders(origin, env) }));
     }
 
@@ -1242,6 +1332,8 @@ export default {
           routeKey = 'go';
         } else if (isLayoutRoute) {
           routeKey = request.method === 'POST' ? 'layout_write' : 'layout_read';
+        } else if (isIconRoute) {
+          routeKey = 'icon';
         }
 
         if (routeKey) {
@@ -1300,6 +1392,11 @@ export default {
 
       if (request.method === 'POST' && isLayoutRoute) {
         return withApiSecurityHeaders(await handlePostLayout(request, env, origin));
+      }
+
+      // ── Icon generation route ───────────────────────────────────────────────
+      if (isIconRoute) {
+        return withApiSecurityHeaders(await handleIconGenerate(request, env, origin));
       }
 
       return withApiSecurityHeaders(jsonResponse({ error: 'Method not allowed' }, 405, origin, env));

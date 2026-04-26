@@ -30,10 +30,10 @@
       --rock-hotspot-top: 50%;
       --rock-hotspot-width: 18%;
       --rock-hotspot-height: 18%;
-      --colicofusion-hotspot-left: 52%;
-      --colicofusion-hotspot-top: 38%;
-      --colicofusion-hotspot-width: 16%;
-      --colicofusion-hotspot-height: 12%;
+      --colecofusion-hotspot-left: 52%;
+      --colecofusion-hotspot-top: 38%;
+      --colecofusion-hotspot-width: 16%;
+      --colecofusion-hotspot-height: 12%;
       --monitor-cursor-left: 39%;
       --monitor-cursor-top: 14%;
       --nav-fade-duration: 0.9s;
@@ -112,11 +112,11 @@
       z-index: 2;
     }
 
-    .colicofusion-btn {
-      left: var(--colicofusion-hotspot-left);
-      top: var(--colicofusion-hotspot-top);
-      width: var(--colicofusion-hotspot-width);
-      height: var(--colicofusion-hotspot-height);
+    .colecofusion-btn {
+      left: var(--colecofusion-hotspot-left);
+      top: var(--colecofusion-hotspot-top);
+      width: var(--colecofusion-hotspot-width);
+      height: var(--colecofusion-hotspot-height);
       z-index: 2;
     }
 
@@ -196,7 +196,7 @@
     }
 
     /* ── Colicofusion zoom overlay ───────────────────────────────────────────── */
-    .colicofusion-zoom-overlay {
+    .colecofusion-zoom-overlay {
       position: fixed;
       inset: 0;
       background: #000;
@@ -209,18 +209,18 @@
       justify-content: center;
     }
 
-    .colicofusion-zoom-overlay.active {
+    .colecofusion-zoom-overlay.active {
       opacity: 1;
       pointer-events: auto;
     }
 
-    .colicofusion-zoom-frame {
+    .colecofusion-zoom-frame {
       position: relative;
       line-height: 0;
       flex-shrink: 1;
     }
 
-    .colicofusion-zoom-img {
+    .colecofusion-zoom-img {
       display: block;
       max-width: 820px;
       max-height: 100vh;
@@ -231,7 +231,7 @@
       -webkit-user-drag: none;
     }
 
-    .colicofusion-zoom-cursor {
+    .colecofusion-zoom-cursor {
       position: absolute;
       left: var(--cf-zoom-cursor-left);
       top: var(--cf-zoom-cursor-top);
@@ -265,7 +265,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .colicofusion-zoom-cursor {
+      .colecofusion-zoom-cursor {
         animation: none;
         color: #ff7800;
       }
@@ -517,10 +517,10 @@
 </head>
 <body>
   <div class="fade-overlay" id="fade-overlay"></div>
-  <div class="colicofusion-zoom-overlay" id="colicofusion-zoom-overlay" aria-hidden="true">
-    <div class="colicofusion-zoom-frame" id="colicofusion-zoom-frame">
-      <img src="assets/images/colicofusion.png" alt="" class="colicofusion-zoom-img" id="colicofusion-zoom-img" />
-      <span class="colicofusion-zoom-cursor" id="colicofusion-zoom-cursor" aria-hidden="true">_</span>
+  <div class="colecofusion-zoom-overlay" id="colecofusion-zoom-overlay" aria-hidden="true">
+    <div class="colecofusion-zoom-frame" id="colecofusion-zoom-frame">
+      <img src="assets/images/colecofusion.png" alt="" class="colecofusion-zoom-img" id="colecofusion-zoom-img" />
+      <span class="colecofusion-zoom-cursor" id="colecofusion-zoom-cursor" aria-hidden="true">_</span>
     </div>
   </div>
   <div class="bedroom-antechamber-outer" id="bedroom-antechamber-outer">
@@ -531,7 +531,7 @@
     <button class="antechamber-hotspot-btn bedroom-enter-btn" id="bedroom-enter-btn" aria-label="Enter the bedroom"></button>
     <button class="antechamber-hotspot-btn lower-level-btn" id="lower-level-btn" aria-label="Descend to the first level"></button>
     <button class="antechamber-hotspot-btn rock-btn" id="rock-btn" aria-label="Toggle layout tools"></button>
-    <button class="antechamber-hotspot-btn colicofusion-btn" id="colicofusion-btn" aria-label="Open Colicofusion"></button>
+    <button class="antechamber-hotspot-btn colecofusion-btn" id="colecofusion-btn" aria-label="Open ColecoFUSION"></button>
 
     <section class="hotspot-tool" id="hotspot-move-tool" aria-label="Move hotspot tool">
       <h2 class="hotspot-tool-title">Move Tool</h2>
@@ -541,7 +541,7 @@
         <option value="bedroom-enter-btn">bedroom door hotspot</option>
         <option value="lower-level-btn">lower level hotspot</option>
         <option value="rock-btn">rock hotspot</option>
-        <option value="colicofusion-btn">colicofusion hotspot</option>
+        <option value="colecofusion-btn">colecofusion hotspot</option>
         <option value="monitor-cursor">monitor cursor</option>
       </select>
       <div class="hotspot-tool-grid">
@@ -568,7 +568,7 @@
         <option value="bedroom-enter-btn">bedroom door hotspot</option>
         <option value="lower-level-btn">lower level hotspot</option>
         <option value="rock-btn">rock hotspot</option>
-        <option value="colicofusion-btn">colicofusion hotspot</option>
+        <option value="colecofusion-btn">colecofusion hotspot</option>
         <option value="monitor-cursor">monitor cursor</option>
       </select>
       <div class="hotspot-tool-grid">
@@ -616,7 +616,7 @@
     let isNavigatingBackUp = false;
     let isNavigatingToBedroom = false;
     let isNavigatingToFirstLevel = false;
-    let isNavigatingToColicofusion = false;
+    let isNavigatingToColecofusion = false;
     const fadeOverlay = document.getElementById('fade-overlay');
     const antechamberOuter = document.getElementById('bedroom-antechamber-outer');
 
@@ -671,7 +671,7 @@
     }
 
     function navigateBackUp() {
-      if (isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToFirstLevel || isNavigatingToColicofusion) {
+      if (isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToFirstLevel || isNavigatingToColecofusion) {
         return;
       }
       isNavigatingBackUp = true;
@@ -679,7 +679,7 @@
     }
 
     function navigateToBedroom() {
-      if (isNavigatingToBedroom || isNavigatingBackUp || isNavigatingToFirstLevel || isNavigatingToColicofusion) {
+      if (isNavigatingToBedroom || isNavigatingBackUp || isNavigatingToFirstLevel || isNavigatingToColecofusion) {
         return;
       }
       isNavigatingToBedroom = true;
@@ -687,38 +687,42 @@
     }
 
     function navigateToFirstLevel() {
-      if (isNavigatingToFirstLevel || isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToColicofusion) {
+      if (isNavigatingToFirstLevel || isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToColecofusion) {
         return;
       }
       isNavigatingToFirstLevel = true;
       window.location.assign('level_one.html');
     }
 
-    function navigateToColicofusion() {
-      if (isNavigatingToColicofusion || isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToFirstLevel) {
+    function navigateToColecofusion() {
+      if (isNavigatingToColecofusion || isNavigatingBackUp || isNavigatingToBedroom || isNavigatingToFirstLevel) {
         return;
       }
-      isNavigatingToColicofusion = true;
-      const overlay = document.getElementById('colicofusion-zoom-overlay');
+      isNavigatingToColecofusion = true;
+      const overlay = document.getElementById('colecofusion-zoom-overlay');
       if (!overlay) {
         return;
       }
       overlay.classList.add('active');
-      const cursor = document.getElementById('colicofusion-zoom-cursor');
-      function showCursor() {
+      const cursor = document.getElementById('colecofusion-zoom-cursor');
+      const CURSOR_PAUSE_MS = 800;
+      function showCursorThenNavigate() {
         if (cursor) { cursor.style.visibility = 'visible'; }
+        setTimeout(function () {
+          fadeOutAndNavigate('colecofusion.html');
+        }, CURSOR_PAUSE_MS);
       }
       function handleOverlayTransitionEnd(e) {
         if (e.target !== overlay || e.propertyName !== 'opacity') { return; }
         overlay.removeEventListener('transitionend', handleOverlayTransitionEnd);
         clearTimeout(fallbackTimer);
-        showCursor();
+        showCursorThenNavigate();
       }
       overlay.addEventListener('transitionend', handleOverlayTransitionEnd);
       const fadeDurationMs = parseCssDurationToMs(getComputedStyle(overlay).transitionDuration) || 900;
       const fallbackTimer = setTimeout(function () {
         overlay.removeEventListener('transitionend', handleOverlayTransitionEnd);
-        showCursor();
+        showCursorThenNavigate();
       }, fadeDurationMs + 100);
     }
 
@@ -808,7 +812,7 @@
     document.getElementById('trapdoor-up-btn').addEventListener('click', navigateBackUp);
     document.getElementById('bedroom-enter-btn').addEventListener('click', navigateToBedroom);
     document.getElementById('lower-level-btn').addEventListener('click', navigateToFirstLevel);
-    document.getElementById('colicofusion-btn').addEventListener('click', navigateToColicofusion);
+    document.getElementById('colecofusion-btn').addEventListener('click', navigateToColecofusion);
 
     // ── Hotspot admin tools ─────────────────────────────────────────────────────
     const HOTSPOT_LAYOUT_PAGE = 'bedroom_antechamber';
@@ -837,7 +841,7 @@
       'bedroom-enter-btn',
       'lower-level-btn',
       'rock-btn',
-      'colicofusion-btn',
+      'colecofusion-btn',
       'monitor-cursor',
     ];
 

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ColecoFUSION — Icon Builder</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background: #000;
+      color: #fff;
+    }
+
+    body {
+      opacity: 0;
+      transition: opacity 0.9s ease;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    body.loaded {
+      opacity: 1;
+    }
+
+    .colecofusion-outer {
+      position: relative;
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 32px 24px 48px;
+      gap: 24px;
+    }
+
+    .colecofusion-title {
+      font-size: clamp(22px, 5vw, 44px);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: center;
+      color: #ff3300;
+      text-shadow:
+        0 0 12px rgba(255, 80, 0, 0.8),
+        0 0 30px rgba(200, 20, 0, 0.5),
+        0 0 60px rgba(180, 0, 0, 0.25);
+      animation: colecofusion-title-pulse 2.4s infinite ease-in-out;
+    }
+
+    .colecofusion-subtitle {
+      font-size: clamp(9px, 1.8vw, 12px);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-align: center;
+      color: rgba(255, 100, 40, 0.6);
+      margin-top: -16px;
+    }
+
+    @keyframes colecofusion-title-pulse {
+      0%, 100% {
+        text-shadow:
+          0 0 12px rgba(255, 80, 0, 0.8),
+          0 0 30px rgba(200, 20, 0, 0.5),
+          0 0 60px rgba(180, 0, 0, 0.25);
+      }
+      50% {
+        text-shadow:
+          0 0 20px rgba(255, 120, 0, 1),
+          0 0 50px rgba(220, 40, 0, 0.7),
+          0 0 100px rgba(180, 0, 0, 0.4);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .colecofusion-title {
+        animation: none;
+        text-shadow: 0 0 12px rgba(255, 80, 0, 0.8);
+      }
+    }
+
+    /* ── Terminal panel ─────────────────────────────────────────────────────── */
+
+    .cf-panel {
+      width: 100%;
+      background: rgba(18, 0, 0, 0.9);
+      border: 1px solid rgba(255, 60, 0, 0.35);
+      padding: 20px 24px;
+    }
+
+    .cf-panel-label {
+      font-size: clamp(9px, 1.6vw, 11px);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255, 60, 0, 0.6);
+      margin-bottom: 10px;
+    }
+
+    .cf-prompt-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .cf-prompt-prefix {
+      color: rgba(255, 100, 0, 0.7);
+      font-size: clamp(12px, 2vw, 14px);
+      padding: 10px 10px 10px 0;
+      flex-shrink: 0;
+      line-height: 1.5;
+      user-select: none;
+    }
+
+    .cf-prompt-input,
+    .cf-word-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255, 60, 0, 0.4);
+      color: rgba(255, 200, 80, 0.95);
+      font-family: inherit;
+      font-size: clamp(12px, 2vw, 14px);
+      padding: 10px 4px;
+      outline: none;
+      caret-color: #ff5500;
+      letter-spacing: 0.04em;
+    }
+
+    .cf-prompt-input::placeholder,
+    .cf-word-input::placeholder {
+      color: rgba(255, 80, 0, 0.3);
+    }
+
+    .cf-prompt-input:focus,
+    .cf-word-input:focus {
+      border-bottom-color: rgba(255, 120, 0, 0.8);
+    }
+
+    /* ── Word tags grid ─────────────────────────────────────────────────────── */
+
+    .cf-words-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .cf-word-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cf-word-field-label {
+      font-size: clamp(8px, 1.4vw, 10px);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 60, 0, 0.5);
+    }
+
+    /* ── Options row ────────────────────────────────────────────────────────── */
+
+    .cf-options-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .cf-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: clamp(11px, 1.8vw, 13px);
+      color: rgba(255, 140, 60, 0.85);
+      letter-spacing: 0.06em;
+      user-select: none;
+    }
+
+    .cf-checkbox {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 1px solid rgba(255, 60, 0, 0.6);
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .cf-checkbox:checked {
+      background: rgba(255, 40, 0, 0.25);
+      border-color: rgba(255, 120, 0, 0.9);
+    }
+
+    .cf-checkbox:checked::after {
+      content: '×';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: rgba(255, 180, 60, 0.95);
+      line-height: 1;
+      top: -1px;
+    }
+
+    .cf-checkbox:focus-visible {
+      outline: 1px solid rgba(255, 120, 0, 0.8);
+      outline-offset: 2px;
+    }
+
+    /* ── Generate button ────────────────────────────────────────────────────── */
+
+    .cf-generate-btn {
+      align-self: flex-start;
+      padding: 12px 32px;
+      background: transparent;
+      border: 1px solid rgba(255, 60, 0, 0.6);
+      color: rgba(255, 140, 60, 0.9);
+      font-family: inherit;
+      font-size: clamp(11px, 2vw, 14px);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cf-generate-btn:hover:not(:disabled),
+    .cf-generate-btn:focus-visible:not(:disabled) {
+      background: rgba(255, 40, 0, 0.18);
+      border-color: rgba(255, 120, 0, 0.9);
+      color: #fff;
+      outline: none;
+    }
+
+    .cf-generate-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* ── Status / log line ──────────────────────────────────────────────────── */
+
+    .cf-status {
+      font-size: clamp(10px, 1.8vw, 12px);
+      color: rgba(255, 100, 40, 0.7);
+      letter-spacing: 0.1em;
+      min-height: 1.5em;
+      padding-left: 2px;
+    }
+
+    .cf-status.cf-status--error {
+      color: rgba(255, 60, 60, 0.85);
+    }
+
+    .cf-status.cf-status--ok {
+      color: rgba(100, 220, 100, 0.8);
+    }
+
+    /* ── Results grid ───────────────────────────────────────────────────────── */
+
+    .cf-results {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cf-results.visible {
+      display: flex;
+    }
+
+    .cf-results-label {
+      font-size: clamp(9px, 1.6vw, 11px);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255, 60, 0, 0.6);
+    }
+
+    .cf-icons-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .cf-icon-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cf-icon-canvas-wrap {
+      width: 96px;
+      height: 96px;
+      border: 1px solid rgba(255, 60, 0, 0.35);
+      background:
+        repeating-conic-gradient(rgba(255,255,255,0.04) 0% 25%, transparent 0% 50%) 0 0 / 12px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .cf-icon-canvas-wrap canvas {
+      width: 96px;
+      height: 96px;
+      image-rendering: pixelated;
+    }
+
+    .cf-icon-dl-btn {
+      padding: 5px 14px;
+      background: transparent;
+      border: 1px solid rgba(255, 60, 0, 0.45);
+      color: rgba(255, 140, 60, 0.8);
+      font-family: inherit;
+      font-size: clamp(9px, 1.6vw, 11px);
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cf-icon-dl-btn:hover,
+    .cf-icon-dl-btn:focus-visible {
+      background: rgba(255, 40, 0, 0.12);
+      border-color: rgba(255, 120, 0, 0.8);
+      color: #fff;
+      outline: none;
+    }
+
+    /* ── Back button ────────────────────────────────────────────────────────── */
+
+    .colecofusion-back-btn {
+      margin-top: auto;
+      align-self: flex-start;
+      padding: 10px 24px;
+      background: transparent;
+      border: 1px solid rgba(255, 60, 0, 0.4);
+      color: rgba(255, 120, 60, 0.7);
+      font-family: inherit;
+      font-size: clamp(10px, 1.8vw, 12px);
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .colecofusion-back-btn:hover,
+    .colecofusion-back-btn:focus-visible {
+      background: rgba(255, 40, 0, 0.12);
+      border-color: rgba(255, 100, 0, 0.7);
+      color: #fff;
+      outline: none;
+    }
+
+    /* ── Fade overlay ───────────────────────────────────────────────────────── */
+
+    .fade-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.9s ease;
+      z-index: 100;
+    }
+
+    .fade-overlay.fading {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="fade-overlay" id="fade-overlay"></div>
+  <div class="colecofusion-outer">
+    <h1 class="colecofusion-title">ColecoFUSION</h1>
+    <p class="colecofusion-subtitle">Icon Builder Terminal</p>
+
+    <!-- Main prompt -->
+    <div class="cf-panel">
+      <p class="cf-panel-label">Subject / Concept</p>
+      <div class="cf-prompt-row">
+        <span class="cf-prompt-prefix" aria-hidden="true">&gt;_</span>
+        <input
+          class="cf-prompt-input"
+          id="cf-prompt"
+          type="text"
+          maxlength="200"
+          placeholder="describe the icon subject…"
+          aria-label="Icon subject or concept"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+    </div>
+
+    <!-- Descriptor words -->
+    <div class="cf-panel">
+      <p class="cf-panel-label">Imagery · Tone · Direction</p>
+      <div class="cf-words-grid">
+        <div class="cf-word-field">
+          <span class="cf-word-field-label">Imagery</span>
+          <input
+            class="cf-word-input"
+            id="cf-word-imagery"
+            type="text"
+            maxlength="60"
+            placeholder="e.g. neon, pixel art…"
+            aria-label="Imagery style word"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <div class="cf-word-field">
+          <span class="cf-word-field-label">Tone</span>
+          <input
+            class="cf-word-input"
+            id="cf-word-tone"
+            type="text"
+            maxlength="60"
+            placeholder="e.g. dark, playful…"
+            aria-label="Tone word"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <div class="cf-word-field">
+          <span class="cf-word-field-label">Direction</span>
+          <input
+            class="cf-word-input"
+            id="cf-word-direction"
+            type="text"
+            maxlength="60"
+            placeholder="e.g. flat, isometric…"
+            aria-label="Artistic direction word"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <div class="cf-word-field">
+          <span class="cf-word-field-label">Extra</span>
+          <input
+            class="cf-word-input"
+            id="cf-word-extra"
+            type="text"
+            maxlength="60"
+            placeholder="optional…"
+            aria-label="Optional extra word"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Options -->
+    <div class="cf-options-row">
+      <label class="cf-checkbox-label">
+        <input class="cf-checkbox" id="cf-transparent" type="checkbox" />
+        Transparent background
+      </label>
+    </div>
+
+    <!-- Generate -->
+    <button class="cf-generate-btn" id="cf-generate-btn" type="button">
+      Generate 3× Icons
+    </button>
+
+    <!-- Status line -->
+    <p class="cf-status" id="cf-status" aria-live="polite"></p>
+
+    <!-- Results -->
+    <div class="cf-results" id="cf-results" aria-label="Generated icons">
+      <p class="cf-results-label">Generated Icons</p>
+      <div class="cf-icons-row" id="cf-icons-row"></div>
+    </div>
+
+    <a class="colecofusion-back-btn" id="back-btn" href="bedroom_antechamber.html">← Back</a>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    const LOAD_REVEAL_FALLBACK_MS = 1200;
+    const ICO_SIZE = 32;
+    const fadeOverlay = document.getElementById('fade-overlay');
+    const generateBtn = document.getElementById('cf-generate-btn');
+    const statusEl = document.getElementById('cf-status');
+    const resultsEl = document.getElementById('cf-results');
+    const iconsRowEl = document.getElementById('cf-icons-row');
+
+    // ── Page reveal ──────────────────────────────────────────────────────────
+
+    function revealPage() {
+      if (document.body.classList.contains('loaded')) {
+        return;
+      }
+      requestAnimationFrame(function () {
+        document.body.classList.add('loaded');
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+      }, { once: true });
+    } else {
+      window.setTimeout(revealPage, LOAD_REVEAL_FALLBACK_MS);
+    }
+
+    window.addEventListener('load', revealPage);
+
+    // ── Back navigation with fade ────────────────────────────────────────────
+
+    let isNavigating = false;
+    function navigateBack(event) {
+      if (event) {
+        event.preventDefault();
+      }
+      if (isNavigating) {
+        return;
+      }
+      isNavigating = true;
+      if (fadeOverlay) {
+        fadeOverlay.classList.add('fading');
+      }
+      const transitionDuration = fadeOverlay
+        ? parseFloat(getComputedStyle(fadeOverlay).transitionDuration) * 1000
+        : 0;
+      window.setTimeout(function () {
+        window.location.assign('bedroom_antechamber.html');
+      }, transitionDuration || 900);
+    }
+
+    document.getElementById('back-btn').addEventListener('click', navigateBack);
+
+    // ── ICO file builder ─────────────────────────────────────────────────────
+    // Creates a single-image ICO file from a canvas (PNG-in-ICO, Vista+ format).
+
+    function canvasToIcoBlob(canvas) {
+      return new Promise(function (resolve, reject) {
+        canvas.toBlob(function (pngBlob) {
+          if (!pngBlob) {
+            reject(new Error('Canvas toBlob failed'));
+            return;
+          }
+          pngBlob.arrayBuffer().then(function (pngBuffer) {
+            const pngBytes = new Uint8Array(pngBuffer);
+            const pngSize = pngBytes.length;
+
+            // ICO header: 6 bytes
+            // ICONDIRENTRY: 16 bytes
+            // PNG data follows at offset 22
+            const icoBuffer = new ArrayBuffer(6 + 16 + pngSize);
+            const view = new DataView(icoBuffer);
+            const bytes = new Uint8Array(icoBuffer);
+
+            // ICONDIR header
+            view.setUint16(0, 0, true);        // reserved
+            view.setUint16(2, 1, true);        // type: 1 = ICO
+            view.setUint16(4, 1, true);        // image count: 1
+
+            // ICONDIRENTRY
+            view.setUint8(6, ICO_SIZE);        // width  (0 = 256)
+            view.setUint8(7, ICO_SIZE);        // height (0 = 256)
+            view.setUint8(8, 0);               // color count (0 = 256+)
+            view.setUint8(9, 0);               // reserved
+            view.setUint16(10, 1, true);       // color planes
+            view.setUint16(12, 32, true);      // bits per pixel
+            view.setUint32(14, pngSize, true); // size of image data
+            view.setUint32(18, 22, true);      // offset to image data (6 + 16)
+
+            // Copy PNG bytes
+            bytes.set(pngBytes, 22);
+
+            resolve(new Blob([icoBuffer], { type: 'image/x-icon' }));
+          }).catch(reject);
+        }, 'image/png');
+      });
+    }
+
+    // Draw a PNG image (from a base64 data URL) onto a 32×32 canvas.
+    function drawPngToCanvas(dataUrl) {
+      return new Promise(function (resolve, reject) {
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement('canvas');
+          canvas.width = ICO_SIZE;
+          canvas.height = ICO_SIZE;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, ICO_SIZE, ICO_SIZE);
+          ctx.drawImage(img, 0, 0, ICO_SIZE, ICO_SIZE);
+          resolve(canvas);
+        };
+        img.onerror = function () {
+          reject(new Error('Image load failed'));
+        };
+        img.src = dataUrl;
+      });
+    }
+
+    // ── Icon card builder ────────────────────────────────────────────────────
+
+    function buildIconCard(canvas, index) {
+      const card = document.createElement('div');
+      card.className = 'cf-icon-card';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'cf-icon-canvas-wrap';
+
+      const display = document.createElement('canvas');
+      display.width = ICO_SIZE;
+      display.height = ICO_SIZE;
+      display.setAttribute('aria-label', 'Generated icon ' + (index + 1));
+      const displayCtx = display.getContext('2d');
+      displayCtx.drawImage(canvas, 0, 0);
+      wrap.appendChild(display);
+      card.appendChild(wrap);
+
+      const dlBtn = document.createElement('button');
+      dlBtn.className = 'cf-icon-dl-btn';
+      dlBtn.type = 'button';
+      dlBtn.textContent = '↓ icon-' + (index + 1) + '.ico';
+      dlBtn.setAttribute('aria-label', 'Download icon ' + (index + 1) + ' as ICO');
+
+      dlBtn.addEventListener('click', function () {
+        canvasToIcoBlob(canvas).then(function (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'icon-' + (index + 1) + '.ico';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 5000);
+        }).catch(function () {
+          setStatus('Download failed.', 'error');
+        });
+      });
+
+      card.appendChild(dlBtn);
+      return card;
+    }
+
+    // ── Status helper ────────────────────────────────────────────────────────
+
+    function setStatus(text, kind) {
+      statusEl.textContent = text;
+      statusEl.className = 'cf-status' +
+        (kind === 'error' ? ' cf-status--error' : kind === 'ok' ? ' cf-status--ok' : '');
+    }
+
+    // ── Generate handler ─────────────────────────────────────────────────────
+
+    generateBtn.addEventListener('click', function () {
+      const prompt = (document.getElementById('cf-prompt').value || '').trim();
+      if (!prompt) {
+        setStatus('Enter a subject or concept first.', 'error');
+        document.getElementById('cf-prompt').focus();
+        return;
+      }
+
+      const words = [
+        (document.getElementById('cf-word-imagery').value || '').trim(),
+        (document.getElementById('cf-word-tone').value || '').trim(),
+        (document.getElementById('cf-word-direction').value || '').trim(),
+        (document.getElementById('cf-word-extra').value || '').trim(),
+      ].filter(Boolean);
+
+      const transparent = document.getElementById('cf-transparent').checked;
+
+      generateBtn.disabled = true;
+      resultsEl.classList.remove('visible');
+      iconsRowEl.innerHTML = '';
+      setStatus('Generating…');
+
+      fetch('/icon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt, words: words, transparent: transparent }),
+      })
+        .then(function (res) {
+          if (!res.ok) {
+            return res.json().then(function (err) {
+              throw new Error((err && err.error) || ('HTTP ' + res.status));
+            }).catch(function (e) {
+              if (e instanceof SyntaxError) {
+                throw new Error('HTTP ' + res.status);
+              }
+              throw e;
+            });
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          if (!data || !Array.isArray(data.images) || data.images.length === 0) {
+            throw new Error('No images returned.');
+          }
+          return Promise.all(
+            data.images.map(function (dataUrl) {
+              return drawPngToCanvas(dataUrl);
+            })
+          );
+        })
+        .then(function (canvases) {
+          canvases.forEach(function (canvas, i) {
+            iconsRowEl.appendChild(buildIconCard(canvas, i));
+          });
+          resultsEl.classList.add('visible');
+          setStatus('Done — 3 icons generated.', 'ok');
+        })
+        .catch(function (err) {
+          setStatus('Error: ' + err.message, 'error');
+        })
+        .finally(function () {
+          generateBtn.disabled = false;
+        });
+    });
+
+    // Allow Enter in prompt field to trigger generate.
+    document.getElementById('cf-prompt').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !generateBtn.disabled) {
+        generateBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
