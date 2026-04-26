@@ -8,13 +8,12 @@
   // ── Constants ──────────────────────────────────────────────────────────────
 
   var EJS_PATH        = '/assets/retroarch/';
-  // Core .data files are served from the EmulatorJS CDN. The self-hosted path
-  // (/assets/retroarch/) is used only for loader.js, emulator.min.js, and
-  // emulator.min.css which are committed to git. Using the CDN for cores means
-  // the emulator works without an R2 bucket or CI secrets. If R2 is later
-  // populated, change this back to EJS_PATH (or '/assets/retroarch/') to serve
-  // cores locally.
-  var EJS_CORES_PATH  = 'https://cdn.emulatorjs.org/stable/data/';
+  // Core .data files and all EmulatorJS assets are served from the self-hosted
+  // R2 bucket via /assets/retroarch/. Using the same-origin path avoids
+  // cross-origin fetch() restrictions (iOS Safari blocks CDN fetches without
+  // CORS headers, showing "Load failed"). EmulatorJS has a built-in CDN
+  // fallback (cdn.emulatorjs.org/4.2.3/data/cores/…) if R2 returns 404.
+  var EJS_CORES_PATH  = '/assets/retroarch/';
   var SYSTEMS_URL     = '/assets/arcade/systems.json';
   var MANIFEST_URL    = '/assets/roms/manifest.json';
   var CORES_BASE      = EJS_CORES_PATH + 'cores/';
