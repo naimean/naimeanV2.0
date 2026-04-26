@@ -81,9 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const arcadePlayer = document.getElementById('arcade-player');
   const arcadeGameWrap = document.querySelector('.arcade-game-wrap');
   const arcadeGameContainer = document.getElementById('game');
-  const arcadeSystemSelect = document.getElementById('arcade-system');
   const arcadeGameList = document.getElementById('arcade-game-list');
-  const arcadeLaunchBtn = document.getElementById('arcade-launch-btn');
   const arcadeFsLaunchBtn = document.getElementById('arcade-fs-launch-btn');
   const arcadeCloseBtn = document.getElementById('arcade-close-btn');
   const arcadePickerFsBtn = document.getElementById('arcade-picker-fs-btn');
@@ -2001,10 +1999,6 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         if (screenOn && !puzzleSolved) {
-          if (ARCADE_COMMANDS.has(getBootInputSuffix())) {
-            openArcade();
-            return;
-          }
           beginJoinDiscordWorkflow();
         }
       });
@@ -2510,25 +2504,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (arcadeCloseBtn) {
       arcadeCloseBtn.addEventListener('click', function() {
         closeArcade();
-      });
-    }
-
-    if (arcadeSystemSelect) {
-      arcadeSystemSelect.addEventListener('change', function() {
-        arcadeSelectedGame = null;
-        if (arcadeLaunchBtn) {
-          arcadeLaunchBtn.disabled = true;
-        }
-        populateArcadeGameList();
-      });
-    }
-
-    if (arcadeLaunchBtn) {
-      arcadeLaunchBtn.addEventListener('click', function() {
-        if (!arcadeSelectedGame || !arcadeSystemSelect) {
-          return;
-        }
-        launchGame(arcadeSystemSelect.value, arcadeSelectedGame.file, arcadeSelectedGame.name);
       });
     }
 
