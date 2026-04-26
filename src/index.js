@@ -15,7 +15,7 @@ const DOCUMENT_CSP = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.emulatorjs.org https://cdn.jsdelivr.net https://js-cdn.music.apple.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.emulatorjs.org https://cdn.jsdelivr.net https://js-cdn.music.apple.com https://static.cloudflareinsights.com",
   // 'wasm-unsafe-eval' allows WebAssembly compilation at runtime (required by EmulatorJS cores).
   // 'unsafe-eval' is required because the EmulatorJS 7-Zip decompression worker (extract7z.js)
   // is Emscripten-generated and calls eval() internally to decompress .wasm.data core archives.
@@ -28,7 +28,7 @@ const DOCUMENT_CSP = [
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net https://cdn.emulatorjs.org https://cdn.jsdelivr.net https://*.mzstatic.com",
   "media-src 'self' data: blob:",
-  "connect-src 'self' https://discord.com https://*.discord.com https://*.workers.dev https://cdn.emulatorjs.org https://cdn.jsdelivr.net https://api.music.apple.com https://amp-api.music.apple.com https://amp-api-edge.music.apple.com",
+  "connect-src 'self' https://www.naimean.com https://discord.com https://*.discord.com https://*.workers.dev https://*.naimean.workers.dev https://cdn.emulatorjs.org https://cdn.jsdelivr.net https://api.music.apple.com https://amp-api.music.apple.com https://amp-api-edge.music.apple.com https://static.cloudflareinsights.com",
   "worker-src 'self' blob:",
   "frame-src 'self' https://discord.com https://*.discord.com https://archive.org",
   "form-action 'self'",
