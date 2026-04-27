@@ -1405,19 +1405,23 @@ document.addEventListener('DOMContentLoaded', function() {
       bootVideo.style.display = 'block';
       try {
         bootVideo.currentTime = 0;
-        // Fire-and-forget (same pattern as prankVideo.play() in runPleaseSequence):
-        // after the async OAuth popup flow the user-gesture activation has expired,
-        // so awaiting play() directly can cause the promise to hang indefinitely
-        // instead of rejecting on some browsers, blocking the shoutbox from ever
-        // appearing. Playback failures are intentionally ignored here — if autoplay
-        // is blocked the video is silently skipped and waitForVideoToEnd times out.
-        bootVideo.play().catch(() => {});
+        // Start playback muted so the browser's autoplay policy does not block
+        // it when there is no active user gesture (e.g. after returning from an
+        // OAuth redirect or after the popup auth flow has expired the gesture).
+        // The .then() callback unmutes immediately once playback has started so
+        // audio plays from the beginning. The finally block below also resets
+        // muted in case play() never started (e.g. video src error).
+        bootVideo.muted = true;
+        bootVideo.play().then(() => {
+          bootVideo.muted = false;
+        }).catch(() => {});
         const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
           ? Math.ceil(bootVideo.duration * 1000) + 2000
           : 12000;
         await waitForVideoToEnd(bootVideo, waitMs);
       } finally {
         bootVideo.pause();
+        bootVideo.muted = false;
         bootVideo.style.display = 'none';
         setDiscordRickrollCounterVisible(true);
       }
