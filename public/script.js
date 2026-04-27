@@ -1426,18 +1426,25 @@ document.addEventListener('DOMContentLoaded', function() {
           bootVideo.addEventListener('seeked', seekResolve, { once: true });
           setTimeout(seekResolve, 400);
         });
-        // Start playback muted so autoplay policy does not block it when there
-        // is no active user gesture.  Awaiting play() lets us detect failure
-        // immediately: if the browser rejects playback we skip the wait rather
-        // than showing a frozen first frame for up to 12 seconds.
-        bootVideo.muted = true;
+        // Try playing unmuted first so the opening audio is never cut off when
+        // this runs in the context of a direct user gesture (e.g. button click).
+        // If the browser rejects unmuted autoplay (no active gesture — e.g. a
+        // post-OAuth redirect resume), fall back to the muted→unmute trick so
+        // the video still plays rather than silently failing.
         let videoStarted = false;
         try {
           await bootVideo.play();
-          bootVideo.muted = false;
           videoStarted = true;
         } catch (_) {
-          bootVideo.muted = false;
+          // No active user gesture: retry muted so autoplay policy allows it.
+          bootVideo.muted = true;
+          try {
+            await bootVideo.play();
+            bootVideo.muted = false;
+            videoStarted = true;
+          } catch (_2) {
+            bootVideo.muted = false;
+          }
         }
         if (videoStarted) {
           const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
