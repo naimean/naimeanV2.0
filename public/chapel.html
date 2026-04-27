@@ -1063,6 +1063,9 @@
     const wrongAudio = new Audio('assets/audio/wrong.v20260424.mp3');
     wrongAudio.preload = 'auto';
     wrongAudio.load();
+    const rickDeathAudio = new Audio('assets/audio/rick_death.mp3');
+    rickDeathAudio.preload = 'auto';
+    rickDeathAudio.load();
     if (chapelWrapper) {
       chapelWrapper.style.setProperty('--rock-roll-trans-rick-exit-duration', `${ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS}ms`);
     }
@@ -2806,6 +2809,8 @@
         if (!rockRollTransRickExitActive) {
           return;
         }
+        rickDeathAudio.currentTime = 0;
+        rickDeathAudio.play().catch(function () {});
         finishRockRollContinuation();
       };
 
