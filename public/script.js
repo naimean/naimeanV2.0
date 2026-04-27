@@ -377,6 +377,12 @@ document.addEventListener('DOMContentLoaded', function() {
     requestAnimationFrame(function() {
       overlay.classList.remove('visible');
     });
+
+    // When returning from chapel, restore the screen to its powered-on state
+    // and show the boot screen (Discord button, counter, input/submit) so the
+    // user lands directly on the blue gate screen instead of a dark C64 image.
+    powerOnScreen();
+    showBlueNedryGateScreen();
   }
 
   function normalizeRickrollCount(value) {
