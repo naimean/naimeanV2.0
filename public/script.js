@@ -1405,13 +1405,17 @@ document.addEventListener('DOMContentLoaded', function() {
       bootVideo.style.display = 'block';
       try {
         bootVideo.currentTime = 0;
-        await bootVideo.play();
+        // Fire-and-forget (same pattern as prankVideo.play() in runPleaseSequence):
+        // after the async OAuth popup flow the user-gesture activation has expired,
+        // so awaiting play() directly can cause the promise to hang indefinitely
+        // instead of rejecting on some browsers, blocking the shoutbox from ever
+        // appearing. Playback failures are intentionally ignored here — if autoplay
+        // is blocked the video is silently skipped and waitForVideoToEnd times out.
+        bootVideo.play().catch(() => {});
         const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
           ? Math.ceil(bootVideo.duration * 1000) + 2000
           : 12000;
         await waitForVideoToEnd(bootVideo, waitMs);
-      } catch (_) {
-        // If autoplay/playback fails, continue to the prompt instead of hanging.
       } finally {
         bootVideo.pause();
         bootVideo.style.display = 'none';
