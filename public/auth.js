@@ -519,11 +519,17 @@
     const status = data.status || WRONG_ORIGIN;
     const nextPath = sanitizeReturnPath(data.nextPath || getCurrentPath());
     const fromPath = sanitizeReturnPath(data.fromPath || getCurrentPath());
+    // Stop the popup watcher immediately so it cannot race with this handler.
+    // Previously clearPopupWatcher() was called inside the refreshAuthSession
+    // .then() callback; the watcher could fire in that window (popup self-closes
+    // after ~350 ms, watcher interval is 800 ms), call refreshAuthSession itself,
+    // get a not-yet-committed session, and steal resolvePendingLogin('closed').
+    clearPopupWatcher();
+    if (popupWindow && !popupWindow.closed) {
+      try { popupWindow.close(); } catch (_) {}
+    }
+    popupWindow = null;
     refreshAuthSession().then(() => {
-      if (popupWindow && !popupWindow.closed) {
-        try { popupWindow.close(); } catch (_) {}
-      }
-      clearPopupWatcher();
       resolvePendingLogin(status, nextPath, fromPath);
     });
   }
