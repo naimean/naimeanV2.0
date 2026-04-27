@@ -105,7 +105,6 @@
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
-      opacity: 1;
     }
 
     .chapel-trans-rick.is-visible {
@@ -2780,13 +2779,15 @@
       }
 
       startCongregationAudio();
-      launchDiscordInviteFromRedirectIfNeeded();
     }
 
     function runTransRickExitAnimation() {
       if (rockRollTransRickExitActive) {
         return;
       }
+
+      // Launch the Discord invite as soon as piece 2 ends, before the exit animation.
+      launchDiscordInviteFromRedirectIfNeeded();
 
       rockRollContinuationActive = false;
       rockRollTransRickExitActive = true;
@@ -2894,14 +2895,6 @@
         rockRollContinuationMedia.defaultMuted = false;
         rockRollContinuationMedia.muted = false;
         rockRollContinuationMedia.volume = startVolume;
-
-        // Trigger the trans_rick exit animation when the media finishes playing.
-        rockRollContinuationMedia.addEventListener('ended', function () {
-          if (!isCurrentContinuationAttempt() || !rockRollContinuationActive) {
-            return;
-          }
-          runTransRickExitAnimation();
-        }, { once: true });
       };
 
       if (rockRollContinuationMedia.readyState > 0) {
@@ -2919,6 +2912,15 @@
       }, ROCK_ROLL_AUTOPLAY_RETRY_BIND_TIMEOUT_MS);
 
       const playPromise = rockRollContinuationMedia.play();
+      // Trigger the trans_rick exit animation when the media finishes playing.
+      // Registered immediately after play() so it fires even if beginAudiblePlayback
+      // is skipped (e.g. when the play() promise settles after a retry cycle).
+      rockRollContinuationMedia.addEventListener('ended', function () {
+        if (!isCurrentContinuationAttempt() || !rockRollContinuationActive) {
+          return;
+        }
+        runTransRickExitAnimation();
+      }, { once: true });
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(function () {
           if (!isCurrentContinuationAttempt()) {
