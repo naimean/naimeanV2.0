@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARCADE — Naimean</title>
+  <link rel="icon" type="image/jpeg" href="/assets/images/commodore64.v20260424.jpg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      height: 100%;
+      height: 100svh;
+    }
+
+    body {
+      height: 100%;
+      height: 100svh;
+      overflow: hidden;
+      background: #07070f;
+      font-family: monospace;
+      color: #8ef0b2;
+      display: flex;
+      flex-direction: column;
+      /* prevent pull-to-refresh fighting with the horizontal scroll */
+      overscroll-behavior: none;
+    }
+
+    /* ── Top bar ─────────────────────────────────────────── */
+    .bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      height: 38px;
+      flex-shrink: 0;
+      border-bottom: 1px solid #1a1a2e;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    .bar-title { flex: 1; }
+
+    .bar a {
+      background: transparent;
+      border: 1px solid #333;
+      color: #8ef0b2;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .bar a:hover { background: rgba(142,240,178,0.1); }
+
+    /* ── Arcade room ─────────────────────────────────────── */
+    .arcade-room {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* radial floor glow */
+    .floor-glow {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 40%;
+      background: radial-gradient(ellipse 100% 60% at 50% 100%, rgba(74,222,128,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ceiling strip */
+    .ceiling {
+      height: 3px;
+      flex-shrink: 0;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(74,222,128,0.15) 20%,
+        rgba(74,222,128,0.25) 50%,
+        rgba(74,222,128,0.15) 80%,
+        transparent 100%);
+    }
+
+    /* ── Scroll track ────────────────────────────────────── */
+    .scroll-track {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      /* gap between cabinets */
+      gap: 8px;
+      /* side padding so edge cabinets are centerable */
+      padding: 16px 10vw 32px;
+      /* hide scrollbar */
+      scrollbar-width: none;
+    }
+    .scroll-track::-webkit-scrollbar { display: none; }
+
+    /* ── Cabinet slot (the whole thing is the hotspot link) ─ */
+    .cab-slot {
+      scroll-snap-align: center;
+      flex-shrink: 0;
+      /* phone: ~85vw each so adjacent cabinet peeks in */
+      /* desktop: fixed width, multiple visible */
+      width: clamp(200px, 82vw, 340px);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      position: relative;
+    }
+
+    /* ── Cabinet image ───────────────────────────────────── */
+    .cab-img-wrap {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      position: relative;
+    }
+
+    .cab-img-wrap img {
+      max-height: 100%;
+      max-width: 90%;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 0 16px rgba(74,222,128,0.20));
+      transition: filter 0.25s, transform 0.25s;
+      /* prevent drag on mobile causing navigation */
+      -webkit-user-drag: none;
+      user-select: none;
+    }
+
+    .cab-slot:hover .cab-img-wrap img,
+    .cab-slot:focus-visible .cab-img-wrap img {
+      filter: drop-shadow(0 0 32px rgba(74,222,128,0.55));
+      transform: translateY(-6px) scale(1.03);
+    }
+
+    .cab-slot:active .cab-img-wrap img {
+      transform: translateY(-2px) scale(0.98);
+      filter: drop-shadow(0 0 20px rgba(74,222,128,0.7));
+    }
+
+    /* ── CSS fallback cabinet ────────────────────────────── */
+    .cab-fallback {
+      width: 78%;
+      max-width: 210px;
+      aspect-ratio: 3 / 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      filter: drop-shadow(0 0 16px rgba(74,222,128,0.20));
+      transition: filter 0.25s, transform 0.25s;
+    }
+
+    .cab-slot:hover .cab-fallback,
+    .cab-slot:focus-visible .cab-fallback {
+      filter: drop-shadow(0 0 32px rgba(74,222,128,0.55));
+      transform: translateY(-6px) scale(1.03);
+    }
+
+    .cab-slot:active .cab-fallback {
+      transform: translateY(-2px) scale(0.98);
+    }
+
+    .cab-f-marquee {
+      width: 80%;
+      background: linear-gradient(160deg, #1a1a2e 0%, #0f3460 60%, #1a1a2e 100%);
+      border-radius: 6px 6px 0 0;
+      padding: 6px 4px 5px;
+      text-align: center;
+      letter-spacing: 2px;
+      font-size: 9px;
+      font-weight: bold;
+      flex-shrink: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cab-f-bezel {
+      width: 88%;
+      background: #1c1c28;
+      border: 2px solid #3a3a50;
+      border-top: none;
+      clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+      padding: 10px 8% 10px;
+      flex-shrink: 0;
+    }
+
+    .cab-f-screen {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #000;
+      border: 2px solid #1a1a1a;
+      border-radius: 4px;
+      box-shadow: inset 0 0 16px rgba(0,0,0,0.9);
+    }
+
+    .cab-f-control {
+      width: 96%;
+      background: linear-gradient(180deg, #252535 0%, #1a1a28 100%);
+      border: 2px solid #3a3a50;
+      clip-path: polygon(0% 0%, 100% 0%, 96% 100%, 4% 100%);
+      padding: 8px 10% 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .cab-f-stick {
+      width: 24px; height: 24px;
+      background: radial-gradient(circle at 38% 32%, #555, #1e1e1e);
+      border-radius: 50%;
+      border: 2px solid #444;
+    }
+
+    .cab-f-btns {
+      display: flex; flex-wrap: wrap; gap: 4px; width: 48px;
+    }
+
+    .cab-f-btn {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+    }
+
+    .cab-f-body {
+      width: 84%; height: 7%;
+      background: linear-gradient(180deg, #18182a 0%, #111120 100%);
+      border: 2px solid #2a2a3a; border-top: none;
+      flex-shrink: 0;
+    }
+
+    .cab-f-legs {
+      width: 70%; display: flex; justify-content: space-between; padding: 0 5%;
+    }
+
+    .cab-f-leg {
+      width: 10px; height: 14px;
+      background: #181828;
+      border: 1px solid #2a2a3a; border-top: none;
+      border-radius: 0 0 3px 3px;
+    }
+
+    /* ── Nameplate ───────────────────────────────────────── */
+    .cab-nameplate {
+      width: 100%;
+      text-align: center;
+      padding: 8px 8px 3px;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(142,240,178,0.65);
+      text-shadow: 0 0 8px rgba(74,222,128,0.3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+
+    .cab-tap-label {
+      font-size: 8px;
+      letter-spacing: 1.5px;
+      color: rgba(142,240,178,0.28);
+      padding-bottom: 4px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+
+    /* ── Dot nav ─────────────────────────────────────────── */
+    .dot-nav {
+      position: absolute;
+      bottom: 10px;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(142,240,178,0.18);
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .dot.active {
+      background: rgba(142,240,178,0.75);
+      transform: scale(1.3);
+    }
+
+    /* ── Scroll arrows (desktop hint) ────────────────────── */
+    .scroll-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 3;
+      background: rgba(7,7,15,0.7);
+      border: 1px solid rgba(142,240,178,0.2);
+      color: rgba(142,240,178,0.5);
+      font-size: 18px;
+      width: 32px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+      /* hide on touch devices; only show on pointer:fine (mouse) */
+      display: none;
+    }
+
+    @media (pointer: fine) {
+      .scroll-arrow { display: flex; }
+    }
+
+    .scroll-arrow:hover {
+      background: rgba(74,222,128,0.1);
+      color: #8ef0b2;
+    }
+
+    .scroll-arrow-left  { left: 4px; }
+    .scroll-arrow-right { right: 4px; }
+
+    /* ── Scroll hint text ────────────────────────────────── */
+    .scroll-hint {
+      position: absolute;
+      top: 10px;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: rgba(142,240,178,0.2);
+      pointer-events: none;
+      z-index: 2;
+      text-transform: uppercase;
+    }
+
+    /* hide hint once user has scrolled */
+    .scroll-hint.hidden { opacity: 0; transition: opacity 0.5s; }
+  </style>
+</head>
+<body>
+
+  <!-- nav bar -->
+  <div class="bar">
+    <div class="bar-title">&#9658; ARCADE</div>
+    <a href="/arcade-builder">&#43; BUILD</a>
+    <a href="/">&#8962; HOME</a>
+  </div>
+
+  <!-- arcade room -->
+  <div class="arcade-room">
+    <div class="ceiling"></div>
+    <div class="floor-glow"></div>
+
+    <div class="scroll-hint" id="scrollHint">&#8592;&nbsp;&nbsp;SCROLL&nbsp;&nbsp;&#8594;</div>
+
+    <!-- left / right arrows for mouse users -->
+    <button class="scroll-arrow scroll-arrow-left"  id="arrowLeft"  aria-label="Scroll left">&#8592;</button>
+    <button class="scroll-arrow scroll-arrow-right" id="arrowRight" aria-label="Scroll right">&#8594;</button>
+
+    <div class="scroll-track" id="scrollTrack"></div>
+
+    <div class="dot-nav" id="dotNav"></div>
+  </div>
+
+  <script>
+    (function () {
+
+      // ── Cabinet registry ──────────────────────────────────────────────────
+      // Add each new machine here.  image is optional — a CSS cabinet is drawn
+      // when absent.  url is the full public game URL (the whole image is the
+      // hotspot that opens it).
+      var CABINETS = [
+        {
+          name: 'The Oregon Trail',
+          url: 'https://oregontrail.ws/games/the-oregon-trail/play/',
+          image: '/assets/arcade/oregon-cabinet.png',
+          accent: '#4ade80',
+        },
+      ];
+
+      // ── Fisher-Yates shuffle — random order on every load ─────────────────
+      function shuffle(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        return a;
+      }
+
+      var track    = document.getElementById('scrollTrack');
+      var dotNav   = document.getElementById('dotNav');
+      var hint     = document.getElementById('scrollHint');
+      var arrowL   = document.getElementById('arrowLeft');
+      var arrowR   = document.getElementById('arrowRight');
+
+      var cabinets = shuffle(CABINETS);
+
+      // ── Build CSS fallback cabinet ────────────────────────────────────────
+      function buildCssCabinet(cab) {
+        var accent = cab.accent || '#4ade80';
+        var root = document.createElement('div');
+        root.className = 'cab-fallback';
+
+        var marquee = document.createElement('div');
+        marquee.className = 'cab-f-marquee';
+        marquee.style.border = '2px solid ' + accent;
+        marquee.style.borderBottom = 'none';
+        marquee.style.color = accent;
+        marquee.style.textShadow = '0 0 10px ' + accent;
+        marquee.textContent = cab.name;
+
+        var bezel = document.createElement('div');
+        bezel.className = 'cab-f-bezel';
+        bezel.style.borderColor = accent;
+
+        var screen = document.createElement('div');
+        screen.className = 'cab-f-screen';
+        bezel.appendChild(screen);
+
+        var control = document.createElement('div');
+        control.className = 'cab-f-control';
+        control.style.borderTopColor = accent;
+
+        var stick = document.createElement('div');
+        stick.className = 'cab-f-stick';
+
+        var btns = document.createElement('div');
+        btns.className = 'cab-f-btns';
+        [['#f87171','#b91c1c'],['#60a5fa','#1d4ed8'],['#fde047','#a16207'],['#4ade80','#15803d']].forEach(function (c) {
+          var b = document.createElement('div');
+          b.className = 'cab-f-btn';
+          b.style.background = 'radial-gradient(circle at 35% 30%,' + c[0] + ',' + c[1] + ')';
+          btns.appendChild(b);
+        });
+
+        control.appendChild(stick);
+        control.appendChild(btns);
+
+        var body = document.createElement('div');
+        body.className = 'cab-f-body';
+
+        var legs = document.createElement('div');
+        legs.className = 'cab-f-legs';
+        [0,1].forEach(function () {
+          var leg = document.createElement('div');
+          leg.className = 'cab-f-leg';
+          legs.appendChild(leg);
+        });
+
+        root.appendChild(marquee);
+        root.appendChild(bezel);
+        root.appendChild(control);
+        root.appendChild(body);
+        root.appendChild(legs);
+        return root;
+      }
+
+      // ── Render cabinets ───────────────────────────────────────────────────
+      cabinets.forEach(function (cab, i) {
+        // The entire slot is an anchor — the whole cabinet is the hotspot.
+        var slot = document.createElement('a');
+        slot.className = 'cab-slot';
+        slot.href = cab.url;
+        slot.target = '_blank';
+        slot.rel = 'noopener noreferrer';
+        slot.setAttribute('aria-label', 'Play ' + cab.name);
+
+        // Image wrapper (flex-1 so it fills space above nameplate)
+        var imgWrap = document.createElement('div');
+        imgWrap.className = 'cab-img-wrap';
+
+        if (cab.image) {
+          var img = document.createElement('img');
+          img.alt = cab.name;
+          img.loading = i === 0 ? 'eager' : 'lazy';
+          img.draggable = false;
+          img.src = cab.image;
+          img.onerror = function () {
+            // Image missing — swap in CSS cabinet
+            if (imgWrap.contains(img)) { imgWrap.removeChild(img); }
+            imgWrap.appendChild(buildCssCabinet(cab));
+          };
+          imgWrap.appendChild(img);
+        } else {
+          imgWrap.appendChild(buildCssCabinet(cab));
+        }
+
+        var nameplate = document.createElement('div');
+        nameplate.className = 'cab-nameplate';
+        nameplate.textContent = cab.name;
+
+        var tapLabel = document.createElement('div');
+        tapLabel.className = 'cab-tap-label';
+        tapLabel.textContent = '\u25b6 tap to play';
+
+        slot.appendChild(imgWrap);
+        slot.appendChild(nameplate);
+        slot.appendChild(tapLabel);
+        track.appendChild(slot);
+
+        // Dot
+        var dot = document.createElement('div');
+        dot.className = 'dot';
+        dotNav.appendChild(dot);
+      });
+
+      // ── Dot nav — highlight cabinet closest to centre ─────────────────────
+      var dots = dotNav.querySelectorAll('.dot');
+
+      function updateDots() {
+        var slots = track.querySelectorAll('.cab-slot');
+        if (!slots.length || !dots.length) { return; }
+        var mid = track.getBoundingClientRect().left + track.offsetWidth / 2;
+        var best = 0, bestDist = Infinity;
+        slots.forEach(function (s, i) {
+          var r = s.getBoundingClientRect();
+          var dist = Math.abs(r.left + r.width / 2 - mid);
+          if (dist < bestDist) { bestDist = dist; best = i; }
+        });
+        dots.forEach(function (d, i) {
+          d.classList.toggle('active', i === best);
+        });
+      }
+
+      if (dots.length) {
+        updateDots();
+        track.addEventListener('scroll', updateDots, { passive: true });
+      }
+
+      // ── Scroll arrows ─────────────────────────────────────────────────────
+      function slotWidth() {
+        var first = track.querySelector('.cab-slot');
+        return first ? first.offsetWidth + 8 : track.offsetWidth;
+      }
+
+      arrowL.addEventListener('click', function () {
+        track.scrollBy({ left: -slotWidth(), behavior: 'smooth' });
+      });
+
+      arrowR.addEventListener('click', function () {
+        track.scrollBy({ left: slotWidth(), behavior: 'smooth' });
+      });
+
+      // ── Scroll hint — hide after first interaction ────────────────────────
+      track.addEventListener('scroll', function onFirstScroll() {
+        hint.classList.add('hidden');
+        track.removeEventListener('scroll', onFirstScroll);
+      }, { passive: true, once: true });
+
+    }());
+  </script>
+
+</body>
+</html>
