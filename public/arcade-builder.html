@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Builder — Naimean</title>
+  <link rel="icon" type="image/jpeg" href="/assets/images/commodore64.v20260424.jpg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #4aff7a;
+      --green-dim: #1a6630;
+      --green-glow: rgba(74, 255, 122, 0.18);
+      --amber: #ffb347;
+      --bg: #060906;
+      --panel: #0a100a;
+      --border: rgba(74, 255, 122, 0.4);
+      --radius: 12px;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: #c8ffc8;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px 48px;
+    }
+
+    .shell {
+      width: min(760px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      padding: 18px 0 8px;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      letter-spacing: 0.12em;
+      color: var(--green);
+      text-shadow: 0 0 14px rgba(74, 255, 122, 0.5);
+    }
+
+    .header p {
+      margin-top: 6px;
+      color: rgba(200, 255, 200, 0.55);
+      font-size: 0.82rem;
+    }
+
+    /* ── Panels ─────────────────────────────────────────── */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 0 20px var(--green-glow);
+    }
+
+    .panel-title {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 14px;
+      opacity: 0.75;
+    }
+
+    /* ── Form inputs ────────────────────────────────────── */
+    label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      color: rgba(200, 255, 200, 0.65);
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      background: #030703;
+      border: 1px solid var(--green-dim);
+      border-radius: 6px;
+      color: #c8ffc8;
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 2px var(--green-glow);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    select option {
+      background: #0a100a;
+    }
+
+    /* ── Name row ───────────────────────────────────────── */
+    .name-row {
+      margin-bottom: 14px;
+    }
+
+    /* ── Art direction row ──────────────────────────────── */
+    .art-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 520px) {
+      .art-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Agent row ──────────────────────────────────────── */
+    .agent-row {
+      margin-top: 14px;
+    }
+
+    /* ── Buttons ────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 20px;
+      border: 1px solid var(--green);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--green);
+      font-family: inherit;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: rgba(74, 255, 122, 0.08);
+      box-shadow: 0 0 10px var(--green-glow);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      width: 100%;
+      margin-top: 16px;
+      padding: 11px;
+      font-size: 0.9rem;
+    }
+
+    .btn-download {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .btn-download:hover:not(:disabled) {
+      background: rgba(255, 179, 71, 0.08);
+      box-shadow: 0 0 10px rgba(255, 179, 71, 0.2);
+    }
+
+    /* ── Status / error ─────────────────────────────────── */
+    .status-bar {
+      font-size: 0.8rem;
+      min-height: 1.4em;
+      color: rgba(200, 255, 200, 0.6);
+      text-align: center;
+    }
+
+    .status-bar.error {
+      color: #ff6b6b;
+    }
+
+    /* ── Results grid ───────────────────────────────────── */
+    .results-panel { display: none; }
+    .results-panel.visible { display: block; }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .results-grid { grid-template-columns: 1fr; }
+    }
+
+    .sprite-card {
+      border: 2px solid rgba(74, 255, 122, 0.2);
+      border-radius: 10px;
+      background: #030703;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .sprite-card:hover {
+      border-color: var(--green);
+      box-shadow: 0 0 14px var(--green-glow);
+      transform: translateY(-2px);
+    }
+
+    .sprite-card.selected {
+      border-color: var(--green);
+      box-shadow: 0 0 18px rgba(74, 255, 122, 0.35);
+    }
+
+    .sprite-card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: contain;
+      display: block;
+      /* checkerboard pattern to show transparency */
+      background: repeating-conic-gradient(rgba(255,255,255,0.06) 0% 25%, transparent 0% 50%) 0 0 / 12px 12px;
+    }
+
+    .sprite-card-label {
+      padding: 7px 10px;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      color: rgba(200, 255, 200, 0.55);
+      width: 100%;
+      text-align: center;
+      border-top: 1px solid rgba(74, 255, 122, 0.12);
+    }
+
+    .sprite-card.selected .sprite-card-label {
+      color: var(--green);
+    }
+
+    /* ── Download panel ─────────────────────────────────── */
+    .download-panel { display: none; }
+    .download-panel.visible { display: block; }
+
+    .download-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    @media (max-width: 480px) {
+      .download-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Back link ──────────────────────────────────────── */
+    .nav-back {
+      font-size: 0.78rem;
+      color: rgba(200, 255, 200, 0.4);
+      text-align: right;
+    }
+
+    .nav-back a {
+      color: rgba(200, 255, 200, 0.4);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+    }
+
+    .nav-back a:hover { color: var(--green); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+
+    <div class="nav-back"><a href="/">&#8962; HOME</a></div>
+
+    <div class="header">
+      <h1>&#9654; ARCADE BUILDER</h1>
+      <p>Generate custom MAME art with a transparent background — ready to drop into the arcade scene</p>
+    </div>
+
+    <!-- ── Form ─────────────────────────────────────────── -->
+    <div class="panel">
+      <div class="panel-title">&#9654; Game Details</div>
+
+      <div class="name-row">
+        <label for="gameName">Game Name</label>
+        <input type="text" id="gameName" placeholder="e.g. Galactic Avenger" maxlength="120" autocomplete="off">
+      </div>
+
+      <div class="art-row">
+        <div>
+          <label for="art1">Artistic Direction 1</label>
+          <input type="text" id="art1" placeholder="e.g. retro pixel art" maxlength="80" autocomplete="off">
+        </div>
+        <div>
+          <label for="art2">Artistic Direction 2</label>
+          <input type="text" id="art2" placeholder="e.g. neon sci-fi" maxlength="80" autocomplete="off">
+        </div>
+        <div>
+          <label for="art3">Color Scheme</label>
+          <input type="text" id="art3" placeholder="e.g. cyan &amp; magenta" maxlength="80" autocomplete="off">
+        </div>
+      </div>
+
+      <div>
+        <label for="prompt">Description / Prompt</label>
+        <textarea id="prompt" maxlength="600" placeholder="Describe the sprite or artwork you want — characters, setting, style, mood…"></textarea>
+      </div>
+
+      <div class="agent-row">
+        <label for="agent">AI Agent</label>
+        <select id="agent">
+          <option value="@cf/stabilityai/stable-diffusion-xl-base-1.0">Stable Diffusion XL</option>
+          <option value="@cf/bytedance/stable-diffusion-xl-lightning">SDXL Lightning (fast)</option>
+          <option value="@cf/lykon/dreamshaper-8-lcm">DreamShaper 8</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" id="generateBtn" type="button">&#9654; GENERATE ARCADE ART</button>
+      <div class="status-bar" id="statusBar" aria-live="polite"></div>
+    </div>
+
+    <!-- ── Results ───────────────────────────────────────── -->
+    <div class="panel results-panel" id="resultsPanel">
+      <div class="panel-title">&#9654; Results — click to select</div>
+      <div class="results-grid" id="resultsGrid"></div>
+    </div>
+
+    <!-- ── Download ─────────────────────────────────────── -->
+    <div class="panel download-panel" id="downloadPanel">
+      <div class="panel-title">&#9654; Download</div>
+      <div class="download-row">
+        <div>
+          <label for="filename">File name</label>
+          <input type="text" id="filename" placeholder="my-sprite" maxlength="120" autocomplete="off">
+        </div>
+        <button class="btn btn-download" id="downloadBtn" type="button">&#8659; DOWNLOAD .PNG</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      var generateBtn  = document.getElementById('generateBtn');
+      var statusBar    = document.getElementById('statusBar');
+      var resultsPanel = document.getElementById('resultsPanel');
+      var resultsGrid  = document.getElementById('resultsGrid');
+      var downloadPanel = document.getElementById('downloadPanel');
+      var downloadBtn   = document.getElementById('downloadBtn');
+      var filenameInput = document.getElementById('filename');
+
+      var selectedDataUrl = null;
+
+      function setStatus(msg, isError) {
+        statusBar.textContent = msg;
+        statusBar.className = 'status-bar' + (isError ? ' error' : '');
+      }
+
+      function sanitizeFilename(raw) {
+        var stripped   = raw.trim().replace(/[^a-zA-Z0-9_\-. ]/g, '').trim();
+        var hyphenated = stripped.replace(/\s+/g, '-') || 'sprite';
+        return hyphenated.replace(/\.+$/, '');
+      }
+
+      // ── Generate ─────────────────────────────────────────
+
+      generateBtn.addEventListener('click', function () {
+        var gameName = document.getElementById('gameName').value.trim();
+        var art1     = document.getElementById('art1').value.trim();
+        var art2     = document.getElementById('art2').value.trim();
+        var art3     = document.getElementById('art3').value.trim();
+        var prompt   = document.getElementById('prompt').value.trim();
+        var model    = document.getElementById('agent').value;
+
+        if (!gameName && !prompt) {
+          setStatus('Enter a game name or description to generate art.', true);
+          return;
+        }
+
+        // Build a combined prompt: game name + art directions + user description.
+        var words = [gameName, art1, art2, art3].filter(function (w) { return w.length > 0; });
+
+        // Prepend game context to the prompt if a name was provided.
+        var fullPrompt = prompt;
+        if (gameName && !prompt) {
+          fullPrompt = 'Arcade game art for a game called ' + gameName + '.';
+        } else if (gameName && prompt) {
+          fullPrompt = prompt;
+        }
+
+        generateBtn.disabled = true;
+        setStatus('Generating\u2026 this may take 20\u201360 seconds.', false);
+
+        selectedDataUrl = null;
+        resultsGrid.innerHTML = '';
+        resultsPanel.classList.remove('visible');
+        downloadPanel.classList.remove('visible');
+
+        fetch('/icon', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: fullPrompt, words: words, transparent: true, model: model }),
+        })
+          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (result) {
+            generateBtn.disabled = false;
+            if (!result.ok || !Array.isArray(result.data.images)) {
+              setStatus((result.data && result.data.error) || 'Generation failed.', true);
+              return;
+            }
+            setStatus('Done! Select an image below.', false);
+            renderResults(result.data.images);
+          })
+          .catch(function (err) {
+            generateBtn.disabled = false;
+            setStatus('Network error: ' + err.message, true);
+          });
+      });
+
+      // ── Render results ───────────────────────────────────
+
+      function renderResults(images) {
+        resultsGrid.innerHTML = '';
+        images.forEach(function (dataUrl, i) {
+          var card = document.createElement('div');
+          card.className = 'sprite-card';
+          card.setAttribute('role', 'button');
+          card.setAttribute('tabindex', '0');
+          card.setAttribute('aria-label', 'Select image ' + (i + 1));
+
+          var img = document.createElement('img');
+          img.src = dataUrl;
+          img.alt = 'Generated arcade art option ' + (i + 1);
+          img.loading = 'lazy';
+
+          var lbl = document.createElement('div');
+          lbl.className = 'sprite-card-label';
+          lbl.textContent = 'OPTION ' + (i + 1);
+
+          card.appendChild(img);
+          card.appendChild(lbl);
+          resultsGrid.appendChild(card);
+
+          function select() {
+            Array.from(resultsGrid.querySelectorAll('.sprite-card')).forEach(function (c) {
+              c.classList.remove('selected');
+            });
+            card.classList.add('selected');
+            selectedDataUrl = dataUrl;
+            downloadPanel.classList.add('visible');
+            if (!filenameInput.value.trim()) {
+              var gameName = document.getElementById('gameName').value.trim();
+              var suggestion = (gameName || document.getElementById('prompt').value.trim())
+                .toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
+                .split(/\s+/).slice(0, 3).join('-');
+              filenameInput.value = suggestion || 'sprite';
+            }
+            downloadPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+
+          card.addEventListener('click', select);
+          card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); }
+          });
+        });
+
+        resultsPanel.classList.add('visible');
+      }
+
+      // ── Download as PNG ──────────────────────────────────
+
+      downloadBtn.addEventListener('click', function () {
+        if (!selectedDataUrl) { return; }
+
+        var name = sanitizeFilename(filenameInput.value);
+        var a    = document.createElement('a');
+        a.href     = selectedDataUrl;
+        a.download = name + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+    })();
+  </script>
+</body>
+</html>
