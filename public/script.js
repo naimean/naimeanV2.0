@@ -1419,6 +1419,13 @@ document.addEventListener('DOMContentLoaded', function() {
       bootVideo.style.display = 'block';
       try {
         bootVideo.currentTime = 0;
+        // Wait for the seek to settle so playback always starts from frame 0.
+        // Without this, play() can race the seek and the first few frames are
+        // skipped or the video appears frozen before jumping ahead.
+        await new Promise((seekResolve) => {
+          bootVideo.addEventListener('seeked', seekResolve, { once: true });
+          setTimeout(seekResolve, 400);
+        });
         // Start playback muted so autoplay policy does not block it when there
         // is no active user gesture.  Awaiting play() lets us detect failure
         // immediately: if the browser rejects playback we skip the wait rather
@@ -1590,9 +1597,19 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
 
-        vid.play().catch(() => {
-          finish();
-        });
+        // Wait for the seek to settle before starting playback so the clip
+        // begins from the chosen position.  If play() is rejected (e.g. no
+        // active user gesture after an OAuth redirect) the scheduleFinish
+        // timer already running will still hide the overlay at the right time
+        // rather than skipping the static entirely.
+        let playStarted = false;
+        const doPlay = () => {
+          if (playStarted) return;
+          playStarted = true;
+          vid.play().catch(() => {});
+        };
+        vid.addEventListener('seeked', doPlay, { once: true });
+        setTimeout(doPlay, 200);
       };
 
       overlay.classList.add('visible');
@@ -1641,9 +1658,18 @@ document.addEventListener('DOMContentLoaded', function() {
       video.addEventListener('ended', finish, { once: true });
       video.addEventListener('error', finish, { once: true });
       video.addEventListener('abort', finish, { once: true });
-      video.play().catch(() => {
-        finish();
-      });
+      // Wait for the seek to settle before playing so the video always starts
+      // from the beginning rather than the position it was last at.
+      let seekSettled = false;
+      const doPlay = () => {
+        if (seekSettled) return;
+        seekSettled = true;
+        video.play().catch(() => {
+          finish();
+        });
+      };
+      video.addEventListener('seeked', doPlay, { once: true });
+      setTimeout(doPlay, 200);
       setTimeout(finish, maxWaitMs);
     });
   }
