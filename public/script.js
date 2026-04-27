@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   ]);
   const POWER_BUTTON_COOLDOWN_MS = 5000;
   const MINI_GAME_START_COMMANDS = new Set(['play', 'game', 'start']);
+  const ARCADE_COMMANDS = new Set(['arcade', 'emulator', 'games', 'user\\arcade']);
   const JUKEBOX_COMMANDS = new Set(['jukebox', 'music', 'apple music', 'musicbe']);
   const OREGON_TRAIL_COMMANDS = new Set(['oregon', 'trail', 'oregon trail']);
   const AUTH_LOGIN_COMMANDS = new Set(['login', 'signin', 'discord']);
@@ -78,7 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const discordAuthAvatar = document.getElementById('discord-auth-avatar');
   const discordAuthAvatarImage = document.getElementById('discord-auth-avatar-image');
   const BOOT_LOCKED_PREFIX = 'C:\\Naimean\\User\\';
-  const BOOT_DEFAULT_VALUE = BOOT_LOCKED_PREFIX;
+  const BOOT_DEFAULT_SUFFIX = 'Arcade';
+  const BOOT_DEFAULT_VALUE = `${BOOT_LOCKED_PREFIX}${BOOT_DEFAULT_SUFFIX}`;
   const BOOT_PREFIX = BOOT_LOCKED_PREFIX;
   const BOOT_WHITEBOARD_AND_CAPEX_AND_SNOW_VISIBILITY = {
     showDiscordButton: false,
