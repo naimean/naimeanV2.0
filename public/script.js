@@ -498,22 +498,14 @@ document.addEventListener('DOMContentLoaded', function() {
         window.NaimeanDiag.set('local count', nextCount);
       }
     } catch (_) {
-      // Network failed – fall back to the locally cached value only when it
-      // is a real previously-seen count (> 0).  If there is no cached value
-      // (e.g. incognito, first visit) show the unavailable placeholder so
-      // the display is never misleadingly stuck at 0.
-      const localCount = readLocalRickrollCount();
       if (window.NaimeanDiag) {
-        window.NaimeanDiag.set('local count', localCount);
-        window.NaimeanDiag.set('count src', 'local (fallback)');
+        window.NaimeanDiag.set('count src', 'unavailable');
       }
-      updateDiscordRickrollCounterDisplay(localCount > 0 ? localCount : null);
+      updateDiscordRickrollCounterDisplay(null);
     }
   }
 
   async function incrementRickrollCount() {
-    const localCountBeforeIncrement = readLocalRickrollCount();
-
     let controller = null;
     if (typeof AbortController === 'function') {
       try {
@@ -561,10 +553,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return syncedCount;
       } catch (resyncError) {
-        updateDiscordRickrollCounterDisplay(localCountBeforeIncrement);
+        updateDiscordRickrollCounterDisplay(null);
         const resyncErrorSuffix = resyncError && resyncError.message ? ` (${resyncError.message})` : '';
-        if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: failed read-endpoint resync, keeping ' + localCountBeforeIncrement + resyncErrorSuffix); }
-        return localCountBeforeIncrement;
+        if (window.NaimeanDiag) { window.NaimeanDiag.log('increment: failed read-endpoint resync' + resyncErrorSuffix); }
+        return null;
       }
     } finally {
       requestSettled = true;
