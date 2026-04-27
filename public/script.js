@@ -1087,12 +1087,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (!screenOn) {
       powerOnScreen();
-      await playStaticTransition();
-      showBlueNedryGateScreen();
-      await delay(JOIN_DISCORD_GATE_HOLD_MS);
     }
 
     if (!puzzleSolved) {
+      await playStaticTransition();
       await runNedryGateSequence();
     }
 
