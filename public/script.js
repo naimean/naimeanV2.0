@@ -2002,7 +2002,18 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    if (bootForm && bootVideo && bootSubmit) {
+    if (bootSubmit) {
+      bootSubmit.addEventListener('click', function() {
+        if (Date.now() < bootScreenUnlockAt) {
+          return;
+        }
+        if (screenOn && !puzzleSolved) {
+          beginJoinDiscordWorkflow();
+        }
+      });
+    }
+
+    if (bootForm && bootVideo) {
       bootForm.addEventListener('submit', function(e) {
         e.preventDefault();
         if (Date.now() < bootScreenUnlockAt) {
