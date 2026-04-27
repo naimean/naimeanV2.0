@@ -357,6 +357,16 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    // Hide the shadow layer instantly (no transition) so it is already gone
+    // before the black page-fade-overlay fades away, preventing a visible
+    // dark patch appearing and then vanishing after the fade completes.
+    if (shadowLayer) {
+      shadowLayer.style.transition = 'none';
+      shadowLayer.classList.add('hidden');
+      void shadowLayer.offsetHeight;
+      shadowLayer.style.transition = '';
+    }
+
     // Make the overlay fully visible immediately so the subsequent class removal
     // always fades from black to transparent instead of briefly animating toward black.
     overlay.style.transition = 'none';
