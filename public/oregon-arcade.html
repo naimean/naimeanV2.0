@@ -48,14 +48,9 @@
     }
 
     /* ── cabinet wrapper ── */
-    /*
-     * When /assets/arcade/oregon-cabinet.png exists the image provides the
-     * cabinet shape.  Until then (or if it fails to load) the pure-CSS
-     * fallback below draws the whole cabinet.
-     */
     .arcade-cabinet {
       position: relative;
-      width: min(520px, 92vw);
+      width: 100%;
       /* 3:4 keeps the proportions of a classic upright cabinet */
       aspect-ratio: 3 / 4;
       filter: drop-shadow(0 0 28px rgba(74,222,128,0.30));
@@ -266,6 +261,15 @@
     .arcade-cabinet.has-image .arcade-screen { display: block; }
     /* hide screen overlay until we know which mode we're in */
     .arcade-cabinet:not(.has-image) .arcade-screen { display: none; }
+
+    /* ── cabinet hotspot link ── */
+    .cabinet-link {
+      display: block;
+      text-decoration: none;
+      cursor: pointer;
+      /* keep the same sizing context as the original div */
+      width: min(520px, 92vw);
+    }
 
     /* ── fallback notice ── */
     .fallback {
