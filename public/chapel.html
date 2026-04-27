@@ -966,7 +966,7 @@
     const DISCORD_WIDGET_ID = '1487898909224341534';
     const DISCORD_WIDGET_API_URL = `https://discord.com/api/guilds/${DISCORD_WIDGET_ID}/widget.json`;
     const DISCORD_INVITE_RESOLVE_TIMEOUT_MS = 2000;
-    const DISCORD_FALLBACK_INVITE_URL = 'https://discord.gg/kTkD7N3JN';
+    const DISCORD_FALLBACK_INVITE_URL = 'https://discord.gg/8EdWyPGVRB';
     const DISCORD_INVITE_LAUNCH_DELAY_MS = 1000;
     const LOCAL_RICKROLL_COUNT_KEY = 'naimean-rickroll-count-fallback';
     const LEGACY_RICKROLL_COUNTER_BASE_URL = 'https://barrelrollcounter-worker.naimean.workers.dev';
@@ -975,10 +975,7 @@
     const ROCK_ROLL_START_VOLUME_FACTOR = 1;
     // Piece 2 begins at the chapel transition already, so continuation playback starts from its first frame.
     const RICK_ROLL_CONTINUATION_OFFSET_SECONDS = 0;
-    // Start the fade 2 seconds into piece 2 so the chapel clip lands briefly, then quickly drops into the trans_rick exit beat.
-    const ROCK_ROLL_START_DELAY_MS = 2000;
     const ROCK_ROLL_AUTOPLAY_RETRY_BIND_TIMEOUT_MS = 1500;
-    const ROCK_ROLL_FADE_DURATION_MS = 3000;
     const ROCK_ROLL_SEEK_THRESHOLD_SECONDS = 0.1;
     const TRANS_RICK_FADE_OUT_MS = 800;
     const ROCK_ROLL_TRANS_RICK_EXIT_DURATION_MS = 1600;
@@ -1392,6 +1389,7 @@
         transRickHideTimerId = window.setTimeout(function () {
           transRickHideTimerId = null;
           if (!target.classList.contains('is-visible')) {
+            target.classList.remove('is-fading-out');
             target.hidden = true;
             target.style.visibility = 'hidden';
           }
@@ -2410,7 +2408,12 @@
       const shouldReveal = rockRollContinuationActive || rockRollTransRickExitActive || isToolsActive();
       applyHotspotElementVisibility(chapelTransRick, shouldReveal);
       chapelTransRick.classList.toggle('is-visible', rockRollContinuationActive || rockRollTransRickExitActive);
-      chapelTransRick.classList.toggle('is-fading-out', rockRollTransRickExitActive);
+      // Only add is-fading-out here; removal is intentionally deferred to
+      // setTransRickVisibility's hide timer so the CSS 'forwards' fill keeps
+      // the element at opacity 0 until it is actually hidden.
+      if (rockRollTransRickExitActive) {
+        chapelTransRick.classList.add('is-fading-out');
+      }
     }
 
     function clampValue(value, min, max) {
@@ -2668,7 +2671,7 @@
         });
 
         if (!response.ok) {
-          return null;
+          return DISCORD_FALLBACK_INVITE_URL;
         }
 
         const payload = await response.json();
@@ -2696,22 +2699,9 @@
           return;
         }
 
-        // Open without noopener so we retain a reference and can close the window
-        // when the user returns to chapel after accepting the Discord invite.
-        const discordWindow = window.open(inviteUrl, '_blank');
-        if (!discordWindow || discordWindow === window) {
-          return;
-        }
-
-        function onChapelFocus() {
-          window.removeEventListener('focus', onChapelFocus);
-          try {
-            if (!discordWindow.closed) {
-              discordWindow.close();
-            }
-          } catch (_) {}
-        }
-        window.addEventListener('focus', onChapelFocus);
+        // Navigate the current tab to the Discord invite. The user will be routed
+        // back to chapel via the browser Back button after accepting the invite.
+        window.location.assign(inviteUrl);
       }, DISCORD_INVITE_LAUNCH_DELAY_MS);
     }
 
@@ -2860,7 +2850,6 @@
       rockRollContinuationMedia.muted = true;
       rockRollContinuationMedia.volume = 0;
       const continuationStartTime = getRockRollContinuationStartTime(playbackState);
-      let fadeOutStarted = false;
       let playbackAttemptSettled = false;
       let playbackStartFallbackTimerId = null;
 
@@ -2895,37 +2884,6 @@
         bindRockRollContinuationRetry();
       };
 
-      const startFadeOut = function () {
-        if (fadeOutStarted) {
-          return;
-        }
-
-        fadeOutStarted = true;
-        const fadeStart = performance.now();
-        function fadeStep(now) {
-          if (!rockRollContinuationMedia || !rockRollContinuationActive) {
-            return;
-          }
-
-          const elapsed = now - fadeStart;
-          const fadeElapsed = Math.max(0, elapsed - ROCK_ROLL_START_DELAY_MS);
-          const progress = Math.min(fadeElapsed / ROCK_ROLL_FADE_DURATION_MS, 1);
-          const nextVolume = startVolume * (1 - progress);
-          rockRollContinuationMedia.volume = Math.max(0, nextVolume);
-
-          if (progress >= 1) {
-            rockRollContinuationMedia.pause();
-            rockRollContinuationMedia.volume = 0;
-            runTransRickExitAnimation();
-            return;
-          }
-
-          requestAnimationFrame(fadeStep);
-        }
-
-        requestAnimationFrame(fadeStep);
-      };
-
       const beginAudiblePlayback = function () {
         if (!rockRollContinuationActive) {
           return;
@@ -2934,7 +2892,14 @@
         rockRollContinuationMedia.defaultMuted = false;
         rockRollContinuationMedia.muted = false;
         rockRollContinuationMedia.volume = startVolume;
-        startFadeOut();
+
+        // Trigger the trans_rick exit animation when the media finishes playing.
+        rockRollContinuationMedia.addEventListener('ended', function () {
+          if (!isCurrentContinuationAttempt() || !rockRollContinuationActive) {
+            return;
+          }
+          runTransRickExitAnimation();
+        }, { once: true });
       };
 
       if (rockRollContinuationMedia.readyState > 0) {
