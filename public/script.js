@@ -1155,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     powerOnScreen();
     await playStaticTransition();
-    showBlueNedryGateScreen();
+    await runNedryGateSequence();
   }
 
   async function openProtectedTool(toolPath) {
@@ -1419,20 +1419,25 @@ document.addEventListener('DOMContentLoaded', function() {
       bootVideo.style.display = 'block';
       try {
         bootVideo.currentTime = 0;
-        // Start playback muted so the browser's autoplay policy does not block
-        // it when there is no active user gesture (e.g. after returning from an
-        // OAuth redirect or after the popup auth flow has expired the gesture).
-        // The .then() callback unmutes immediately once playback has started so
-        // audio plays from the beginning. The finally block below also resets
-        // muted in case play() never started (e.g. video src error).
+        // Start playback muted so autoplay policy does not block it when there
+        // is no active user gesture.  Awaiting play() lets us detect failure
+        // immediately: if the browser rejects playback we skip the wait rather
+        // than showing a frozen first frame for up to 12 seconds.
         bootVideo.muted = true;
-        bootVideo.play().then(() => {
+        let videoStarted = false;
+        try {
+          await bootVideo.play();
           bootVideo.muted = false;
-        }).catch(() => {});
-        const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
-          ? Math.ceil(bootVideo.duration * 1000) + 2000
-          : 12000;
-        await waitForVideoToEnd(bootVideo, waitMs);
+          videoStarted = true;
+        } catch (_) {
+          bootVideo.muted = false;
+        }
+        if (videoStarted) {
+          const waitMs = Number.isFinite(bootVideo.duration) && bootVideo.duration > 0
+            ? Math.ceil(bootVideo.duration * 1000) + 2000
+            : 12000;
+          await waitForVideoToEnd(bootVideo, waitMs);
+        }
       } finally {
         bootVideo.pause();
         bootVideo.muted = false;
@@ -1491,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await playStaticTransition();
-    showBlueNedryGateScreen();
+    await runNedryGateSequence();
   }
 
   function showBlueNedryGateScreen() {
