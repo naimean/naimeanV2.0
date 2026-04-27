@@ -136,6 +136,11 @@
       .art-row { grid-template-columns: 1fr; }
     }
 
+    /* ── URL row ────────────────────────────────────────── */
+    .url-row {
+      margin-bottom: 14px;
+    }
+
     /* ── Agent row ──────────────────────────────────────── */
     .agent-row {
       margin-top: 14px;
@@ -306,6 +311,11 @@
       <div class="name-row">
         <label for="gameName">Game Name</label>
         <input type="text" id="gameName" placeholder="e.g. Galactic Avenger" maxlength="120" autocomplete="off">
+      </div>
+
+      <div class="url-row">
+        <label for="gameUrl">Game URL <span style="opacity:0.5;font-size:0.72rem;">(publicly hosted game to launch)</span></label>
+        <input type="text" id="gameUrl" placeholder="https://oregontrail.ws/games/the-oregon-trail/play/" maxlength="500" autocomplete="off" spellcheck="false">
       </div>
 
       <div class="art-row">
