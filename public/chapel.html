@@ -2605,8 +2605,7 @@
       }
 
       // Always wait for the network before updating the display so the counter
-      // always reflects the real server-side value. On failure, fall back to
-      // the locally cached count (if one is available from a previous visit).
+      // always reflects the real server-side value. On failure, show unavailable.
       try {
         const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URLS);
         const nextCount = remoteCount;
@@ -2618,12 +2617,10 @@
           window.NaimeanDiag.set('local count', nextCount);
         }
       } catch (_) {
-        const localCount = readLocalRickrollCount();
         if (window.NaimeanDiag) {
-          window.NaimeanDiag.set('local count', localCount);
-          window.NaimeanDiag.set('count src', 'local (fallback)');
+          window.NaimeanDiag.set('count src', 'unavailable');
         }
-        chapelTvCounter.textContent = localCount > 0 ? String(localCount).padStart(2, '0') : '--';
+        chapelTvCounter.textContent = '--';
       }
     }
 
