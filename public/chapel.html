@@ -2598,13 +2598,9 @@
         return;
       }
 
-      const localCount = readLocalRickrollCount();
-      chapelTvCounter.textContent = localCount > 0 ? String(localCount).padStart(2, '0') : '--';
-      if (window.NaimeanDiag) {
-        window.NaimeanDiag.set('local count', localCount);
-        window.NaimeanDiag.set('count src', localCount > 0 ? 'local' : 'pending remote');
-      }
-
+      // Always wait for the network before updating the display so the counter
+      // always reflects the real server-side value. On failure, fall back to
+      // the locally cached count (if one is available from a previous visit).
       try {
         const remoteCount = await fetchRickrollCount(RICKROLL_COUNT_API_URLS);
         const nextCount = remoteCount;
@@ -2616,7 +2612,12 @@
           window.NaimeanDiag.set('local count', nextCount);
         }
       } catch (_) {
-        if (window.NaimeanDiag) { window.NaimeanDiag.set('count src', 'local (fallback)'); }
+        const localCount = readLocalRickrollCount();
+        if (window.NaimeanDiag) {
+          window.NaimeanDiag.set('local count', localCount);
+          window.NaimeanDiag.set('count src', 'local (fallback)');
+        }
+        chapelTvCounter.textContent = localCount > 0 ? String(localCount).padStart(2, '0') : '--';
       }
     }
 
