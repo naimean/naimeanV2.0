@@ -467,12 +467,19 @@
     const popupReturnTo = `/auth_popup_complete.html?next=${encodeURIComponent(returnToPath)}&from=${encodeURIComponent(fromPath)}`;
     const loginUrl = `${AUTH_DISCORD_LOGIN_PATH}?returnTo=${encodeURIComponent(popupReturnTo)}`;
 
+    // Open the popup immediately while the user gesture is still active.
+    // The async session check below may close it if the user is already authenticated.
+    const tentativePopup = window.open(loginUrl, POPUP_NAME, POPUP_FEATURES);
+
     const existingSession = await refreshAuthSession();
     if (existingSession.authenticated && existingSession.user && existingSession.user.provider === 'discord') {
+      if (tentativePopup && !tentativePopup.closed) {
+        try { tentativePopup.close(); } catch (_) {}
+      }
       return { status: 'already', session: existingSession, nextPath: returnToPath, fromPath };
     }
 
-    popupWindow = window.open(loginUrl, POPUP_NAME, POPUP_FEATURES);
+    popupWindow = tentativePopup;
     if (!popupWindow) {
       window.location.assign(loginUrl);
       return { status: 'redirect', session: existingSession, nextPath: returnToPath, fromPath };
