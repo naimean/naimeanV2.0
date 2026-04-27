@@ -3,6 +3,13 @@ main = "src/index.js"
 compatibility_date = "2026-04-18"
 compatibility_flags = ["nodejs_compat"]
 
+# Set required secrets before first deploy (never commit values — stored by Cloudflare):
+#
+#   Apple Music developer token (generated from your Apple Developer account .p8 key):
+#     wrangler secret put APPLE_MUSIC_TOKEN
+#
+# The token is injected server-side into jukebox.html as window.NAIMEAN_APPLE_MUSIC_DEVELOPER_TOKEN.
+
 [[routes]]
 pattern = "naimean.com/*"
 zone_name = "naimean.com"
@@ -18,7 +25,7 @@ zone_name = "naimean.com"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/get", "/hit", "/increment", "/auth", "/go", "/layout", "/icon", "/assets/retroarch/cores/"]
+run_worker_first = ["/get", "/hit", "/increment", "/auth", "/go", "/layout", "/icon", "/assets/retroarch/cores/", "/jukebox"]
 
 [[services]]
 binding = "COUNTER"

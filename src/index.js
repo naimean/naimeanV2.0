@@ -4,6 +4,10 @@ const PROXY_PATHS = ["/get", "/hit", "/increment", "/auth", "/go", "/layout", "/
 // Must stay in sync with run_worker_first in wrangler.toml (checked by scripts/check-route-alignment.js).
 const R2_PATHS = ["/assets/retroarch/cores/"];
 
+// HTML pages that require the Apple Music developer token injected before serving.
+// Worker must run first for these paths — keep in sync with run_worker_first in wrangler.toml.
+const JUKEBOX_INJECT_PATHS = ["/jukebox"];
+
 const UPLOADS_HOSTNAME = 'uploads.naimean.com';
 
 // Requests under this prefix are served from the CORES R2 bucket instead of ASSETS.
@@ -39,6 +43,41 @@ const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; fo
 
 // Static asset paths that benefit from long-lived caching (content-addressed or versioned).
 const IMMUTABLE_ASSET_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp', '.avif', '.woff2', '.woff', '.data'];
+
+// Returns true for any request pathname that maps to a jukebox injection page.
+// Handles the canonical path (/jukebox), trailing-slash (/jukebox/), and
+// direct HTML file requests (/jukebox.html), all derived from JUKEBOX_INJECT_PATHS.
+function isJukeboxPage(pathname) {
+  return JUKEBOX_INJECT_PATHS.some(
+    (p) => pathname === p || pathname === p + '/' || pathname === p + '.html',
+  );
+}
+
+// Injects window.NAIMEAN_APPLE_MUSIC_DEVELOPER_TOKEN into a jukebox HTML response
+// when env.APPLE_MUSIC_TOKEN is configured as a Worker secret. Returns the original
+// response unchanged when the token is absent, malformed, or the response is not HTML.
+async function injectAppleMusicToken(response, env) {
+  const token = typeof env.APPLE_MUSIC_TOKEN === 'string' ? env.APPLE_MUSIC_TOKEN.trim() : '';
+  if (!token) return response;
+
+  // Validate token looks like a JWT (three base64url segments) before injecting.
+  if (!/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(token)) return response;
+
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
+  if (!contentType.includes('text/html')) return response;
+
+  const html = await response.text();
+  const injected = html.replace(
+    '</head>',
+    `<script>window.NAIMEAN_APPLE_MUSIC_DEVELOPER_TOKEN=${JSON.stringify(token)};</script></head>`,
+  );
+
+  return new Response(injected, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: new Headers(response.headers),
+  });
+}
 
 function isImmutableAsset(pathname) {
   const lower = pathname.toLowerCase();
@@ -180,6 +219,10 @@ export default {
           }
         }
       }
+    }
+
+    if (isJukeboxPage(url.pathname) && upstreamResponse.status === 200) {
+      upstreamResponse = await injectAppleMusicToken(upstreamResponse, env);
     }
 
     return applyEdgeSecurityHeaders(upstreamResponse, isSecureTransport, url.pathname);
