@@ -29,8 +29,6 @@ jobs:
         run: |
           node --check public/script.js
           node --check public/diagnostics.js
-          node --check public/js/arcade-health.js
-          node --check public/js/arcade-shell.js
 
       - name: Check naimean-api worker JS syntax
         run: |

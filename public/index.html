@@ -28,8 +28,7 @@
     .shoutbox-container,
     .discord-overlay,
     .static-overlay,
-    .power-off-overlay,
-    .arcade-overlay {
+    .power-off-overlay {
       display: none;
     }
   </style>
@@ -83,7 +82,7 @@
             </button>
           </div>
           <div class="boot-input-row">
-            <input id="boot-input" class="boot-input" type="text" maxlength="32" value="C:\Naimean\User\Arcade" aria-label="Boot command input" />
+            <input id="boot-input" class="boot-input" type="text" maxlength="32" value="C:\Naimean\User\" aria-label="Boot command input" />
             <button id="boot-inline-submit" class="boot-submit boot-inline-submit" type="button" aria-label="Submit boot command">submit</button>
           </div>
         </form>
@@ -136,24 +135,11 @@
               <div class="shoutbox-hint-cover" aria-hidden="true"></div>
             </div>
             <div class="shoutbox-entry">
-              <input type="text" id="shoutbox-input" maxlength="120" value="C:\Naimean\User\Arcade" aria-label="Shoutbox command input" autocomplete="off" />
+              <input type="text" id="shoutbox-input" maxlength="120" value="C:\Naimean\User\" aria-label="Shoutbox command input" autocomplete="off" />
               <button type="submit" aria-label="Submit command">submit</button>
             </div>
           </form>
         </div>
-      </div>
-    </div>
-    <div class="arcade-overlay" id="arcade-overlay" aria-hidden="true" aria-label="Arcade emulator">
-      <div class="arcade-picker" id="arcade-picker">
-        <div class="arcade-picker-header">
-          <span class="arcade-title">&#9658; ARCADE</span>
-          <button class="arcade-picker-fs-btn" id="arcade-picker-fs-btn" type="button" aria-label="Toggle fullscreen">FULLSCREEN</button>
-          <button class="arcade-close-btn" id="arcade-close-btn" type="button" aria-label="Close arcade">&#10005; CLOSE</button>
-        </div>
-        <div class="arcade-game-list" id="arcade-game-list" role="listbox" aria-label="Available games"></div>
-        <div id="arcade-status" class="arcade-status" aria-live="polite"></div>
-        <button class="arcade-fs-launch-btn" id="arcade-fs-launch-btn" type="button">LAUNCH</button>
-        <p class="arcade-controller-hint">If you have 2x controllers connected, they should just "work"</p>
       </div>
     </div>
   </div>
