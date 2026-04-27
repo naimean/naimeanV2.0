@@ -37,6 +37,12 @@ if (!r2Match) {
   process.exit(1);
 }
 
+const injectMatch = src.match(/const JUKEBOX_INJECT_PATHS\s*=\s*\[([^\]]+)\]/);
+if (!injectMatch) {
+  process.stderr.write('JUKEBOX_INJECT_PATHS not found in src/index.js\n');
+  process.exit(1);
+}
+
 const workerFirstMatch = routerToml.match(/run_worker_first\s*=\s*\[([^\]]+)\]/);
 if (!workerFirstMatch) {
   process.stderr.write('run_worker_first not found in wrangler.toml\n');
@@ -46,9 +52,10 @@ if (!workerFirstMatch) {
 const extract = (s) => [...s.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 const proxyPaths = extract(proxyMatch[1]);
 const r2Paths = extract(r2Match[1]);
+const injectPaths = extract(injectMatch[1]);
 const workerFirstPaths = extract(workerFirstMatch[1]);
 // Combined set of paths that must be in run_worker_first.
-const expectedWorkerFirstPaths = [...proxyPaths, ...r2Paths];
+const expectedWorkerFirstPaths = [...proxyPaths, ...r2Paths, ...injectPaths];
 // Each [[routes]] block is isolated by splitting on the next TOML section header.
 const extractRoutePatterns = (toml) => toml
   .split(/\[\[routes\]\]/)
@@ -93,5 +100,6 @@ for (const route of EXPECTED_API_ROUTES) {
 if (!ok) process.exit(1);
 console.log('Route alignment OK: ' + proxyPaths.join(', '));
 console.log('R2 paths OK: ' + r2Paths.join(', '));
+console.log('Injection paths OK: ' + injectPaths.join(', '));
 console.log('Router routes OK: ' + EXPECTED_ROUTER_ROUTES.join(', '));
 console.log('API routes OK: ' + EXPECTED_API_ROUTES.join(', '));
