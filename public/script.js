@@ -1104,6 +1104,8 @@ document.addEventListener('DOMContentLoaded', function() {
           // null = redirect in progress (keep pending key); false = auth cancelled
           if (hasDiscordAuth === false) {
             setJoinDiscordWorkflowPending(false);
+            playWrongSound();
+            showBlueNedryGateScreen();
           }
           return false;
         }
@@ -2024,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = 'https://oregontrail.ws/games/the-oregon-trail/play/';
             return;
           }
-          continueJoinDiscordWorkflow();
+          beginJoinDiscordWorkflow();
         }
       });
     }
