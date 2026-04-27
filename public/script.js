@@ -2024,7 +2024,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = 'https://oregontrail.ws/games/the-oregon-trail/play/';
             return;
           }
-          beginJoinDiscordWorkflow();
+          continueJoinDiscordWorkflow();
         }
       });
     }
