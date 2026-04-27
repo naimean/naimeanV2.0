@@ -2789,6 +2789,7 @@
       }
 
       startCongregationAudio();
+      launchDiscordInviteFromRedirectIfNeeded();
     }
 
     function runTransRickExitAnimation() {
@@ -3190,7 +3191,9 @@
         // Retry a few times in case layout shifts as images decode on mobile
         setTimeout(scrollToCurrentStartPoint, 100);
         setTimeout(scrollToCurrentStartPoint, 300);
-        launchDiscordInviteFromRedirectIfNeeded();
+        if (!rockRollContinuationPending) {
+          launchDiscordInviteFromRedirectIfNeeded();
+        }
       }
       setTimeout(function () {
         if (!isLayoutProbeMode) {
